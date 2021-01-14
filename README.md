@@ -54,3 +54,35 @@ window.addEventListener("load", () => {
 });
 ```
 
+## Building
+
+Forgo uses the latest JSX createElement factory changes, so you might need to enable this with Babel. More details here: https://babeljs.io/docs/en/babel-plugin-transform-react-jsx
+
+For your babel config:
+
+```json
+{
+  "plugins": [
+    [
+      "@babel/plugin-transform-react-jsx",
+      {
+        "throwIfNamespace": false,
+        "runtime": "automatic",
+        "importSource": "forgo"
+      }
+    ]
+  ]
+}
+```
+
+If you're using TypeScript, add the following lines to your tsconfig.json file.
+
+```json
+{
+  "compilerOptions": {
+    // other stuff...
+    "jsx": "react-jsx",
+    "jsxImportSource": "forgo"
+  },
+}
+```
