@@ -20,6 +20,6 @@ export default function () {
       });
     });
 
-    innerHtml.includes("Hello world").should.be.true();
+    innerHtml.should.containEql("Hello world");
   });
 }
