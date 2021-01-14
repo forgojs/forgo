@@ -5,7 +5,7 @@ import loadScript from "../loadScript";
 import "should";
 
 export default function () {
-  it("Should mount a component", async () => {
+  it("mounts a component", async () => {
     const scriptPath = join(__dirname, "script.js");
     const dom = new JSDOM(htmlFile(), {
       runScripts: "dangerously",
