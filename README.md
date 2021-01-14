@@ -5,10 +5,10 @@ Forgo is a 4KB library that makes it super easy to create modern web apps using 
 Unlike React, apps are plain JS with very little framework specific code. Everything you already know about DOM APIs and JavaScript will easily carry over.
 
 - Use HTML DOM APIs for accessing elements
-- There are no synthetic events, use standard DOM APIs
+- There are no synthetic events
 - Use closures for maintaining component state
 - Use any singleton pattern for managing app-wide state
-- There's no vDOM, DOM diffing etc. Renders are manually triggered.
+- There's no vDOM or DOM diffing. Renders are manually triggered
 
 Forgo is basically just one small JS file (actually TypeScript). It's somewhat decently documented, but I could use some help here. A stated goal of the project is to always remain within that single file.
 
@@ -59,9 +59,9 @@ Most of these things work just as you would expect. Let's make a Todo List app.
 
 There will be three components:
 
-1. The main TodoList component
-2. A TodoListItem component
-3. And an AddTodo component
+1. TodoList (the main component)
+2. TodoListItem
+3. AddTodo
 
 Here's the TodoList, which hosts the other two components.
 
