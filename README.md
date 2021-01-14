@@ -55,9 +55,9 @@ window.addEventListener("load", () => {
 
 ## Multiple Components, passing props etc. 
 
-Most of these things work just as you already know it. Let's make a TodoList.
+Most of these things work just as you would expect. Let's make a Todo List app.
 
-There are three components:
+There will be three components:
 
 1. The main TodoList component
 2. A TodoListItem component
