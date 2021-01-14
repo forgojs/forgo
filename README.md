@@ -80,7 +80,6 @@ If you're using TypeScript, add the following lines to your tsconfig.json file.
 ```json
 {
   "compilerOptions": {
-    // other stuff...
     "jsx": "react-jsx",
     "jsxImportSource": "forgo"
   },
