@@ -84,9 +84,9 @@ function Greeter(props) {
 
 ## Reading Form Input Elements
 
-You can read form input control values with regular DOM APIs.
+You can read form input element values with regular DOM APIs.
 
-There's a small hurdle though - how do you we get a reference to the actual DOM elements? Well, that's where the ref attribute comes in. An object referenced by the ref attribute in an element's markup will have its value property set to the actual DOM element.
+There's a small hurdle though - how do we get a reference to the actual DOM element? That's where the ref attribute comes in. An object referenced by the ref attribute in an element's markup will have its value property set to the actual DOM element.
 
 Better explained with an example:
 
@@ -170,7 +170,7 @@ function TodoList(props: TodoListProps) {
 }
 ```
 
-Here's the TodoList item, which simply displays a Todo.
+Here's the TodoListItem component, which simply displays a Todo.
 
 ```tsx
 type TodoListItemProps = {
@@ -257,3 +257,7 @@ If you're using TypeScript, add the following lines to your tsconfig.json file.
   }
 }
 ```
+
+## Getting Help
+
+You can reach out to me via twitter or email. If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues).
