@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{			
+			"type": "npm",
+			"script": "build-test",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build-test",
+			"detail": "(cd test && ./build.sh)"
+		}
+	]
+}

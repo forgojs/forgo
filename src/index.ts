@@ -33,16 +33,14 @@ export type ForgoRenderArgs = {
 /*
   ForgoComponent contains three functions.
   1. render() returns the actual DOM to render. 
-  2. load() is optional. And gets called just before the component gets mounted.
-  3. unload() is optional. Opposite of load, gets called just before unmount.
+  2. unmount() is optional. Gets called just before unmount.
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
   render: (
     props: TProps,
     args: ForgoRenderArgs
   ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
-  load?: () => void;
-  unload?: () => void;
+  unmount?: () => void;
 };
 
 /*
@@ -113,6 +111,26 @@ const ATTRIBUTE_NODE_TYPE = 2;
 const TEXT_NODE_TYPE = 3;
 
 /*
+  The following adds support for injecting test environment objects.
+  Such as JSDOM.
+*/
+export type EnvType = {
+  window: Window | typeof globalThis;
+  document: HTMLDocument;
+};
+const documentObject = globalThis ? globalThis.document : document;
+const windowObject = globalThis ? globalThis : window;
+
+let env: EnvType = {
+  window: windowObject,
+  document: documentObject,
+};
+
+export function setCustomEnv(value: any) {
+  env = value;
+}
+
+/*
   This is the main render function.
   forgoNode is the node to render.
   
@@ -167,9 +185,16 @@ function renderString(
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ): { node: ChildNode } {
   // Text nodes will always be recreated
-  const textNode = document.createTextNode(text);
+  const textNode = env.document.createTextNode(text);
   attachProps(text, textNode, pendingAttachStates);
   if (node) {
+    // If there are old component states, we might need to unmount some of em.
+    // After comparing with the new states.
+    const oldComponentStates = getForgoState(node)?.components;
+    if (oldComponentStates) {
+      unloadIncompatibleStates(pendingAttachStates, oldComponentStates);
+    }
+
     node.replaceWith(textNode);
   }
   return { node: textNode };
@@ -195,24 +220,32 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   if (node) {
     let nodeToBindTo: ChildNode;
 
+    // If there are old component states, we might need to unmount some of em.
+    // After comparing with the new states.
+    const oldComponentStates = getForgoState(node)?.components;
+    if (oldComponentStates) {
+      unloadIncompatibleStates(pendingAttachStates, oldComponentStates);
+    }
+
     // if the nodes are not of the same of the same type, we need to replace.
     if (
       node.nodeType === TEXT_NODE_TYPE ||
       ((node as HTMLElement).tagName &&
         (node as HTMLElement).tagName.toLowerCase() !== forgoElement.type)
     ) {
-      const newElement = document.createElement(forgoElement.type);
+      const newElement = env.document.createElement(forgoElement.type);
       node.replaceWith(newElement);
       nodeToBindTo = newElement;
     } else {
       nodeToBindTo = node;
     }
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
+
     renderChildNodes(forgoElement, nodeToBindTo as HTMLElement);
     return { node: nodeToBindTo };
   } else {
     // There was no node passed in, so create a new element.
-    const newElement = document.createElement(forgoElement.type);
+    const newElement = env.document.createElement(forgoElement.type);
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
     }
@@ -240,16 +273,6 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       savedComponentState && savedComponentState.ctor === forgoElement.type;
 
     if (!hasCompatibleState) {
-      // If we don't have compatible state,
-      // unload all components from index upwards
-      const unloaded = state.components.slice(componentIndex);
-      state.components = state.components.slice(0, componentIndex);
-      for (const item of unloaded) {
-        if (item.component.unload) {
-          item.component.unload();
-        }
-      }
-
       // We have to create a new component
       const args: ForgoRenderArgs = { element: { componentIndex } };
       const ctor = forgoElement.type;
@@ -278,7 +301,10 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
       // Since we have compatible state already stored,
       // we'll push the savedComponentState into pending states for later attachment.
-      const statesToAttach = pendingAttachStates.concat(savedComponentState);
+      const statesToAttach = pendingAttachStates.concat({
+        ...savedComponentState,
+        props: forgoElement.props,
+      });
 
       // Get a new element by calling render on existing component.
       const newForgoElement = savedComponentState.component.render(
@@ -367,42 +393,30 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
       } else {
-        if (typeof forgoChild.type === "string") {
-          const findResult = findReplacementCandidateForDOMElement(
-            forgoChild as ForgoElement<string, any>,
+        const findResult =
+          typeof forgoChild.type === "string"
+            ? findReplacementCandidateForDOMElement(
+                forgoChild as ForgoElement<string, any>,
+                childNodes,
+                forgoChildIndex
+              )
+            : findReplacementCandidateForCustomComponent(
+                forgoChild as ForgoElement<ForgoComponentCtor<any>, any>,
+                childNodes,
+                forgoChildIndex
+              );
+
+        if (findResult.found) {
+          unloadNodes(
+            parentElement,
             childNodes,
-            forgoChildIndex
+            forgoChildIndex,
+            findResult.index
           );
-          if (findResult.found) {
-            unloadNodes(
-              parentElement,
-              childNodes,
-              forgoChildIndex,
-              findResult.index
-            );
-            render(forgoChild, childNodes[findResult.index], []);
-          } else {
-            const { node } = render(forgoChild, undefined, []);
-            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
-          }
+          render(forgoChild, childNodes[findResult.index], []);
         } else {
-          const findResult = findReplacementCandidateForCustomComponent(
-            forgoChild as ForgoElement<ForgoComponentCtor<any>, any>,
-            childNodes,
-            forgoChildIndex
-          );
-          if (findResult.found) {
-            unloadNodes(
-              parentElement,
-              childNodes,
-              forgoChildIndex,
-              findResult.index
-            );
-            render(forgoChild, childNodes[findResult.index], []);
-          } else {
-            const { node } = render(forgoChild, undefined, []);
-            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
-          }
+          const { node } = render(forgoChild, undefined, []);
+          parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
       }
     }
@@ -418,7 +432,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
 }
 
 /*
-  Unloads nodes from a node list
+  Unloads components from a node list
   This does:
   a) Remove the node
   b) Calls unload on all attached components
@@ -435,10 +449,45 @@ function unloadNodes(
     const state = getForgoState(node);
     if (state) {
       for (const componentState of state.components) {
-        if (componentState.component.unload) {
-          componentState.component.unload();
+        if (componentState.component.unmount) {
+          componentState.component.unmount();
         }
       }
+    }
+  }
+}
+
+/*
+  When states is attached to a new node,
+  or when states are reattached, some of the old component states need to go away.
+  The corresponding components will need to be unmounted.
+
+  While rendering, the component gets reused if the ctor is the same.
+  If the ctor is different, the component is discarded. And hence needs to be unmounted.
+  So we check the ctor type in old and new.
+*/
+function unloadIncompatibleStates(
+  newStates: NodeAttachedComponentState<any>[],
+  oldStates: NodeAttachedComponentState<any>[]
+) {
+  let i = 0;
+
+  for (const newState of newStates) {
+    if (oldStates.length > i) {
+      const oldState = oldStates[i];
+      if (oldState.ctor !== newState.ctor) {
+        break;
+      }
+      i++;
+    } else {
+      break;
+    }
+  }
+
+  for (let j = i; j < oldStates.length; j++) {
+    const oldState = oldStates[j];
+    if (oldState.component.unmount) {
+      oldState.component.unmount();
     }
   }
 }

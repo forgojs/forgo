@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./dist",
   "devDependencies": {
     "@types/jsdom": "^16.2.6",
@@ -13,6 +13,7 @@
     "typescript": "^4.1.3"
   },
   "scripts": {
+    "build-test": "(cd test && ./build.sh)",
     "test": "mocha -r esm test/dist/test.js"
   },
   "license": "MIT"

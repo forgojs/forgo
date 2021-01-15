@@ -1,4 +1,8 @@
-import { mount } from "../../../dist";
+import { DOMWindow, JSDOM } from "jsdom";
+import { mount, setCustomEnv } from "../../../";
+
+let window: DOMWindow;
+let document: HTMLDocument;
 
 export function Parent() {
   return {
@@ -20,6 +24,12 @@ export function Child(props: { text: string }) {
   };
 }
 
-window.addEventListener("load", () => {
-  mount(<Parent />, document.getElementById("root"));
-});
+export function run(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<Parent />, document.getElementById("root"));
+  });
+}

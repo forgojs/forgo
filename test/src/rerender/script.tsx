@@ -1,4 +1,8 @@
-import { rerender, mount, ForgoRenderArgs } from "../../../dist";
+import { DOMWindow, JSDOM } from "jsdom";
+import { rerender, mount, ForgoRenderArgs, setCustomEnv } from "../../../";
+
+let window: DOMWindow;
+let document: HTMLDocument;
 
 export function Component() {
   let counter = 0;
@@ -24,6 +28,12 @@ export function Component() {
   };
 }
 
-window.addEventListener("load", () => {
-  mount(<Component />, document.getElementById("root"));
-});
+export function run(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<Component />, document.getElementById("root"));
+  });
+}

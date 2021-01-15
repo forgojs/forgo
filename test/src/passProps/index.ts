@@ -1,18 +1,17 @@
 import { JSDOM } from "jsdom";
-import { join } from "path";
 import htmlFile from "../htmlFile";
-import loadScript from "../loadScript";
 import "should";
+import { run } from "./script";
 
 export default function () {
   it("passes props to child", async () => {
-    const scriptPath = join(__dirname, "script.js");
     const dom = new JSDOM(htmlFile(), {
-      runScripts: "dangerously",
+      runScripts: "outside-only",
       resources: "usable",
     });
     const window = dom.window;
-    loadScript(dom, scriptPath);
+
+    run(dom);
 
     const innerHtml = await new Promise<string>((resolve) => {
       window.addEventListener("load", () => {

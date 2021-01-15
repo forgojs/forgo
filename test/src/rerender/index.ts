@@ -1,19 +1,17 @@
 import { JSDOM } from "jsdom";
-import { join } from "path";
 import htmlFile from "../htmlFile";
-import loadScript from "../loadScript";
-import should from "should";
-import { ForgoRef } from "../../../dist";
+import { ForgoRef } from "../../../";
+import { run } from "./script";
 
 export default function () {
   it("rerenders", async () => {
-    const scriptPath = join(__dirname, "script.js");
     const dom = new JSDOM(htmlFile(), {
-      runScripts: "dangerously",
+      runScripts: "outside-only",
       resources: "usable",
     });
     const window = dom.window;
-    loadScript(dom, scriptPath);
+
+    run(dom);
 
     const button = await new Promise<ForgoRef<HTMLButtonElement>>((resolve) => {
       window.addEventListener("load", () => {

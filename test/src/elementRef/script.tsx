@@ -1,19 +1,29 @@
-import { mount } from "../../../dist";
+import { DOMWindow, JSDOM } from "jsdom";
+import { mount, setCustomEnv } from "../../../";
+
+let window: DOMWindow;
+let document: HTMLDocument;
 
 export function Parent() {
   return {
     render() {
-      (window as any).myInput = {};
+      window.myInput = {};
 
       return (
         <div>
-          <input type="text" ref={(window as any).myInput} />
+          <input type="text" ref={window.myInput} />
         </div>
       );
     },
   };
 }
 
-window.addEventListener("load", () => {
-  mount(<Parent />, document.getElementById("root"));
-});
+export function run(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<Parent />, document.getElementById("root"));
+  });
+}

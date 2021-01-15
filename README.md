@@ -53,9 +53,66 @@ window.addEventListener("load", () => {
 });
 ```
 
-## Multiple Components, passing props etc. 
+## Child Components and Passing Props
 
-Most of these things work just as you would expect. Let's make a Todo List app.
+That works just as you'd have seen in React.
+
+```jsx
+function Parent(props) {
+  return {
+    render(props, args) {
+      return (
+        <div>
+          <Greeter firstName="Jeswin" />
+          <Greeter firstName="Kai" />
+        </div>
+      );
+    },
+  };
+}
+
+function Greeter(props) {
+  return {
+    render(props, args) {
+      return <div>Hello {props.firstName}</div>;
+    },
+  };
+}
+```
+
+## Reading Form Input Elements
+
+You're expected to read form input control values with regular DOM APIs.
+
+There's a small hurdle though - how do you we get a reference to these nodes? Well, that's where the ref attribute comes in. An object bound to the ref attribute in the markup will have its value property set to the DOM element.
+
+See the usage below:
+
+```jsx
+function Component(props) {
+  const myInputRef = {};
+
+  return {
+    render(props, args) {
+      function onClick() {
+        const inputElement = myInputRef.value;
+        alert(inputElement.value); // Read the text input!
+      }
+
+      return (
+        <div>
+          <input type="text" ref={myInputRef} />
+          <button onclick={onClick}>Click me!</button>
+        </div>
+      );
+    },
+  };
+}
+```
+
+## Multiple Components, passing props etc.
+
+Finally, let's do a recap with a more complete example. Let's make a Todo List app in TypeScript.
 
 There will be three components:
 

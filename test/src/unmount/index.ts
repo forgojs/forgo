@@ -1,11 +1,12 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile";
-import * as should from "should";
-import { ForgoRef } from "../../../";
 import { run } from "./script";
+import * as should from "should";
 
 export default function () {
-  it("attaches element refs", async () => {
+  it("runs unmount() when a component goes away", async () => {
+    // const scriptPath = join(__dirname, "script.js");
+
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
@@ -14,12 +15,13 @@ export default function () {
 
     run(dom);
 
-    const element = await new Promise<ForgoRef<HTMLElement>>((resolve) => {
+    await new Promise<void>((resolve) => {
       window.addEventListener("load", () => {
-        resolve(window.myInput);
+        (window as any).renderAgain();
+        resolve();
       });
     });
 
-    should.equal((element as any).value.tagName, "INPUT");
+    should.equal((window as any).hasUnmounted, true);
   });
 }
