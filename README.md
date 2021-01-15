@@ -84,11 +84,11 @@ function Greeter(props) {
 
 ## Reading Form Input Elements
 
-You're expected to read form input control values with regular DOM APIs.
+You can read form input control values with regular DOM APIs.
 
-There's a small hurdle though - how do you we get a reference to these nodes? Well, that's where the ref attribute comes in. An object bound to the ref attribute in the markup will have its value property set to the DOM element.
+There's a small hurdle though - how do you we get a reference to the actual DOM elements? Well, that's where the ref attribute comes in. An object referenced by the ref attribute in an element's markup will have its value property set to the actual DOM element.
 
-See the usage below:
+Better explained with an example:
 
 ```jsx
 function Component(props) {
