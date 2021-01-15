@@ -196,7 +196,7 @@ type AddTodoProps = {
 function AddTodo(props: AddTodoProps) {
   const input: { value?: HTMLInputElement } = {};
 
-  function onClick() {
+  function saveTodo() {
     const inputEl = input.value;
     if (inputEl) {
       props.onAdd(inputEl.value);
@@ -205,12 +205,19 @@ function AddTodo(props: AddTodoProps) {
     }
   }
 
+  // Add the todo when Enter is pressed
+  function onKeyPress(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      saveTodo();
+    }
+  }
+
   return {
     render() {
       return (
         <div>
-          <input type="text" ref={input} />
-          <button onclick={onClick}>Add me!</button>
+          <input onkeypress={onKeyPress} type="text" ref={input} />
+          <button onclick={saveTodo}>Add me!</button>
         </div>
       );
     },
