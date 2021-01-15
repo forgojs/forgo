@@ -425,7 +425,11 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           render(forgoChild, childNodes[forgoChildIndex], []);
         } else {
           const { node } = render(forgoChild, undefined, []);
-          parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+          if (childNodes.length > forgoChildIndex) {
+            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+          } else {
+            parentElement.appendChild(node);
+          }
         }
       }
     }
