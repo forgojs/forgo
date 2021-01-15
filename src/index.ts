@@ -146,7 +146,11 @@ function render(
 ): { node: ChildNode } {
   // Just a string
   if (!isForgoElement(forgoNode)) {
-    return renderString(forgoNode.toString(), node, pendingAttachStates);
+    return renderString(
+      stringOfPrimitiveNode(forgoNode),
+      node,
+      pendingAttachStates
+    );
   }
   // HTML Element
   else if (typeof forgoNode.type === "string") {
@@ -385,11 +389,19 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           childNodes[forgoChildIndex] &&
           childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
         ) {
-          render(forgoChild.toString(), childNodes[forgoChildIndex], []);
+          render(
+            stringOfPrimitiveNode(forgoChild),
+            childNodes[forgoChildIndex],
+            []
+          );
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
         else {
-          const { node } = render(forgoChild.toString(), undefined, []);
+          const { node } = render(
+            stringOfPrimitiveNode(forgoChild),
+            undefined,
+            []
+          );
           parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
       } else {
@@ -407,27 +419,21 @@ function renderChildNodes<TProps extends ForgoElementProps>(
               );
 
         if (findResult.found) {
-          unloadNodes(
-            parentElement,
-            childNodes,
-            forgoChildIndex,
-            findResult.index
-          );
-          render(forgoChild, childNodes[findResult.index], []);
+          for (let i = forgoChildIndex; i < findResult.index; i++) {
+            unloadNode(parentElement, childNodes[i]);
+          }
+          render(forgoChild, childNodes[forgoChildIndex], []);
         } else {
           const { node } = render(forgoChild, undefined, []);
           parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
       }
     }
-    // Now we gotta remove old nodes which aren't being used.
-    // Everything after forgoChildIndex must go.
-    unloadNodes(
-      parentElement,
-      childNodes,
-      forgoChildIndex + 1,
-      childNodes.length
-    );
+  }
+  // Now we gotta remove old nodes which aren't being used.
+  // Everything after forgoChildIndex must go.
+  for (let i = forgoChildIndex; i < childNodes.length; i++) {
+    unloadNode(parentElement, childNodes[i]);
   }
 }
 
@@ -437,21 +443,13 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   a) Remove the node
   b) Calls unload on all attached components
 */
-function unloadNodes(
-  parentElement: HTMLElement,
-  nodes: NodeListOf<ChildNode>,
-  from: number,
-  to: number
-) {
-  for (let i = from; i < to; i++) {
-    const node = nodes[i];
-    parentElement.removeChild(node);
-    const state = getForgoState(node);
-    if (state) {
-      for (const componentState of state.components) {
-        if (componentState.component.unmount) {
-          componentState.component.unmount();
-        }
+function unloadNode(parentElement: HTMLElement, node: ChildNode) {
+  parentElement.removeChild(node);
+  const state = getForgoState(node);
+  if (state) {
+    for (const componentState of state.components) {
+      if (componentState.component.unmount) {
+        componentState.component.unmount();
       }
     }
   }
@@ -648,11 +646,21 @@ export function rerender(element: ForgoElementArg | undefined) {
 }
 
 /*
+  ForgoNodes can be primitive types.
+  Convert all primitive types to their string representation.
+*/
+function stringOfPrimitiveNode(node: ForgoNode) {
+  return typeof node === "undefined" ? "undefined" : node.toString();
+}
+
+/*
   Nodes could be strings, numbers, booleans etc.
   Treat them as strings.
 */
 function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
-  return (node as any).__is_forgo_element__ === true;
+  return (
+    typeof node !== "undefined" && (node as any).__is_forgo_element__ === true
+  );
 }
 
 /*
