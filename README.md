@@ -2,7 +2,7 @@
 
 Forgo is a 4KB library that makes it super easy to create modern web apps using JSX (like React).
 
-Unlike React, there are very few framework specific patterns to learn. Everything you already know about DOM APIs and JavaScript will easily carry over.
+Unlike React, there are very few framework specific patterns and lingo to learn. Everything you already know about DOM APIs and JavaScript will easily carry over.
 
 - Use HTML DOM APIs for accessing elements
 - There are no synthetic events
@@ -12,7 +12,7 @@ Unlike React, there are very few framework specific patterns to learn. Everythin
 
 ## We'll be tiny. Always.
 
-All of Forgo is in one small JS file (actually it's TypeScript). A stated goal of the project is to always remain within that single file.
+All of Forgo is in one small JS file (actually it's TypeScript). It is a goal of the project is to remain within that single file.
 
 ## Installation
 
@@ -112,7 +112,24 @@ function Component(props) {
 }
 ```
 
-## Multiple Components, passing props etc.
+## Unmount
+
+When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. This is of course, totally optional.
+
+```jsx
+function Greeter(props) {
+  return {
+    render(props, args) {
+      return <div>Hello {props.firstName}</div>;
+    },
+    unmount() {
+      console.log("Got unloaded.");
+    },
+  };
+}
+```
+
+## Recap with a complete example
 
 Finally, let's do a recap with a more complete example. Let's make a Todo List app in TypeScript.
 
