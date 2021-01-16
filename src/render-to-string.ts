@@ -309,6 +309,4 @@ function getFallbackComponentName(component: any) {
   return name;
 }
 
-export default renderToString;
-
 export { renderToString, shallowRender };
