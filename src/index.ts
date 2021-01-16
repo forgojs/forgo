@@ -1,5 +1,3 @@
-export * from "./render-to-string";
-
 /*
   A type that wraps a reference.
 */
