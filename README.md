@@ -131,7 +131,7 @@ function Greeter(props) {
 
 ## Additional Rerender options
 
-The most straight forward way to do rerender is by invoking it with `args.element` as follows.
+The most straight forward way to do rerender is by invoking it with `args.element` as the only argument - as follows.
 
 ```tsx
 function TodoList(props) {
