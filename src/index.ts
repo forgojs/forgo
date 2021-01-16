@@ -650,6 +650,40 @@ export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   }
 }
 
+interface HydrateOptions {
+  root?: string | (() => HTMLElement) | HTMLElement;
+}
+
+/*
+  Mount will hydrate the DOM as a child of the specified container element.
+*/
+export function hydrate(
+  forgoNode: ForgoNode,
+  parentElement: HTMLElement | null,
+  options: HydrateOptions
+) {
+  const opts = options || {};
+  if (parentElement) {
+    let root;
+    if (typeof opts.root === "function") {
+      root = opts.root();
+    } else if (typeof opts.root === "object") {
+      root = opts.root;
+    } else {
+      root = parentElement.querySelector(opts.root || "[forgo-root]");
+    }
+
+    if (!root) {
+      throw new Error("Could not locate root to hydrate into.");
+    }
+
+    const { node } = render(forgoNode, undefined, [], false);
+    parentElement.replaceChild(node, root);
+  } else {
+    throw new Error(`Mount was called on a non-element (${parentElement}).`);
+  }
+}
+
 /*
   Code inside a component will call rerender whenever it wants to rerender.
   The following function is what they'll need to call.
