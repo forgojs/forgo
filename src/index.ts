@@ -660,7 +660,7 @@ interface HydrateOptions {
 export function hydrate(
   forgoNode: ForgoNode,
   parentElement: HTMLElement | null,
-  options: HydrateOptions
+  options?: HydrateOptions
 ) {
   const opts = options || {};
   if (parentElement) {
