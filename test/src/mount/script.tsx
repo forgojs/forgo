@@ -4,7 +4,7 @@ import { mount, setCustomEnv } from "../../../";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function BasicComponent() {
+function BasicComponent() {
   return {
     render() {
       return <div>Hello world</div>;

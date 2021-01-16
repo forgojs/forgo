@@ -5,7 +5,7 @@ import promiseSignal from "../promiseSignal";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function Parent() {
+function Parent() {
   let firstRender = true;
 
   return {
@@ -23,7 +23,7 @@ export function Parent() {
   };
 }
 
-export function Child() {
+function Child() {
   return {
     render() {
       return <div>This is the child component</div>;

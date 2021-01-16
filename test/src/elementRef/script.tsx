@@ -4,7 +4,7 @@ import { mount, setCustomEnv } from "../../../";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function Parent() {
+function Parent() {
   return {
     render() {
       window.myInput = {};

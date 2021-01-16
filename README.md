@@ -129,6 +129,39 @@ function Greeter(props) {
 }
 ```
 
+## Additional Rerender options
+
+The most straight forward way to do rerender is by invoking it with `args.element` as follows.
+
+```tsx
+function TodoList(props) {
+  let todos = [];
+
+  return {
+    render(props, args) {
+      function addTodos(text) {
+        todos.push(text);
+        rerender(args.element);
+      }
+
+      return <div>markup goes here...</div>;
+    },
+  };
+}
+```
+
+But there are a couple of handy options to rerender, 'newProps' and 'forceRerender'. 
+
+newProps let you pass a new set of props while rerendering. If you'd like previous props to be used, pass undefined here.
+
+forceRerender defaults to true, but when set to false skips child component rendering if props haven't changed.
+
+```js
+const newProps = { name: "Kai" };
+const forceRerender = false;
+rerender(args.element, newProps, forceRerender);
+```
+
 ## Recap with a complete example
 
 Finally, let's do a recap with a more complete example. Let's make a Todo List app in TypeScript.
@@ -149,7 +182,7 @@ function TodoList(props: TodoListProps) {
 
   return {
     render(props: TodoListProps, args: ForgoRenderArgs) {
-      function onTodoAdd(text: string) {
+      function addTodos(text: string) {
         todos.push(text);
         rerender(args.element);
       }
@@ -162,7 +195,7 @@ function TodoList(props: TodoListProps) {
               <TodoListItem text={t} />
             ))}
           </ul>
-          <AddTodo onAdd={onTodoAdd} />
+          <AddTodo onAdd={addTodos} />
         </div>
       );
     },

@@ -142,14 +142,16 @@ export function setCustomEnv(value: any) {
 function render(
   forgoNode: ForgoNode,
   node: ChildNode | undefined,
-  pendingAttachStates: NodeAttachedComponentState<any>[]
+  pendingAttachStates: NodeAttachedComponentState<any>[],
+  fullRerender: boolean
 ): { node: ChildNode } {
   // Just a string
   if (!isForgoElement(forgoNode)) {
     return renderString(
       stringOfPrimitiveNode(forgoNode),
       node,
-      pendingAttachStates
+      pendingAttachStates,
+      fullRerender
     );
   }
   // HTML Element
@@ -157,7 +159,8 @@ function render(
     return renderDOMElement(
       forgoNode as ForgoElement<string, any>,
       node,
-      pendingAttachStates
+      pendingAttachStates,
+      fullRerender
     );
   }
   // Custom Component.
@@ -166,7 +169,8 @@ function render(
     return renderCustomComponent(
       forgoNode as ForgoElement<ForgoComponentCtor<any>, any>,
       node,
-      pendingAttachStates
+      pendingAttachStates,
+      fullRerender
     );
   }
 }
@@ -186,7 +190,8 @@ function render(
 function renderString(
   text: string,
   node: ChildNode | undefined,
-  pendingAttachStates: NodeAttachedComponentState<any>[]
+  pendingAttachStates: NodeAttachedComponentState<any>[],
+  fullRerender: boolean
 ): { node: ChildNode } {
   // Text nodes will always be recreated
   const textNode = env.document.createTextNode(text);
@@ -219,7 +224,8 @@ function renderString(
 function renderDOMElement<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<string, TProps>,
   node: ChildNode | undefined,
-  pendingAttachStates: NodeAttachedComponentState<any>[]
+  pendingAttachStates: NodeAttachedComponentState<any>[],
+  fullRerender: boolean
 ): { node: ChildNode } {
   if (node) {
     let nodeToBindTo: ChildNode;
@@ -245,7 +251,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     }
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
 
-    renderChildNodes(forgoElement, nodeToBindTo as HTMLElement);
+    renderChildNodes(forgoElement, nodeToBindTo as HTMLElement, fullRerender);
     return { node: nodeToBindTo };
   } else {
     // There was no node passed in, so create a new element.
@@ -254,7 +260,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       forgoElement.props.ref.value = newElement;
     }
     attachProps(forgoElement, newElement, pendingAttachStates);
-    renderChildNodes(forgoElement, newElement);
+    renderChildNodes(forgoElement, newElement, fullRerender);
     return { node: newElement };
   }
 }
@@ -266,7 +272,8 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<ForgoComponentCtor<TProps>, TProps>,
   node: ChildNode | undefined,
-  pendingAttachStates: NodeAttachedComponentState<any>[]
+  pendingAttachStates: NodeAttachedComponentState<any>[],
+  fullRerender: boolean
 ): { node: ChildNode } {
   if (node) {
     const state = getExistingForgoState(node);
@@ -297,27 +304,36 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       const newForgoElement = component.render(forgoElement.props, args);
 
       // Pass it on for rendering...
-      return render(newForgoElement, node, statesToAttach);
+      return render(newForgoElement, node, statesToAttach, fullRerender);
     }
     // We have compatible state, and this is a rerender
     else {
-      const args = { element: { componentIndex: pendingAttachStates.length } };
+      if (
+        fullRerender ||
+        havePropsChanged(savedComponentState.props, forgoElement.props)
+      ) {
+        const args = {
+          element: { componentIndex: pendingAttachStates.length },
+        };
 
-      // Since we have compatible state already stored,
-      // we'll push the savedComponentState into pending states for later attachment.
-      const statesToAttach = pendingAttachStates.concat({
-        ...savedComponentState,
-        props: forgoElement.props,
-      });
+        // Since we have compatible state already stored,
+        // we'll push the savedComponentState into pending states for later attachment.
+        const statesToAttach = pendingAttachStates.concat({
+          ...savedComponentState,
+          props: forgoElement.props,
+        });
 
-      // Get a new element by calling render on existing component.
-      const newForgoElement = savedComponentState.component.render(
-        forgoElement.props,
-        args
-      );
+        // Get a new element by calling render on existing component.
+        const newForgoElement = savedComponentState.component.render(
+          forgoElement.props,
+          args
+        );
 
-      // Pass it on for rendering...
-      return render(newForgoElement, node, statesToAttach);
+        // Pass it on for rendering...
+        return render(newForgoElement, node, statesToAttach, fullRerender);
+      } else {
+        return { node };
+      }
     }
   }
   // First time render
@@ -340,7 +356,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     const newForgoElement = component.render(forgoElement.props, args);
 
     // We have no node to render to yet. So pass undefined for the node.
-    return render(newForgoElement, undefined, statesToAttach);
+    return render(newForgoElement, undefined, statesToAttach, fullRerender);
   }
 }
 
@@ -359,7 +375,8 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 */
 function renderChildNodes<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<string | ForgoComponentCtor<TProps>, TProps>,
-  parentElement: HTMLElement
+  parentElement: HTMLElement,
+  fullRerender: boolean
 ) {
   const { children: forgoChildrenObj } = forgoElement.props;
   const childNodes = parentElement.childNodes;
@@ -392,7 +409,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           render(
             stringOfPrimitiveNode(forgoChild),
             childNodes[forgoChildIndex],
-            []
+            [],
+            fullRerender
           );
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
@@ -400,7 +418,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           const { node } = render(
             stringOfPrimitiveNode(forgoChild),
             undefined,
-            []
+            [],
+            fullRerender
           );
           parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
@@ -422,9 +441,9 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           for (let i = forgoChildIndex; i < findResult.index; i++) {
             unloadNode(parentElement, childNodes[i]);
           }
-          render(forgoChild, childNodes[forgoChildIndex], []);
+          render(forgoChild, childNodes[forgoChildIndex], [], fullRerender);
         } else {
-          const { node } = render(forgoChild, undefined, []);
+          const { node } = render(forgoChild, undefined, [], fullRerender);
           if (childNodes.length > forgoChildIndex) {
             parentElement.insertBefore(node, childNodes[forgoChildIndex]);
           } else {
@@ -607,11 +626,24 @@ function attachProps(
 }
 
 /*
+  Compare old props and new props.
+  We don't rerender if props remain the same.
+*/
+function havePropsChanged(oldProps: any, newProps: any) {
+  const oldKeys = Object.keys(oldProps);
+  const newKeys = Object.keys(newProps);
+  return (
+    oldKeys.length !== newKeys.length ||
+    oldKeys.some((key) => oldProps[key] !== newProps[key])
+  );
+}
+
+/*
   Mount will render the DOM as a child of the specified container element.
 */
 export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   if (parentElement) {
-    const { node } = render(forgoNode, undefined, []);
+    const { node } = render(forgoNode, undefined, [], true);
     parentElement.appendChild(node);
   } else {
     throw new Error(`Mount was called on a non-element (${parentElement}).`);
@@ -627,20 +659,32 @@ export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
 
   This is attached to a node inside a NodeAttachedState structure.
 */
-export function rerender(element: ForgoElementArg | undefined) {
+export function rerender(
+  element: ForgoElementArg | undefined,
+  props = undefined,
+  fullRerender = true
+) {
   if (element && element.node) {
     const state = getForgoState(element.node);
     if (state) {
       const component = state.components[element.componentIndex];
+
+      const effectiveProps =
+        typeof props !== "undefined" ? props : component.props;
+
       const forgoNode = component.component.render(
-        component.props,
+        effectiveProps,
         component.args
       );
-      const statesToAttach = state.components.slice(
-        0,
-        element.componentIndex + 1
-      );
-      render(forgoNode, element.node, statesToAttach);
+
+      const statesToAttach = state.components
+        .slice(0, element.componentIndex)
+        .concat({
+          ...component,
+          props: effectiveProps,
+        });
+
+      render(forgoNode, element.node, statesToAttach, fullRerender);
     } else {
       throw new Error(
         `Rerender was called on an element which was never seen before.`

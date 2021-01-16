@@ -4,7 +4,7 @@ import { mount, setCustomEnv } from "../../../";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function Parent() {
+function Parent() {
   return {
     render() {
       return <Greet name="kai" />;
@@ -12,7 +12,7 @@ export function Parent() {
   };
 }
 
-export function Greet(props: { name: string }) {
+function Greet(props: { name: string }) {
   window.greetingDiv = {};
 
   return {

@@ -4,24 +4,31 @@ import { rerender, mount, ForgoRenderArgs, setCustomEnv } from "../../../";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-function Component() {
-  let counter = 0;
-
+export function Parent() {
   return {
     render(props: any, args: ForgoRenderArgs) {
-      function updateCounter() {
-        counter++;
-        rerender(args.element);
-      }
-
-      (window as any).myButton = {};
+      window.renderAgain = () => {
+        rerender(args.element, undefined, false);
+      };
 
       return (
         <div>
-          <button onclick={updateCounter} ref={(window as any).myButton}>
-            Click me!
-          </button>
-          <p>Clicked {counter} times</p>
+          <Greet text="kai" />
+        </div>
+      );
+    },
+  };
+}
+
+function Greet(props: { text: string }) {
+  let greetingCounter = 0;
+
+  return {
+    render(props: { text: string }) {
+      greetingCounter++;
+      return (
+        <div>
+          Greeting counter is {greetingCounter}
         </div>
       );
     },
@@ -34,6 +41,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, document.getElementById("root"));
+    mount(<Parent />, document.getElementById("root"));
   });
 }

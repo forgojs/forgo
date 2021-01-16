@@ -4,19 +4,19 @@ import { mount, setCustomEnv } from "../../../";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function Parent() {
+function Parent() {
   return {
     render() {
       return (
         <div>
-          <Child text="Hello" />
+          <Greet text="Hello" />
         </div>
       );
     },
   };
 }
 
-export function Child(props: { text: string }) {
+function Greet(props: { text: string }) {
   return {
     render(props: { text: string }) {
       return <div>{props.text}</div>;

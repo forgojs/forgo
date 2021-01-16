@@ -4,7 +4,7 @@ import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../..";
 let window: DOMWindow;
 let document: HTMLDocument;
 
-export function Parent() {
+function Parent() {
   window.unmountedElements = [];
   let firstRender = true;
   return {
@@ -33,7 +33,7 @@ export function Parent() {
   };
 }
 
-export function Child(props: { key: string; id: string }) {
+function Child(props: { key: string; id: string }) {
   let myId = "NA";
 
   return {

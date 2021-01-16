@@ -5,6 +5,7 @@ import rerender from "./rerender";
 import unmount from "./unmount";
 import nodeState from "./nodeState";
 import replaceByKey from "./replaceByKey";
+import skipRender from "./skipRender";
 
 mount();
 passProps();
@@ -13,3 +14,4 @@ rerender();
 unmount();
 nodeState();
 replaceByKey();
+skipRender();
