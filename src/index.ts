@@ -530,18 +530,14 @@ function findReplacementCandidateForDOMElement(
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
-  if (forgoElement.key) {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
+  for (let i = searchNodesFrom; i < nodes.length; i++) {
+    const node = nodes[i] as ChildNode;
+    if (forgoElement.key) {
       const stateOnNode = getForgoState(node);
       if (stateOnNode?.key === forgoElement.key) {
         return { found: true, index: i };
       }
-    }
-    return { found: false };
-  } else {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
+    } else {
       if (node.nodeType === ELEMENT_NODE_TYPE) {
         const element = node as HTMLElement;
         if (element.tagName.toLowerCase() === forgoElement.type) {
@@ -549,8 +545,8 @@ function findReplacementCandidateForDOMElement(
         }
       }
     }
-    return { found: false };
   }
+  return { found: false };
 }
 
 /*
@@ -564,29 +560,22 @@ function findReplacementCandidateForCustomComponent(
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
-  if (forgoElement.key) {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
-      const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > 0) {
+  for (let i = searchNodesFrom; i < nodes.length; i++) {
+    const node = nodes[i] as ChildNode;
+    const stateOnNode = getForgoState(node);
+    if (stateOnNode && stateOnNode.components.length > 0) {
+      if (forgoElement.key) {
         if (stateOnNode.components[0].key === forgoElement.key) {
           return { found: true, index: i };
         }
-      }
-    }
-    return { found: false };
-  } else {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
-      const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > 0) {
+      } else {
         if (stateOnNode.components[0].ctor === forgoElement.type) {
           return { found: true, index: i };
         }
       }
     }
-    return { found: false };
   }
+  return { found: false };
 }
 
 /*
