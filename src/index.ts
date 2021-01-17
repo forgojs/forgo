@@ -454,7 +454,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
 
         if (findResult.found) {
           for (let i = forgoChildIndex; i < findResult.index; i++) {
-            unloadNode(parentElement, childNodes[i]);
+            unloadNode(childNodes[i]);
           }
           internalRender(
             forgoChild,
@@ -481,7 +481,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   // Now we gotta remove old nodes which aren't being used.
   // Everything after forgoChildIndex must go.
   for (let i = forgoChildIndex; i < childNodes.length; i++) {
-    unloadNode(parentElement, childNodes[i]);
+    unloadNode(childNodes[i]);
   }
 }
 
@@ -491,8 +491,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   a) Remove the node
   b) Calls unload on all attached components
 */
-function unloadNode(parentElement: HTMLElement, node: ChildNode) {
-  parentElement.removeChild(node);
+function unloadNode(node: ChildNode) {
+  node.remove();
   const state = getForgoState(node);
   if (state) {
     for (const componentState of state.components) {
@@ -736,7 +736,7 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
 /*
   Get the state (NodeAttachedState) saved into an element.
 */
-function getForgoState(node: ChildNode): NodeAttachedState | undefined {
+export function getForgoState(node: ChildNode): NodeAttachedState | undefined {
   return (node as any).__forgo;
 }
 
@@ -750,6 +750,6 @@ function getExistingForgoState(node: ChildNode): NodeAttachedState {
 /*
   Sets the state (NodeAttachedState) on an element.
 */
-function setForgoState(node: ChildNode, state: NodeAttachedState): void {
+export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
   (node as any).__forgo = state;
 }
