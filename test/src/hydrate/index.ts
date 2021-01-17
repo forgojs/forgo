@@ -30,7 +30,6 @@ export default function () {
     (button as any).value.click();
     (button as any).value.click();
 
-    console.log(window.document.body.innerHTML);
     window.document.body.innerHTML.should.containEql("Clicked 3 times");
   });
 }

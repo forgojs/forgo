@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { rerender, hydrate, ForgoRenderArgs, setCustomEnv } from "../../../";
+import { rerender, render, ForgoRenderArgs, setCustomEnv } from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -34,6 +34,7 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    hydrate(<Component />, document.getElementById("root"));
+    const { node } = render(<Component />, false);
+    document.getElementById("root")!.firstElementChild!.replaceWith(node);
   });
 }
