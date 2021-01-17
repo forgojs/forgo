@@ -162,6 +162,13 @@ const forceRerender = false;
 rerender(args.element, newProps, forceRerender);
 ```
 
+## Try it out on CodeSandbox
+
+You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
+
+Or if you prefer Typescript, try [Forgo TodoList in TypeScript](https://codesandbox.io/s/forgo-todos-typescript-9v0iy).
+
+
 ## Recap with a complete example
 
 Finally, let's do a recap with a more complete example. Let's make a Todo List app in TypeScript.
