@@ -148,7 +148,7 @@ export function setCustomEnv(value: any) {
 
   statesToAttach is the list of Component State objects which will be attached to the element.
 */
-function render(
+function internalRender(
   forgoNode: ForgoNode,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
@@ -300,7 +300,7 @@ function boundaryFallback<T>(
       errorArgs.error = err;
 
       const newForgoElement = boundary.error(props, errorArgs);
-      return render(
+      return internalRender(
         newForgoElement,
         node,
         statesToAttach,
@@ -362,7 +362,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           const newForgoElement = component.render(forgoElement.props, args);
 
           // Pass it on for rendering...
-          return render(
+          return internalRender(
             newForgoElement,
             node,
             statesToAttach,
@@ -404,7 +404,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           boundary,
           () => {
             // Pass it on for rendering...
-            return render(
+            return internalRender(
               newForgoElement,
               node,
               statesToAttach,
@@ -447,7 +447,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       () => {
         const newForgoElement = component.render(forgoElement.props, args);
         // Pass it on for rendering...
-        return render(
+        return internalRender(
           newForgoElement,
           undefined,
           statesToAttach,
@@ -508,7 +508,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           childNodes[forgoChildIndex] &&
           childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
         ) {
-          render(
+          internalRender(
             stringOfPrimitiveNode(forgoChild),
             childNodes[forgoChildIndex],
             [],
@@ -518,7 +518,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
         else {
-          const { node } = render(
+          const { node } = internalRender(
             stringOfPrimitiveNode(forgoChild),
             undefined,
             [],
@@ -545,20 +545,18 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           for (let i = forgoChildIndex; i < findResult.index; i++) {
             unloadNode(parentElement, childNodes[i]);
           }
-          render(
+          internalRender(
             forgoChild,
             childNodes[forgoChildIndex],
             [],
-            fullRerender,
-            boundary
+            fullRerender
           );
         } else {
-          const { node } = render(
+          const { node } = internalRender(
             forgoChild,
             undefined,
             [],
-            fullRerender,
-            boundary
+            fullRerender
           );
           if (childNodes.length > forgoChildIndex) {
             parentElement.insertBefore(node, childNodes[forgoChildIndex]);
@@ -646,18 +644,14 @@ function findReplacementCandidateForDOMElement(
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
-  if (forgoElement.key) {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
+  for (let i = searchNodesFrom; i < nodes.length; i++) {
+    const node = nodes[i] as ChildNode;
+    if (forgoElement.key) {
       const stateOnNode = getForgoState(node);
       if (stateOnNode?.key === forgoElement.key) {
         return { found: true, index: i };
       }
-    }
-    return { found: false };
-  } else {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
+    } else {
       if (node.nodeType === ELEMENT_NODE_TYPE) {
         const element = node as HTMLElement;
         if (element.tagName.toLowerCase() === forgoElement.type) {
@@ -665,8 +659,8 @@ function findReplacementCandidateForDOMElement(
         }
       }
     }
-    return { found: false };
   }
+  return { found: false };
 }
 
 /*
@@ -680,29 +674,22 @@ function findReplacementCandidateForCustomComponent(
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
-  if (forgoElement.key) {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
-      const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > 0) {
+  for (let i = searchNodesFrom; i < nodes.length; i++) {
+    const node = nodes[i] as ChildNode;
+    const stateOnNode = getForgoState(node);
+    if (stateOnNode && stateOnNode.components.length > 0) {
+      if (forgoElement.key) {
         if (stateOnNode.components[0].key === forgoElement.key) {
           return { found: true, index: i };
         }
-      }
-    }
-    return { found: false };
-  } else {
-    for (let i = searchNodesFrom; i < nodes.length; i++) {
-      const node = nodes[i] as ChildNode;
-      const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > 0) {
+      } else {
         if (stateOnNode.components[0].ctor === forgoElement.type) {
           return { found: true, index: i };
         }
       }
     }
-    return { found: false };
   }
+  return { found: false };
 }
 
 /*
@@ -759,7 +746,7 @@ function havePropsChanged(oldProps: any, newProps: any) {
 */
 export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   if (parentElement) {
-    const { node } = render(forgoNode, undefined, [], true);
+    const { node } = internalRender(forgoNode, undefined, [], true);
     parentElement.appendChild(node);
   } else {
     throw new Error(`Mount was called on a non-element (${parentElement}).`);
@@ -795,11 +782,19 @@ export function hydrate(
       throw new Error("Could not locate root to hydrate into.");
     }
 
-    const { node } = render(forgoNode, undefined, [], false);
+    const { node } = internalRender(forgoNode, undefined, [], false);
     parentElement.replaceChild(node, root);
   } else {
     throw new Error(`Mount was called on a non-element (${parentElement}).`);
   }
+}
+
+/*
+  This render function returns the rendered dom node.
+  forgoNode is the node to render.
+*/
+export function render(forgoNode: ForgoNode) {
+  return internalRender(forgoNode, undefined, [], true);
 }
 
 /*
@@ -836,7 +831,7 @@ export function rerender(
           props: effectiveProps,
         });
 
-      render(forgoNode, element.node, statesToAttach, fullRerender);
+      internalRender(forgoNode, element.node, statesToAttach, fullRerender);
     } else {
       throw new Error(
         `Rerender was called on an element which was never seen before.`

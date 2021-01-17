@@ -162,6 +162,18 @@ const forceRerender = false;
 rerender(args.element, newProps, forceRerender);
 ```
 
+## Rendering without mounting
+
+Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted. 
+
+```tsx
+const { node } = render(<Component />);
+
+window.addEventListener("load", () => {
+  document.getElementById("root")!.firstElementChild!.replaceWith(node);
+});
+```
+
 ## Try it out on CodeSandbox
 
 You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
