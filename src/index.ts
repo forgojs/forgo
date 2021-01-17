@@ -30,12 +30,21 @@ export type ForgoRenderArgs = {
   element: ForgoElementArg;
 };
 
+export type ForgoErrorArgs = {
+  element: ForgoElementArg;
+  error: any;
+};
+
 /*
   ForgoComponent contains three functions.
   1. render() returns the actual DOM to render. 
   2. unmount() is optional. Gets called just before unmount.
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
+  error?: (
+    props: TProps,
+    args: ForgoErrorArgs
+  ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
   render: (
     props: TProps,
     args: ForgoRenderArgs
@@ -143,8 +152,9 @@ function render(
   forgoNode: ForgoNode,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
-): { node: ChildNode } {
+  fullRerender: boolean,
+  boundary?: ForgoComponent<any>
+): { node: ChildNode; boundary?: ForgoComponent<any> } {
   // Just a string
   if (!isForgoElement(forgoNode)) {
     return renderString(
@@ -160,7 +170,8 @@ function render(
       forgoNode as ForgoElement<string, any>,
       node,
       pendingAttachStates,
-      fullRerender
+      fullRerender,
+      boundary
     );
   }
   // Custom Component.
@@ -170,7 +181,8 @@ function render(
       forgoNode as ForgoElement<ForgoComponentCtor<any>, any>,
       node,
       pendingAttachStates,
-      fullRerender
+      fullRerender,
+      boundary
     );
   }
 }
@@ -225,7 +237,8 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<string, TProps>,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
+  fullRerender: boolean,
+  boundary?: ForgoComponent<any>
 ): { node: ChildNode } {
   if (node) {
     let nodeToBindTo: ChildNode;
@@ -251,7 +264,12 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     }
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
 
-    renderChildNodes(forgoElement, nodeToBindTo as HTMLElement, fullRerender);
+    renderChildNodes(
+      forgoElement,
+      nodeToBindTo as HTMLElement,
+      fullRerender,
+      boundary
+    );
     return { node: nodeToBindTo };
   } else {
     // There was no node passed in, so create a new element.
@@ -260,8 +278,38 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       forgoElement.props.ref.value = newElement;
     }
     attachProps(forgoElement, newElement, pendingAttachStates);
-    renderChildNodes(forgoElement, newElement, fullRerender);
+    renderChildNodes(forgoElement, newElement, fullRerender, boundary);
     return { node: newElement };
+  }
+}
+
+function boundaryFallback<T>(
+  node: ChildNode | undefined,
+  props: any,
+  args: ForgoRenderArgs,
+  statesToAttach: NodeAttachedComponentState<any>[],
+  fullRerender: boolean,
+  boundary: ForgoComponent<any> | undefined,
+  exec: () => T
+) {
+  try {
+    return exec();
+  } catch (err) {
+    if (boundary && boundary.error) {
+      const errorArgs = args as ForgoErrorArgs;
+      errorArgs.error = err;
+
+      const newForgoElement = boundary.error(props, errorArgs);
+      return render(
+        newForgoElement,
+        node,
+        statesToAttach,
+        fullRerender,
+        boundary
+      );
+    }
+
+    throw err;
   }
 }
 
@@ -273,8 +321,9 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<ForgoComponentCtor<TProps>, TProps>,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
-): { node: ChildNode } {
+  fullRerender: boolean,
+  boundary?: ForgoComponent<any>
+): { node: ChildNode; boundary?: ForgoComponent<any> } {
   if (node) {
     const state = getExistingForgoState(node);
 
@@ -288,6 +337,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       const args: ForgoRenderArgs = { element: { componentIndex } };
       const ctor = forgoElement.type;
       const component = ctor(forgoElement.props);
+      boundary = component.error ? component : boundary;
 
       // Create new component state
       // ... and push it to pendingAttachStates
@@ -300,11 +350,27 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       };
       const statesToAttach = pendingAttachStates.concat(componentState);
 
-      // Create an element by rendering the component
-      const newForgoElement = component.render(forgoElement.props, args);
+      return boundaryFallback(
+        node,
+        forgoElement.props,
+        args,
+        statesToAttach,
+        fullRerender,
+        boundary,
+        () => {
+          // Create an element by rendering the component
+          const newForgoElement = component.render(forgoElement.props, args);
 
-      // Pass it on for rendering...
-      return render(newForgoElement, node, statesToAttach, fullRerender);
+          // Pass it on for rendering...
+          return render(
+            newForgoElement,
+            node,
+            statesToAttach,
+            fullRerender,
+            boundary
+          );
+        }
+      );
     }
     // We have compatible state, and this is a rerender
     else {
@@ -312,7 +378,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         fullRerender ||
         havePropsChanged(savedComponentState.props, forgoElement.props)
       ) {
-        const args = {
+        const args: ForgoRenderArgs = {
           element: { componentIndex: pendingAttachStates.length },
         };
 
@@ -329,10 +395,26 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           args
         );
 
-        // Pass it on for rendering...
-        return render(newForgoElement, node, statesToAttach, fullRerender);
+        return boundaryFallback(
+          node,
+          forgoElement.props,
+          args,
+          statesToAttach,
+          fullRerender,
+          boundary,
+          () => {
+            // Pass it on for rendering...
+            return render(
+              newForgoElement,
+              node,
+              statesToAttach,
+              fullRerender,
+              boundary
+            );
+          }
+        );
       } else {
-        return { node };
+        return { node, boundary };
       }
     }
   }
@@ -341,6 +423,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     const args: ForgoRenderArgs = { element: { componentIndex: 0 } };
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
+    boundary = component.error ? component : boundary;
 
     // We'll have to create a new component state
     // ... and push it to pendingAttachStates
@@ -353,10 +436,28 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     };
 
     const statesToAttach = pendingAttachStates.concat(componentState);
-    const newForgoElement = component.render(forgoElement.props, args);
+
+    return boundaryFallback(
+      undefined,
+      forgoElement.props,
+      args,
+      statesToAttach,
+      fullRerender,
+      boundary,
+      () => {
+        const newForgoElement = component.render(forgoElement.props, args);
+        // Pass it on for rendering...
+        return render(
+          newForgoElement,
+          undefined,
+          statesToAttach,
+          fullRerender,
+          boundary
+        );
+      }
+    );
 
     // We have no node to render to yet. So pass undefined for the node.
-    return render(newForgoElement, undefined, statesToAttach, fullRerender);
   }
 }
 
@@ -376,7 +477,8 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 function renderChildNodes<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<string | ForgoComponentCtor<TProps>, TProps>,
   parentElement: HTMLElement,
-  fullRerender: boolean
+  fullRerender: boolean,
+  boundary?: ForgoComponent<any>
 ) {
   const { children: forgoChildrenObj } = forgoElement.props;
   const childNodes = parentElement.childNodes;
@@ -410,7 +512,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
             stringOfPrimitiveNode(forgoChild),
             childNodes[forgoChildIndex],
             [],
-            fullRerender
+            fullRerender,
+            boundary
           );
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
@@ -419,7 +522,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
             stringOfPrimitiveNode(forgoChild),
             undefined,
             [],
-            fullRerender
+            fullRerender,
+            boundary
           );
           parentElement.insertBefore(node, childNodes[forgoChildIndex]);
         }
@@ -441,9 +545,21 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           for (let i = forgoChildIndex; i < findResult.index; i++) {
             unloadNode(parentElement, childNodes[i]);
           }
-          render(forgoChild, childNodes[forgoChildIndex], [], fullRerender);
+          render(
+            forgoChild,
+            childNodes[forgoChildIndex],
+            [],
+            fullRerender,
+            boundary
+          );
         } else {
-          const { node } = render(forgoChild, undefined, [], fullRerender);
+          const { node } = render(
+            forgoChild,
+            undefined,
+            [],
+            fullRerender,
+            boundary
+          );
           if (childNodes.length > forgoChildIndex) {
             parentElement.insertBefore(node, childNodes[forgoChildIndex]);
           } else {
