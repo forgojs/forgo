@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "main": "./dist",
   "devDependencies": {
     "@types/jsdom": "^16.2.6",
