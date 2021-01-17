@@ -5,7 +5,7 @@ import { run } from "./script";
 import "should";
 
 export default function () {
-  it("rerenders", async () => {
+  it("skips render if props remain the same", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
