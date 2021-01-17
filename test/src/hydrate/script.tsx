@@ -33,8 +33,8 @@ export function run(dom: JSDOM) {
   document = window.document;
   setCustomEnv({ window, document });
 
+  const { node } = render(<Component />, false);
   window.addEventListener("load", () => {
-    const { node } = render(<Component />, false);
     document.getElementById("root")!.firstElementChild!.replaceWith(node);
   });
 }
