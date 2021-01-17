@@ -669,8 +669,10 @@ export function hydrate(
       root = opts.root();
     } else if (typeof opts.root === "object") {
       root = opts.root;
+    } else if (typeof opts.root === "string") {
+      root = parentElement.querySelector(opts.root);
     } else {
-      root = parentElement.querySelector(opts.root || "[forgo-root]");
+      root = parentElement.firstElementChild;
     }
 
     if (!root) {
