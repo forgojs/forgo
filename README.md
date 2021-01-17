@@ -162,6 +162,18 @@ const forceRerender = false;
 rerender(args.element, newProps, forceRerender);
 ```
 
+## Rendering without mounting
+
+Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted. 
+
+```tsx
+const { node } = render(<Component />, false);
+
+window.addEventListener("load", () => {
+  document.getElementById("root")!.firstElementChild!.replaceWith(node);
+});
+```
+
 ## Try it out on CodeSandbox
 
 You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
@@ -270,19 +282,6 @@ That's all. Mount it, and we're ready to go.
 ```ts
 window.addEventListener("load", () => {
   mount(<TodoList />, document.getElementById("root"));
-});
-```
-
-## Advanced API
-
-Forgo also exports a render method that returns the rendered DOM node that should then be manually mounted.
-
-An example use-case of this is SSR hydration, that can be accomlipshed as follows:
-
-```tsx
-const { node } = render(<Component />, false);
-window.addEventListener("load", () => {
-  document.getElementById("root")!.firstElementChild!.replaceWith(node);
 });
 ```
 
