@@ -668,8 +668,8 @@ export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   This render function returns the rendered dom node.
   forgoNode is the node to render.
 */
-export function render(forgoNode: ForgoNode, fullRender: boolean = true) {
-  return internalRender(forgoNode, undefined, [], fullRender);
+export function render(forgoNode: ForgoNode) {
+  return internalRender(forgoNode, undefined, [], true);
 }
 
 /*
