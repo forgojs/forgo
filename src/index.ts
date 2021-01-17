@@ -752,50 +752,6 @@ export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   }
 }
 
-interface HydrateOptions {
-  root?: string | (() => HTMLElement) | HTMLElement;
-}
-
-/*
-  Mount will hydrate the DOM as a child of the specified container element.
-*/
-export function hydrate(
-  forgoNode: ForgoNode,
-  parentElement: HTMLElement | null,
-  options?: HydrateOptions
-) {
-  const opts = options || {};
-  if (parentElement) {
-    let root;
-    if (typeof opts.root === "function") {
-      root = opts.root();
-    } else if (typeof opts.root === "object") {
-      root = opts.root;
-    } else if (typeof opts.root === "string") {
-      root = parentElement.querySelector(opts.root);
-    } else {
-      root = parentElement.firstElementChild;
-    }
-
-    if (!root) {
-      throw new Error("Could not locate root to hydrate into.");
-    }
-
-    const { node } = internalRender(forgoNode, undefined, [], false);
-    parentElement.replaceChild(node, root);
-  } else {
-    throw new Error(`Mount was called on a non-element (${parentElement}).`);
-  }
-}
-
-/*
-  This render function returns the rendered dom node.
-  forgoNode is the node to render.
-*/
-export function render(forgoNode: ForgoNode) {
-  return internalRender(forgoNode, undefined, [], true);
-}
-
 /*
   This render function returns the rendered dom node.
   forgoNode is the node to render.
