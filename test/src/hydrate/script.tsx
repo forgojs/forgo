@@ -33,7 +33,7 @@ export function run(dom: JSDOM) {
   document = window.document;
   setCustomEnv({ window, document });
 
-  const { node } = render(<Component />, false);
+  const { node } = render(<Component />);
   window.addEventListener("load", () => {
     document.getElementById("root")!.firstElementChild!.replaceWith(node);
   });
