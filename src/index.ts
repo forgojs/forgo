@@ -139,7 +139,7 @@ export function setCustomEnv(value: any) {
 
   statesToAttach is the list of Component State objects which will be attached to the element.
 */
-function render(
+function internalRender(
   forgoNode: ForgoNode,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
@@ -304,7 +304,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       const newForgoElement = component.render(forgoElement.props, args);
 
       // Pass it on for rendering...
-      return render(newForgoElement, node, statesToAttach, fullRerender);
+      return internalRender(
+        newForgoElement,
+        node,
+        statesToAttach,
+        fullRerender
+      );
     }
     // We have compatible state, and this is a rerender
     else {
@@ -330,7 +335,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         );
 
         // Pass it on for rendering...
-        return render(newForgoElement, node, statesToAttach, fullRerender);
+        return internalRender(
+          newForgoElement,
+          node,
+          statesToAttach,
+          fullRerender
+        );
       } else {
         return { node };
       }
@@ -356,7 +366,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     const newForgoElement = component.render(forgoElement.props, args);
 
     // We have no node to render to yet. So pass undefined for the node.
-    return render(newForgoElement, undefined, statesToAttach, fullRerender);
+    return internalRender(
+      newForgoElement,
+      undefined,
+      statesToAttach,
+      fullRerender
+    );
   }
 }
 
@@ -406,7 +421,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           childNodes[forgoChildIndex] &&
           childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
         ) {
-          render(
+          internalRender(
             stringOfPrimitiveNode(forgoChild),
             childNodes[forgoChildIndex],
             [],
@@ -415,7 +430,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
         else {
-          const { node } = render(
+          const { node } = internalRender(
             stringOfPrimitiveNode(forgoChild),
             undefined,
             [],
@@ -441,9 +456,19 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           for (let i = forgoChildIndex; i < findResult.index; i++) {
             unloadNode(parentElement, childNodes[i]);
           }
-          render(forgoChild, childNodes[forgoChildIndex], [], fullRerender);
+          internalRender(
+            forgoChild,
+            childNodes[forgoChildIndex],
+            [],
+            fullRerender
+          );
         } else {
-          const { node } = render(forgoChild, undefined, [], fullRerender);
+          const { node } = internalRender(
+            forgoChild,
+            undefined,
+            [],
+            fullRerender
+          );
           if (childNodes.length > forgoChildIndex) {
             parentElement.insertBefore(node, childNodes[forgoChildIndex]);
           } else {
@@ -632,11 +657,24 @@ function havePropsChanged(oldProps: any, newProps: any) {
 */
 export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
   if (parentElement) {
-    const { node } = render(forgoNode, undefined, [], true);
+    const { node } = internalRender(forgoNode, undefined, [], true);
     parentElement.appendChild(node);
   } else {
     throw new Error(`Mount was called on a non-element (${parentElement}).`);
   }
+}
+
+/*
+  This render function returns the rendered dom node.
+  forgoNode is the node to render.
+*/
+export function render(forgoNode: ForgoNode, fullRender?: boolean) {
+  return internalRender(
+    forgoNode,
+    undefined,
+    [],
+    typeof fullRender === "undefined" ? false : fullRender
+  );
 }
 
 /*
@@ -673,7 +711,7 @@ export function rerender(
           props: effectiveProps,
         });
 
-      render(forgoNode, element.node, statesToAttach, fullRerender);
+      internalRender(forgoNode, element.node, statesToAttach, fullRerender);
     } else {
       throw new Error(
         `Rerender was called on an element which was never seen before.`
