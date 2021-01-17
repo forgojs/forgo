@@ -273,6 +273,19 @@ window.addEventListener("load", () => {
 });
 ```
 
+## Advanced API
+
+Forgo also exports a render method that returns the rendered DOM node that should then be manually mounted.
+
+An example use-case of this is SSR hydration, that can be accomlipshed as follows:
+
+```tsx
+const { node } = render(<Component />, false);
+window.addEventListener("load", () => {
+  document.getElementById("root")!.firstElementChild!.replaceWith(node);
+});
+```
+
 ## Building
 
 Forgo uses the latest JSX createElement factory changes, so you might need to enable this with Babel. More details here: https://babeljs.io/docs/en/babel-plugin-transform-react-jsx
