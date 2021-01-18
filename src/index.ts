@@ -108,6 +108,7 @@ export type NodeAttachedComponentState<TProps> = {
 */
 export type NodeAttachedState = {
   key?: string | number;
+  props?: { [key: string]: any };
   components: NodeAttachedComponentState<any>[];
 };
 
@@ -696,7 +697,26 @@ function attachProps(
   node: ChildNode,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ) {
+  // We have to inject node into the args object.
+  // components are already holding a reference to the args object.
+  // They don't know yet that args.element.node is undefined.
+  for (const state of pendingAttachStates) {
+    state.args.element.node = node;
+  }
+
   if (isForgoElement(forgoNode)) {
+    const currentState = getForgoState(node);
+
+    // Remove props which don't match
+    if (currentState && currentState.props) {
+      const currentEntries = Object.entries(currentState.props);
+      for (const [key, value] of currentEntries) {
+        if (key !== "children" && forgoNode.props[key] !== value) {
+          (node as any)[key] = undefined;
+        }
+      }
+    }
+
     // We're gonna keep this simple.
     // Attach everything as is.
     const entries = Object.entries(forgoNode.props);
@@ -705,22 +725,23 @@ function attachProps(
         (node as any)[key] = value;
       }
     }
+
+    // Now attach the internal forgo state.
+    const state: NodeAttachedState = {
+      key: forgoNode.key,
+      props: forgoNode.props,
+      components: pendingAttachStates,
+    };
+
+    setForgoState(node, state);
+  } else {
+    // Now attach the internal forgo state.
+    const state: NodeAttachedState = {
+      components: pendingAttachStates,
+    };
+
+    setForgoState(node, state);
   }
-
-  // We have to inject node into the args object.
-  // components are already holding a reference to the args object.
-  // They don't know yet that args.element.node is undefined.
-  for (const state of pendingAttachStates) {
-    state.args.element.node = node;
-  }
-
-  // Now attach the internal forgo state.
-  const state: NodeAttachedState = {
-    key: isForgoElement(forgoNode) ? forgoNode.key : undefined,
-    components: pendingAttachStates,
-  };
-
-  setForgoState(node, state);
 }
 
 /*

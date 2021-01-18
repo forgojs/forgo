@@ -8,6 +8,7 @@ import unmount from "./unmount";
 import nodeState from "./nodeState";
 import replaceByKey from "./replaceByKey";
 import skipRender from "./skipRender";
+import clearsProps from "./clearsProps";
 
 boundary();
 mount();
@@ -19,3 +20,4 @@ unmount();
 nodeState();
 replaceByKey();
 skipRender();
+clearsProps();
