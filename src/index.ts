@@ -327,51 +327,11 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
     const componentIndex = pendingAttachStates.length;
     const savedComponentState = state.components[componentIndex];
-    const hasCompatibleState =
+    const haveCompatibleState =
       savedComponentState && savedComponentState.ctor === forgoElement.type;
 
-    if (!hasCompatibleState) {
-      // We have to create a new component
-      const args: ForgoRenderArgs = { element: { componentIndex } };
-      const ctor = forgoElement.type;
-      const component = ctor(forgoElement.props);
-      boundary = component.error ? component : boundary;
-
-      // Create new component state
-      // ... and push it to pendingAttachStates
-      const componentState = {
-        key: forgoElement.key,
-        ctor,
-        component,
-        props: forgoElement.props,
-        args,
-      };
-      const statesToAttach = pendingAttachStates.concat(componentState);
-
-      return boundaryFallback(
-        node,
-        forgoElement.props,
-        args,
-        statesToAttach,
-        fullRerender,
-        boundary,
-        () => {
-          // Create an element by rendering the component
-          const newForgoElement = component.render(forgoElement.props, args);
-
-          // Pass it on for rendering...
-          return internalRender(
-            newForgoElement,
-            node,
-            statesToAttach,
-            fullRerender,
-            boundary
-          );
-        }
-      );
-    }
     // We have compatible state, and this is a rerender
-    else {
+    if (haveCompatibleState) {
       if (
         fullRerender ||
         havePropsChanged(savedComponentState.props, forgoElement.props)
@@ -414,6 +374,46 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       } else {
         return { node, boundary };
       }
+    }
+    // We don't have compatible state, have to create a new component.
+    else {
+      const args: ForgoRenderArgs = { element: { componentIndex } };
+      const ctor = forgoElement.type;
+      const component = ctor(forgoElement.props);
+      boundary = component.error ? component : boundary;
+
+      // Create new component state
+      // ... and push it to pendingAttachStates
+      const componentState = {
+        key: forgoElement.key,
+        ctor,
+        component,
+        props: forgoElement.props,
+        args,
+      };
+      const statesToAttach = pendingAttachStates.concat(componentState);
+
+      return boundaryFallback(
+        node,
+        forgoElement.props,
+        args,
+        statesToAttach,
+        fullRerender,
+        boundary,
+        () => {
+          // Create an element by rendering the component
+          const newForgoElement = component.render(forgoElement.props, args);
+
+          // Pass it on for rendering...
+          return internalRender(
+            newForgoElement,
+            node,
+            statesToAttach,
+            fullRerender,
+            boundary
+          );
+        }
+      );
     }
   }
   // First time render
@@ -546,7 +546,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           }
           internalRender(
             forgoChild,
-            childNodes[forgoChildIndex], 
+            childNodes[forgoChildIndex],
             [],
             fullRerender
           );
