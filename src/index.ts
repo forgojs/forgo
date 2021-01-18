@@ -795,9 +795,13 @@ export function rerender(
       internalRender(forgoNode, element.node, statesToAttach, fullRerender);
     } else {
       throw new Error(
-        `Rerender was called on an element which was never seen before.`
+        `Missing forgo state on node.`
       );
     }
+  } else {
+    throw new Error(
+      `Missing node information in rerender() argument.`
+    );
   }
 }
 
