@@ -19,6 +19,9 @@ export default function () {
       });
     });
 
-    innerHtml.should.containEql("Some error occurred :(");
+    innerHtml.should.containEql("GoodComponent rendered!");
+    innerHtml.should.containEql(
+      "Error in ErrorComponent: Some error occurred :("
+    );
   });
 }
