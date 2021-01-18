@@ -336,10 +336,6 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         fullRerender ||
         havePropsChanged(savedComponentState.props, forgoElement.props)
       ) {
-        const args: ForgoRenderArgs = {
-          element: { componentIndex: pendingAttachStates.length },
-        };
-
         // Since we have compatible state already stored,
         // we'll push the savedComponentState into pending states for later attachment.
         const statesToAttach = pendingAttachStates.concat({
@@ -350,13 +346,13 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         // Get a new element by calling render on existing component.
         const newForgoElement = savedComponentState.component.render(
           forgoElement.props,
-          args
+          savedComponentState.args
         );
 
         return boundaryFallback(
           node,
           forgoElement.props,
-          args,
+          savedComponentState.args,
           statesToAttach,
           fullRerender,
           boundary,
