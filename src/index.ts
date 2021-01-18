@@ -418,7 +418,9 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   }
   // First time render
   else {
-    const args: ForgoRenderArgs = { element: { componentIndex: 0 } };
+    const args: ForgoRenderArgs = {
+      element: { componentIndex: pendingAttachStates.length },
+    };
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
     boundary = component.error ? component : boundary;
@@ -544,7 +546,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           }
           internalRender(
             forgoChild,
-            childNodes[forgoChildIndex],
+            childNodes[forgoChildIndex], 
             [],
             fullRerender
           );
@@ -794,14 +796,10 @@ export function rerender(
 
       internalRender(forgoNode, element.node, statesToAttach, fullRerender);
     } else {
-      throw new Error(
-        `Missing forgo state on node.`
-      );
+      throw new Error(`Missing forgo state on node.`);
     }
   } else {
-    throw new Error(
-      `Missing node information in rerender() argument.`
-    );
+    throw new Error(`Missing node information in rerender() argument.`);
   }
 }
 
