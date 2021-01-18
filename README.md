@@ -129,6 +129,39 @@ function Greeter(props) {
 }
 ```
 
+## Error handling
+
+By defining the error() function, Forgo lets you catch errors in child components (at any level, and not necessarily immediate children).
+
+```jsx
+// Here's a component which throws an error.
+function BadComponent() {
+  return {
+    render() {
+      throw new Error("Some error occurred :(");
+    },
+  };
+}
+
+// Parent can catch the error by defining the error() function.
+function Parent(
+  props
+) {
+  return {
+    render() {
+      return <div><BadComponent /></div>;
+    },
+    error(props, args) {
+      return (
+        <p>
+          Error in {props.name}: {args.error.message}
+        </p>
+      );
+    },
+  };
+}
+```
+
 ## Additional Rerender options
 
 The most straight forward way to do rerender is by invoking it with `args.element` as the only argument - as follows.

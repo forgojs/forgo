@@ -294,11 +294,9 @@ function boundaryFallback<T>(
 ) {
   try {
     return exec();
-  } catch (err) {
+  } catch (error) {
     if (boundary && boundary.error) {
-      const errorArgs = args as ForgoErrorArgs;
-      errorArgs.error = err;
-
+      const errorArgs = { ...args, error };
       const newForgoElement = boundary.error(props, errorArgs);
       return internalRender(
         newForgoElement,
@@ -307,9 +305,9 @@ function boundaryFallback<T>(
         fullRerender,
         boundary
       );
+    } else {
+      throw error;
     }
-
-    throw err;
   }
 }
 

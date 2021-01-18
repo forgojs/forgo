@@ -4,6 +4,7 @@ import {
   ForgoElementProps,
   mount,
   setCustomEnv,
+  ForgoErrorArgs
 } from "../../../";
 
 let window: DOMWindow;
@@ -36,10 +37,10 @@ function ErrorBoundary(
     render({ children }) {
       return <div>{children}</div>;
     },
-    error({ name }, { error }) {
+    error(props: ErrorBoundaryProps, args: ForgoErrorArgs) {
       return (
         <p>
-          Error in {name}: {error.message}
+          Error in {props.name}: {args.error.message}
         </p>
       );
     },
