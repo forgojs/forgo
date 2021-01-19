@@ -20,7 +20,7 @@ All of Forgo is in one small JS file (actually it's TypeScript). It is a goal of
 npm i forgo
 ```
 
-An easy way to get a project started is to clone one of the following templates. These templates use parcel as the bundler/build tool.
+An easy way to get a project started is by cloning one of the following templates. These templates use parcel as the bundler/build tool.
 
 - [Forgo template which uses JavaScript](https://github.com/forgojs/forgo-template-javascript)
 - [Forgo template which uses TypeScript](https://github.com/forgojs/forgo-template-typescript)
