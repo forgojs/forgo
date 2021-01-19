@@ -41,15 +41,16 @@ export type ForgoErrorArgs = {
   2. unmount() is optional. Gets called just before unmount.
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
-  error?: (
-    props: TProps,
-    args: ForgoErrorArgs
-  ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
   render: (
     props: TProps,
     args: ForgoRenderArgs
   ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
+  error?: (
+    props: TProps,
+    args: ForgoErrorArgs
+  ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
   unmount?: () => void;
+  shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
 };
 
 /*
@@ -335,40 +336,54 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     if (haveCompatibleState) {
       if (
         fullRerender ||
-        havePropsChanged(savedComponentState.props, forgoElement.props)
+        havePropsChanged(forgoElement.props, savedComponentState.props)
       ) {
-        // Since we have compatible state already stored,
-        // we'll push the savedComponentState into pending states for later attachment.
-        const statesToAttach = pendingAttachStates.concat({
-          ...savedComponentState,
-          props: forgoElement.props,
-        });
+        if (
+          !savedComponentState.component.shouldUpdate ||
+          savedComponentState.component.shouldUpdate(
+            forgoElement.props,
+            savedComponentState.props
+          )
+        ) {
+          // Since we have compatible state already stored,
+          // we'll push the savedComponentState into pending states for later attachment.
+          const statesToAttach = pendingAttachStates.concat({
+            ...savedComponentState,
+            props: forgoElement.props,
+          });
 
-        // Get a new element by calling render on existing component.
-        const newForgoElement = savedComponentState.component.render(
-          forgoElement.props,
-          savedComponentState.args
-        );
+          // Get a new element by calling render on existing component.
+          const newForgoElement = savedComponentState.component.render(
+            forgoElement.props,
+            savedComponentState.args
+          );
 
-        return boundaryFallback(
-          node,
-          forgoElement.props,
-          savedComponentState.args,
-          statesToAttach,
-          fullRerender,
-          boundary,
-          () => {
-            // Pass it on for rendering...
-            return internalRender(
-              newForgoElement,
-              node,
-              statesToAttach,
-              fullRerender,
-              boundary
-            );
-          }
-        );
-      } else {
+          return boundaryFallback(
+            node,
+            forgoElement.props,
+            savedComponentState.args,
+            statesToAttach,
+            fullRerender,
+            boundary,
+            () => {
+              // Pass it on for rendering...
+              return internalRender(
+                newForgoElement,
+                node,
+                statesToAttach,
+                fullRerender,
+                boundary
+              );
+            }
+          );
+        }
+        // shouldUpdate() returned false
+        else {
+          return { node, boundary };
+        }
+      }
+      // not a fullRender and havePropsChanged() returned false
+      else {
         return { node, boundary };
       }
     }
@@ -748,7 +763,7 @@ function attachProps(
   Compare old props and new props.
   We don't rerender if props remain the same.
 */
-function havePropsChanged(oldProps: any, newProps: any) {
+function havePropsChanged(newProps: any, oldProps: any) {
   const oldKeys = Object.keys(oldProps);
   const newKeys = Object.keys(newProps);
   return (
@@ -799,19 +814,24 @@ export function rerender(
       const effectiveProps =
         typeof props !== "undefined" ? props : component.props;
 
-      const forgoNode = component.component.render(
-        effectiveProps,
-        component.args
-      );
+      if (
+        !component.component.shouldUpdate ||
+        component.component.shouldUpdate(effectiveProps, component.props)
+      ) {
+        const forgoNode = component.component.render(
+          effectiveProps,
+          component.args
+        );
 
-      const statesToAttach = state.components
-        .slice(0, element.componentIndex)
-        .concat({
-          ...component,
-          props: effectiveProps,
-        });
+        const statesToAttach = state.components
+          .slice(0, element.componentIndex)
+          .concat({
+            ...component,
+            props: effectiveProps,
+          });
 
-      internalRender(forgoNode, element.node, statesToAttach, fullRerender);
+        internalRender(forgoNode, element.node, statesToAttach, fullRerender);
+      }
     } else {
       throw new Error(`Missing forgo state on node.`);
     }

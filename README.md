@@ -129,6 +129,23 @@ function Greeter(props) {
 }
 ```
 
+## Bailing out of a render
+
+When the shouldUpdate() function is defined for a component, Forgo will call it with newProps and oldProps and check if the return value is true before rendering the component. Returning false will skip rendering the component.
+
+```jsx
+function Greeter(props) {
+  return {
+    render(props, args) {
+      return <div>Hello {props.firstName}</div>;
+    },
+    shouldUpdate(newProps, oldProps) {
+      return newProps.firstName !== oldProps.firstName;
+    },
+  };
+}
+```
+
 ## Error handling
 
 By defining the error() function, Forgo lets you catch errors in child components (at any level, and not necessarily immediate children).
