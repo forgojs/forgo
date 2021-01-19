@@ -119,7 +119,7 @@ function Component(props) {
 
 ## Unmount
 
-When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. This is of course, totally optional.
+When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function.
 
 ```jsx
 function Greeter(props) {
@@ -127,7 +127,7 @@ function Greeter(props) {
     render(props, args) {
       return <div>Hello {props.firstName}</div>;
     },
-    unmount() {
+    unmount(props, args) {
       console.log("Got unloaded.");
     },
   };
