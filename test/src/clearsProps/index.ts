@@ -4,7 +4,7 @@ import * as should from "should";
 import { run } from "./script";
 
 export default function () {
-  it("mounts a component", async () => {
+  it("clears old props", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
