@@ -20,6 +20,11 @@ All of Forgo is in one small JS file (actually it's TypeScript). It is a goal of
 npm i forgo
 ```
 
+An easy way to get a project started is to clone one of the following templates. These templates use parcel as the bundler/build tool.
+
+- [Forgo template which uses JavaScript](https://github.com/forgojs/forgo-template-javascript)
+- [Forgo template which uses TypeScript](https://github.com/forgojs/forgo-template-typescript)
+
 ## A Forgo Component
 
 A Forgo Component is a function that returns an object with a render() function. The render function is called for the first render, and then subsequently for each rerender.
@@ -161,12 +166,14 @@ function BadComponent() {
 }
 
 // Parent can catch the error by defining the error() function.
-function Parent(
-  props
-) {
+function Parent(props) {
   return {
     render() {
-      return <div><BadComponent /></div>;
+      return (
+        <div>
+          <BadComponent />
+        </div>
+      );
     },
     error(props, args) {
       return (
@@ -200,7 +207,7 @@ function TodoList(props) {
 }
 ```
 
-But there are a couple of handy options to rerender, 'newProps' and 'forceRerender'. 
+But there are a couple of handy options to rerender, 'newProps' and 'forceRerender'.
 
 newProps let you pass a new set of props while rerendering. If you'd like previous props to be used, pass undefined here.
 
@@ -214,7 +221,7 @@ rerender(args.element, newProps, forceRerender);
 
 ## Rendering without mounting
 
-Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted. 
+Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted.
 
 ```tsx
 const { node } = render(<Component />);
@@ -224,12 +231,10 @@ window.addEventListener("load", () => {
 });
 ```
 
-
 ## Routing
 
-Forgo Router is a tiny router for Forgo, and is just around 1KB gzipped. 
+Forgo Router is a tiny router for Forgo, and is just around 1KB gzipped.
 https://github.com/forgojs/forgo-router
-
 
 ## Try it out on CodeSandbox
 
