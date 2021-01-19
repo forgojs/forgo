@@ -22,8 +22,8 @@ npm i forgo
 
 An easy way to get a project started is by cloning one of the following templates. These templates use parcel as the bundler/build tool.
 
-- [Forgo template which uses JavaScript](https://github.com/forgojs/forgo-template-javascript)
-- [Forgo template which uses TypeScript](https://github.com/forgojs/forgo-template-typescript)
+- [Starter-kit using JavaScript](https://github.com/forgojs/forgo-template-javascript)
+- [Starter-kit using TypeScript](https://github.com/forgojs/forgo-template-typescript)
 
 ## A Forgo Component
 
