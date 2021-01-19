@@ -1,7 +1,12 @@
 {
   "name": "forgo",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "main": "./dist",
+  "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/forgojs/forgo"
+  },
   "devDependencies": {
     "@types/jsdom": "^16.2.6",
     "@types/mocha": "^8.2.0",
