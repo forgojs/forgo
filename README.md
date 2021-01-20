@@ -117,7 +117,7 @@ function Component(props) {
 }
 ```
 
-## Unmount
+## Component Unmount
 
 When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function.
 
@@ -129,6 +129,23 @@ function Greeter(props) {
     },
     unmount(props, args) {
       console.log("Got unloaded.");
+    },
+  };
+}
+```
+
+## Component mount
+
+You'd rarely have to use this. mount() gets called with the same arguments as render () but after getting mounted on a real DOM node. At this point you can expect args.element.node to be populated, where args is the second parameter to mount() and render().
+
+```jsx
+function Greeter(props) {
+  return {
+    render(props, args) {
+      return <div id="hello">Hello {props.firstName}</div>;
+    },
+    mount(props, args) {
+      console.log(`Mounted on node with id ${args.element.node.id}`);
     },
   };
 }

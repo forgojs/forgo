@@ -49,6 +49,7 @@ export type ForgoComponent<TProps extends ForgoElementProps> = {
     props: TProps,
     args: ForgoErrorArgs
   ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
+  mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
 };
@@ -209,17 +210,31 @@ function renderString(
 ): { node: ChildNode } {
   // Text nodes will always be recreated
   const textNode = env.document.createTextNode(text);
-  attachProps(text, textNode, pendingAttachStates);
+  
   if (node) {
-    // If there are old component states, we might need to unmount some of em.
-    // After comparing with the new states.
+    // We have to get oldStates before attachProps;
+    // coz attachProps will overwrite with new states.
     const oldComponentStates = getForgoState(node)?.components;
+
+    attachProps(text, textNode, pendingAttachStates);
+
     if (oldComponentStates) {
-      unloadIncompatibleStates(pendingAttachStates, oldComponentStates);
+      const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+        pendingAttachStates,
+        oldComponentStates
+      );
+      unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
+      mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
+    } else {
+      mountComponents(pendingAttachStates, 0);
     }
 
     node.replaceWith(textNode);
+  } else {
+    attachProps(text, textNode, pendingAttachStates);
+    mountComponents(pendingAttachStates, 0);
   }
+
   return { node: textNode };
 }
 
@@ -245,13 +260,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   if (node) {
     let nodeToBindTo: ChildNode;
 
-    // If there are old component states, we might need to unmount some of em.
-    // After comparing with the new states.
-    const oldComponentStates = getForgoState(node)?.components;
-    if (oldComponentStates) {
-      unloadIncompatibleStates(pendingAttachStates, oldComponentStates);
-    }
-
     // if the nodes are not of the same of the same type, we need to replace.
     if (
       node.nodeType === TEXT_NODE_TYPE ||
@@ -264,7 +272,23 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     } else {
       nodeToBindTo = node;
     }
+    
+    // We have to get oldStates before attachProps;
+    // coz attachProps will overwrite with new states.
+    const oldComponentStates = getForgoState(node)?.components;
+    
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
+
+    if (oldComponentStates) {
+      const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+        pendingAttachStates,
+        oldComponentStates
+      );
+      unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
+      mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
+    } else {
+      mountComponents(pendingAttachStates, 0);
+    }
 
     renderChildNodes(
       forgoElement,
@@ -273,13 +297,15 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       boundary
     );
     return { node: nodeToBindTo };
-  } else {
-    // There was no node passed in, so create a new element.
+  }
+  // There was no node passed in; have to create a new element.
+  else {
     const newElement = env.document.createElement(forgoElement.type);
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
     }
     attachProps(forgoElement, newElement, pendingAttachStates);
+    mountComponents(pendingAttachStates, 0);
     renderChildNodes(forgoElement, newElement, fullRerender, boundary);
     return { node: newElement };
   }
@@ -536,7 +562,12 @@ function renderChildNodes<TProps extends ForgoElementProps>(
             fullRerender,
             boundary
           );
-          parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+
+          if (childNodes.length > forgoChildIndex) {
+            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+          } else {
+            parentElement.appendChild(node);
+          }
         }
       } else {
         const findResult =
@@ -554,7 +585,11 @@ function renderChildNodes<TProps extends ForgoElementProps>(
 
         if (findResult.found) {
           for (let i = forgoChildIndex; i < findResult.index; i++) {
-            unloadNode(childNodes[i]);
+            const nodesToRemove = Array.from(childNodes).slice(
+              forgoChildIndex,
+              findResult.index
+            );
+            unloadNodes(nodesToRemove);
           }
           internalRender(
             forgoChild,
@@ -580,9 +615,8 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   }
   // Now we gotta remove old nodes which aren't being used.
   // Everything after forgoChildIndex must go.
-  for (let i = forgoChildIndex; i < childNodes.length; i++) {
-    unloadNode(childNodes[i]);
-  }
+  const nodesToRemove = Array.from(childNodes).slice(forgoChildIndex);
+  unloadNodes(nodesToRemove);
 }
 
 /*
@@ -591,17 +625,12 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   a) Remove the node
   b) Calls unload on all attached components
 */
-function unloadNode(node: ChildNode) {
-  node.remove();
-  const state = getForgoState(node);
-  if (state) {
-    for (const componentState of state.components) {
-      if (componentState.component.unmount) {
-        componentState.component.unmount(
-          componentState.props,
-          componentState.args
-        );
-      }
+function unloadNodes(nodes: ChildNode[]) {
+  for (const node of nodes) {
+    node.remove();
+    const state = getForgoState(node);
+    if (state) {
+      unmountComponents(state.components, 0);
     }
   }
 }
@@ -615,10 +644,10 @@ function unloadNode(node: ChildNode) {
   If the ctor is different, the component is discarded. And hence needs to be unmounted.
   So we check the ctor type in old and new.
 */
-function unloadIncompatibleStates(
+function findIndexOfFirstIncompatibleState(
   newStates: NodeAttachedComponentState<any>[],
   oldStates: NodeAttachedComponentState<any>[]
-) {
+): number {
   let i = 0;
 
   for (const newState of newStates) {
@@ -633,10 +662,29 @@ function unloadIncompatibleStates(
     }
   }
 
-  for (let j = i; j < oldStates.length; j++) {
-    const oldState = oldStates[j];
-    if (oldState.component.unmount) {
-      oldState.component.unmount(oldState.props, oldState.args);
+  return i;
+}
+
+function mountComponents(
+  states: NodeAttachedComponentState<any>[],
+  from: number
+) {
+  for (let j = from; j < states.length; j++) {
+    const state = states[j];
+    if (state.component.mount) {
+      state.component.mount(state.props, state.args);
+    }
+  }
+}
+
+function unmountComponents(
+  states: NodeAttachedComponentState<any>[],
+  from: number
+) {
+  for (let j = from; j < states.length; j++) {
+    const state = states[j];
+    if (state.component.unmount) {
+      state.component.unmount(state.props, state.args);
     }
   }
 }

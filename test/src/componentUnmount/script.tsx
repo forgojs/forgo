@@ -1,6 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../";
-import promiseSignal from "../promiseSignal";
 
 let window: DOMWindow;
 let document: HTMLDocument;
