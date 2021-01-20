@@ -89,7 +89,7 @@ function Greeter(props) {
 
 ## Reading Form Input Elements
 
-You can accesa and read form input element values with regular DOM APIs.
+You can access and read form input elements using regular DOM APIs.
 
 Like this:
 
