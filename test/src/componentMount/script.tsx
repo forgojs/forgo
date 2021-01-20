@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../dist";
+import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;

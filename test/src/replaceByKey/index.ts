@@ -1,7 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile";
 import * as should from "should";
-import { ForgoRef } from "../../..";
 import { run } from "./script";
 
 export default function () {
