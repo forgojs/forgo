@@ -89,11 +89,35 @@ function Greeter(props) {
 
 ## Reading Form Input Elements
 
-You can read form input element values with regular DOM APIs.
+You can accesa and read form input element values with regular DOM APIs.
 
-There's a small hurdle though - how do we get a reference to the actual DOM element? That's where the ref attribute comes in. An object referenced by the ref attribute in an element's markup will have its value property set to the actual DOM element.
+Like this:
 
-Better explained with an example:
+```jsx
+function Component(props) {
+  const myInputRef = {};
+
+  return {
+    render(props, args) {
+      function onClick() {
+        const inputElement = document.getElementById("myinput");
+        alert(inputElement.value); // Read the text input!
+      }
+
+      return (
+        <div>
+          <input type="text" id="myinput" />
+          <button onclick={onClick}>Click me!</button>
+        </div>
+      );
+    },
+  };
+}
+```
+
+But there's also another way to do this, without requiring you to assign an id. An object referenced by the ref attribute in an element's markup will have its value property set to the actual DOM element.
+
+So you could do this as well:
 
 ```jsx
 function Component(props) {
