@@ -138,6 +138,8 @@ let env: EnvType = {
   document: documentObject,
 };
 
+const isString = (val: unknown): val is string => typeof val === 'string'
+
 export function setCustomEnv(value: any) {
   env = value;
 }
@@ -826,7 +828,9 @@ function havePropsChanged(newProps: any, oldProps: any) {
 /*
   Mount will render the DOM as a child of the specified container element.
 */
-export function mount(forgoNode: ForgoNode, parentElement: HTMLElement | null) {
+export function mount(forgoNode: ForgoNode, conatiner: HTMLElement | string | null) {
+  let parentElement = isString(conatiner) ? env.document.querySelector(conatiner) : conatiner;
+
   if (parentElement) {
     const { node } = internalRender(forgoNode, undefined, [], true);
     parentElement.appendChild(node);
