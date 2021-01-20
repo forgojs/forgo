@@ -828,8 +828,8 @@ function havePropsChanged(newProps: any, oldProps: any) {
 /*
   Mount will render the DOM as a child of the specified container element.
 */
-export function mount(forgoNode: ForgoNode, conatiner: HTMLElement | string | null) {
-  let parentElement = isString(conatiner) ? env.document.querySelector(conatiner) : conatiner;
+export function mount(forgoNode: ForgoNode, container: HTMLElement | string | null) {
+  let parentElement = isString(container) ? env.document.querySelector(container) : container;
 
   if (parentElement) {
     const { node } = internalRender(forgoNode, undefined, [], true);

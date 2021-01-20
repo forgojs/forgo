@@ -60,6 +60,14 @@ window.addEventListener("load", () => {
 });
 ```
 
+You could also pass a selector instead of an element.
+
+```js
+window.addEventListener("load", () => {
+  mount(<SimpleTimer />, "#root");
+});
+```
+
 ## Child Components and Passing Props
 
 That works just as you'd have seen in React.
