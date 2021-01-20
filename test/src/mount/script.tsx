@@ -18,6 +18,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<BasicComponent />, document.getElementById("root"));
+    mount(<BasicComponent />, '#root');
   });
 }
