@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import "should";
 import { run } from "./script";
 
-export default function () {
+export default function mount() {
   it("mounts a component", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

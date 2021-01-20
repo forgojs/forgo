@@ -4,7 +4,7 @@ import { ForgoRef } from "../../../";
 import { run } from "./script";
 import "should";
 
-export default function () {
+export default function skipRender() {
   it("skips render if props remain the same", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

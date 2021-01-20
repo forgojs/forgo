@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import * as should from "should";
 import { run } from "./script";
 
-export default function () {
+export default function clearProps() {
   it("clears old props", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

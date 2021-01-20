@@ -4,7 +4,7 @@ import * as should from "should";
 import { ForgoRef } from "../../../";
 import { run } from "./script";
 
-export default function () {
+export default function nodeState() {
   it("attaches state correctly", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

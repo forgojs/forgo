@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { run } from "./script";
 import * as should from "should";
 
-export default function () {
+export default function componentMount() {
   it("runs mount() when a component is attached to node", async () => {
     // const scriptPath = join(__dirname, "script.js");
 

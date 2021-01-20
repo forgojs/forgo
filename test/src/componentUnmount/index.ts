@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { run } from "./script";
 import * as should from "should";
 
-export default function () {
+export default function componentUnmount() {
   it("runs unmount() when a component goes away", async () => {
     // const scriptPath = join(__dirname, "script.js");
 
