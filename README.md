@@ -27,12 +27,14 @@ An easy way to get a project started is by cloning one of the following template
 
 ## A Forgo Component
 
-A Forgo Component is a function that returns an object with a render() function. The render function is called for the first render, and then subsequently for each rerender.
+A Forgo Component must have a function (called Component Constructor) that returns an object with a render() function (called Component). 
+
+Here's an Example.
 
 ```tsx
 import { rerender } from "forgo";
 
-function SimpleTimer() {
+function SimpleTimer(initialProps) {
   let seconds = 0; // Just a regular variable, no hooks!
 
   return {
@@ -47,6 +49,8 @@ function SimpleTimer() {
   };
 }
 ```
+
+The Component Constructor function and the Component's render() method are both called during the first render with the initial set of props. But for rerenders of the same component, only the render() gets called (with new props). So if you're using props, remember to get it from the render() method.
 
 ## Mounting the Component
 
@@ -73,7 +77,7 @@ window.addEventListener("load", () => {
 That works just as you'd have seen in React.
 
 ```jsx
-function Parent(props) {
+function Parent(initialProps) {
   return {
     render(props, args) {
       return (
@@ -86,7 +90,7 @@ function Parent(props) {
   };
 }
 
-function Greeter(props) {
+function Greeter(initialProps) {
   return {
     render(props, args) {
       return <div>Hello {props.firstName}</div>;
@@ -102,7 +106,7 @@ To access the actual DOM elements corresponding to your markup (and the values c
 Here's an example:
 
 ```jsx
-function Component(props) {
+function Component(initialProps) {
   const myInputRef = {};
 
   return {
@@ -135,7 +139,7 @@ function onClick() {
 Lastly, you can pass an event handler to an input and extract the current value from the input event:
 
 ```jsx
-function Component(props) {
+function Component(initialProps) {
   const myInputRef = {};
 
   return {
@@ -160,7 +164,7 @@ function Component(props) {
 When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function.
 
 ```jsx
-function Greeter(props) {
+function Greeter(initialProps) {
   return {
     render(props, args) {
       return <div>Hello {props.firstName}</div>;
@@ -177,7 +181,7 @@ function Greeter(props) {
 You'd rarely have to use this. mount() gets called with the same arguments as render () but after getting mounted on a real DOM node. At this point you can expect args.element.node to be populated, where args is the second parameter to mount() and render().
 
 ```jsx
-function Greeter(props) {
+function Greeter(initialProps) {
   return {
     render(props, args) {
       return <div id="hello">Hello {props.firstName}</div>;
@@ -194,7 +198,7 @@ function Greeter(props) {
 When the shouldUpdate() function is defined for a component, Forgo will call it with newProps and oldProps and check if the return value is true before rendering the component. Returning false will skip rendering the component.
 
 ```jsx
-function Greeter(props) {
+function Greeter(initialProps) {
   return {
     render(props, args) {
       return <div>Hello {props.firstName}</div>;
@@ -221,7 +225,7 @@ function BadComponent() {
 }
 
 // Parent can catch the error by defining the error() function.
-function Parent(props) {
+function Parent(initialProps) {
   return {
     render() {
       return (
@@ -246,7 +250,7 @@ function Parent(props) {
 The most straight forward way to do rerender is by invoking it with `args.element` as the only argument - as follows.
 
 ```tsx
-function TodoList(props) {
+function TodoList(initialProps) {
   let todos = [];
 
   return {
