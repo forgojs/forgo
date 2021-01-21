@@ -1,3 +1,4 @@
+import createApp from './createApp'
 import boundary from "./boundary";
 import mount from "./mount";
 import passProps from "./passProps";
@@ -12,6 +13,7 @@ import skipRender from "./skipRender";
 import clearsProps from "./clearsProps";
 import shouldUpdate from "./shouldUpdate";
 
+createApp();
 boundary();
 mount();
 passProps();

@@ -831,6 +831,18 @@ function havePropsChanged(newProps: any, oldProps: any) {
   );
 }
 
+function internalMount(node: ChildNode, container: HTMLElement | string | null) {
+  let parentElement = isString(container)
+    ? env.document.querySelector(container)
+    : container;
+
+  if (parentElement) {
+    parentElement.appendChild(node);
+  } else {
+    throw new Error(`Mount was called on a non-element (${parentElement}).`);
+  }
+}
+
 /*
   Mount will render the DOM as a child of the specified container element.
 */
@@ -838,16 +850,8 @@ export function mount(
   forgoNode: ForgoNode,
   container: HTMLElement | string | null
 ) {
-  let parentElement = isString(container)
-    ? env.document.querySelector(container)
-    : container;
-
-  if (parentElement) {
-    const { node } = internalRender(forgoNode, undefined, [], true);
-    parentElement.appendChild(node);
-  } else {
-    throw new Error(`Mount was called on a non-element (${parentElement}).`);
-  }
+  const { node } = internalRender(forgoNode, undefined, [], true);
+  internalMount(node, container)
 }
 
 /*
@@ -906,6 +910,20 @@ export function rerender(
     }
   } else {
     throw new Error(`Missing node information in rerender() argument.`);
+  }
+}
+
+export function createApp(forgoNode: ForgoNode) {
+  const { node } = internalRender(forgoNode, undefined, [], true);
+  
+  return {
+    mount(container: HTMLElement | string | null) {
+      if (env.document.readyState != "loading") {
+        internalMount(node, container)
+      } else {
+        env.document.addEventListener("DOMContentLoaded", () => internalMount(node, container));
+      }
+    }
   }
 }
 
