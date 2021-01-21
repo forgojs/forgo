@@ -11,6 +11,7 @@ import replaceByKey from "./replaceByKey";
 import skipRender from "./skipRender";
 import clearsProps from "./clearsProps";
 import shouldUpdate from "./shouldUpdate";
+import renderPrimitives from "./renderPrimitives";
 
 boundary();
 mount();
@@ -25,3 +26,4 @@ replaceByKey();
 skipRender();
 clearsProps();
 shouldUpdate();
+renderPrimitives();

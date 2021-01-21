@@ -87,7 +87,9 @@ export type ForgoNode =
   | number
   | boolean
   | object
+  | null
   | BigInt
+  | undefined
   | ForgoElement<string | ForgoComponentCtor<any>, any>;
 
 /*
@@ -424,8 +426,11 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     // We don't have compatible state, have to create a new component.
     else {
       const args: ForgoRenderArgs = { element: { componentIndex } };
+
       const ctor = forgoElement.type;
       const component = ctor(forgoElement.props);
+      assertIsComponent(component);
+
       boundary = component.error ? component : boundary;
 
       // Create new component state
@@ -469,6 +474,8 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     };
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
+    assertIsComponent(component);
+
     boundary = component.error ? component : boundary;
 
     // We'll have to create a new component state
@@ -529,11 +536,9 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   const childNodes = parentElement.childNodes;
 
   // Children will not be an array if single item
-  const forgoChildren = (forgoChildrenObj !== undefined
-    ? Array.isArray(forgoChildrenObj)
-      ? forgoChildrenObj
-      : [forgoChildrenObj]
-    : []) as ForgoNode[];
+  const forgoChildren = Array.isArray(forgoChildrenObj)
+    ? forgoChildrenObj
+    : [forgoChildrenObj];
 
   let forgoChildIndex = 0;
 
@@ -547,34 +552,36 @@ function renderChildNodes<TProps extends ForgoElementProps>(
 
       // We have to find a matching node candidate, if any.
       if (!isForgoElement(forgoChild)) {
-        // If the first node is a text node, we could pass that along.
-        // No need to replace here, callee does that.
-        if (
-          childNodes[forgoChildIndex] &&
-          childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
-        ) {
-          internalRender(
-            stringOfPrimitiveNode(forgoChild),
-            childNodes[forgoChildIndex],
-            [],
-            fullRerender,
-            boundary
-          );
-        }
-        // But otherwise, don't pass a replacement node. Just insert instead.
-        else {
-          const { node } = internalRender(
-            stringOfPrimitiveNode(forgoChild),
-            undefined,
-            [],
-            fullRerender,
-            boundary
-          );
+        if (forgoChild !== undefined && forgoChild !== null) {
+          // If the first node is a text node, we could pass that along.
+          // No need to replace here, callee does that.
+          if (
+            childNodes[forgoChildIndex] &&
+            childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
+          ) {
+            internalRender(
+              stringOfPrimitiveNode(forgoChild),
+              childNodes[forgoChildIndex],
+              [],
+              fullRerender,
+              boundary
+            );
+          }
+          // But otherwise, don't pass a replacement node. Just insert instead.
+          else {
+            const { node } = internalRender(
+              stringOfPrimitiveNode(forgoChild),
+              undefined,
+              [],
+              fullRerender,
+              boundary
+            );
 
-          if (childNodes.length > forgoChildIndex) {
-            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
-          } else {
-            parentElement.appendChild(node);
+            if (childNodes.length > forgoChildIndex) {
+              parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+            } else {
+              parentElement.appendChild(node);
+            }
           }
         }
       } else {
@@ -913,8 +920,8 @@ export function rerender(
   ForgoNodes can be primitive types.
   Convert all primitive types to their string representation.
 */
-function stringOfPrimitiveNode(node: ForgoNode) {
-  return typeof node === "undefined" ? "undefined" : node.toString();
+function stringOfPrimitiveNode(node: ForgoNode): string {
+  return typeof node === "undefined" || node === null ? "" : node.toString();
 }
 
 /*
@@ -923,7 +930,9 @@ function stringOfPrimitiveNode(node: ForgoNode) {
 */
 function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
   return (
-    typeof node !== "undefined" && (node as any).__is_forgo_element__ === true
+    typeof node !== "undefined" &&
+    node !== null &&
+    (node as any).__is_forgo_element__ === true
   );
 }
 
@@ -946,4 +955,13 @@ function getExistingForgoState(node: Required<ChildNode>): NodeAttachedState {
 */
 export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
   node.__forgo = state;
+}
+
+/*
+  Throw if component is a non-component
+*/
+function assertIsComponent(component: ForgoComponent<any>) {
+  if (!component.render) {
+    throw new Error("component must have a render() method.");
+  }
 }
