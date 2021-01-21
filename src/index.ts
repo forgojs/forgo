@@ -598,13 +598,11 @@ function renderChildNodes<TProps extends ForgoElementProps>(
               );
 
         if (findResult.found) {
-          for (let i = forgoChildIndex; i < findResult.index; i++) {
-            const nodesToRemove = Array.from(childNodes).slice(
-              forgoChildIndex,
-              findResult.index
-            );
-            unloadNodes(nodesToRemove);
-          }
+          const nodesToRemove = Array.from(childNodes).slice(
+            forgoChildIndex,
+            findResult.index
+          );
+          unloadNodes(nodesToRemove);
           internalRender(
             forgoChild,
             childNodes[forgoChildIndex],
