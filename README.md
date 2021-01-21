@@ -44,7 +44,7 @@ function SimpleTimer(initialProps) {
         rerender(args.element); // rerender
       }, 1000);
 
-      return <div>{seconds} secs have elapsed...</div>;
+      return <div>{seconds} seconds have elapsed... {props.firstName}!</div>;
     },
   };
 }
