@@ -12,6 +12,7 @@ import skipRender from "./skipRender";
 import clearsProps from "./clearsProps";
 import shouldUpdate from "./shouldUpdate";
 import renderPrimitives from "./renderPrimitives";
+import assertIsComponent from "./assertIsComponent";
 
 boundary();
 mount();
@@ -27,3 +28,4 @@ skipRender();
 clearsProps();
 shouldUpdate();
 renderPrimitives();
+assertIsComponent();

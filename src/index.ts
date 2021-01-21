@@ -429,7 +429,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
       const ctor = forgoElement.type;
       const component = ctor(forgoElement.props);
-      assertIsComponent(component);
+      assertIsComponent(ctor, component);
 
       boundary = component.error ? component : boundary;
 
@@ -474,7 +474,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     };
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
-    assertIsComponent(component);
+    assertIsComponent(ctor, component);
 
     boundary = component.error ? component : boundary;
 
@@ -960,8 +960,15 @@ export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
 /*
   Throw if component is a non-component
 */
-function assertIsComponent(component: ForgoComponent<any>) {
+function assertIsComponent(
+  ctor: ForgoComponentCtor<any>,
+  component: ForgoComponent<any>
+) {
   if (!component.render) {
-    throw new Error("component must have a render() method.");
+    throw new Error(
+      `${
+        ctor.name || "Unnamed"
+      } component constructor must return an object having a render() function.`
+    );
   }
 }
