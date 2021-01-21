@@ -1,3 +1,9 @@
+declare global {
+  interface ChildNode {
+    __forgo?: NodeAttachedState;
+  }
+}
+
 /*
   A type that wraps a reference.
 */
@@ -138,7 +144,7 @@ let env: EnvType = {
   document: documentObject,
 };
 
-const isString = (val: unknown): val is string => typeof val === 'string'
+const isString = (val: unknown): val is string => typeof val === "string";
 
 export function setCustomEnv(value: any) {
   env = value;
@@ -184,7 +190,7 @@ function internalRender(
   else {
     return renderCustomComponent(
       forgoNode as ForgoElement<ForgoComponentCtor<any>, any>,
-      node,
+      node as Required<ChildNode>,
       pendingAttachStates,
       fullRerender,
       boundary
@@ -212,7 +218,7 @@ function renderString(
 ): { node: ChildNode } {
   // Text nodes will always be recreated
   const textNode = env.document.createTextNode(text);
-  
+
   if (node) {
     // We have to get oldStates before attachProps;
     // coz attachProps will overwrite with new states.
@@ -274,11 +280,11 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     } else {
       nodeToBindTo = node;
     }
-    
+
     // We have to get oldStates before attachProps;
     // coz attachProps will overwrite with new states.
     const oldComponentStates = getForgoState(node)?.components;
-    
+
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
 
     if (oldComponentStates) {
@@ -347,7 +353,7 @@ function boundaryFallback<T>(
 */
 function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoElement<ForgoComponentCtor<TProps>, TProps>,
-  node: ChildNode | undefined,
+  node: Required<ChildNode> | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
@@ -828,8 +834,13 @@ function havePropsChanged(newProps: any, oldProps: any) {
 /*
   Mount will render the DOM as a child of the specified container element.
 */
-export function mount(forgoNode: ForgoNode, container: HTMLElement | string | null) {
-  let parentElement = isString(container) ? env.document.querySelector(container) : container;
+export function mount(
+  forgoNode: ForgoNode,
+  container: HTMLElement | string | null
+) {
+  let parentElement = isString(container)
+    ? env.document.querySelector(container)
+    : container;
 
   if (parentElement) {
     const { node } = internalRender(forgoNode, undefined, [], true);
@@ -920,19 +931,19 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
   Get the state (NodeAttachedState) saved into an element.
 */
 export function getForgoState(node: ChildNode): NodeAttachedState | undefined {
-  return (node as any).__forgo;
+  return node.__forgo;
 }
 
 /*
   Same as above, but will never be undefined. (Caller makes sure.)
 */
-function getExistingForgoState(node: ChildNode): NodeAttachedState {
-  return (node as any).__forgo;
+function getExistingForgoState(node: Required<ChildNode>): NodeAttachedState {
+  return node.__forgo;
 }
 
 /*
   Sets the state (NodeAttachedState) on an element.
 */
 export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
-  (node as any).__forgo = state;
+  node.__forgo = state;
 }
