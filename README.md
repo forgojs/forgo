@@ -132,6 +132,29 @@ function onClick() {
 }
 ```
 
+Lastly, you can pass an event handler to an input and extract the current value from the input event:
+
+```jsx
+function Component(props) {
+  const myInputRef = {};
+
+  return {
+    render(props, args) {
+      function oninput(e) {
+        e.preventDefault();
+        alert(e.target.value);
+      }
+
+      return (
+        <div>
+          <input type="text" oninput={oninput} />
+        </div>
+      );
+    },
+  };
+}
+```
+
 ## Component Unmount
 
 When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function.
