@@ -536,9 +536,10 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   const childNodes = parentElement.childNodes;
 
   // Children will not be an array if single item
-  const forgoChildren = Array.isArray(forgoChildrenObj)
+  const forgoChildren = (Array.isArray(forgoChildrenObj)
     ? forgoChildrenObj
-    : [forgoChildrenObj];
+    : [forgoChildrenObj]
+  ).filter((x) => typeof x !== "undefined" && x !== null);
 
   let forgoChildIndex = 0;
 
@@ -552,36 +553,34 @@ function renderChildNodes<TProps extends ForgoElementProps>(
 
       // We have to find a matching node candidate, if any.
       if (!isForgoElement(forgoChild)) {
-        if (forgoChild !== undefined && forgoChild !== null) {
-          // If the first node is a text node, we could pass that along.
-          // No need to replace here, callee does that.
-          if (
-            childNodes[forgoChildIndex] &&
-            childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
-          ) {
-            internalRender(
-              stringOfPrimitiveNode(forgoChild),
-              childNodes[forgoChildIndex],
-              [],
-              fullRerender,
-              boundary
-            );
-          }
-          // But otherwise, don't pass a replacement node. Just insert instead.
-          else {
-            const { node } = internalRender(
-              stringOfPrimitiveNode(forgoChild),
-              undefined,
-              [],
-              fullRerender,
-              boundary
-            );
+        // If the first node is a text node, we could pass that along.
+        // No need to replace here, callee does that.
+        if (
+          childNodes[forgoChildIndex] &&
+          childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
+        ) {
+          internalRender(
+            stringOfPrimitiveNode(forgoChild),
+            childNodes[forgoChildIndex],
+            [],
+            fullRerender,
+            boundary
+          );
+        }
+        // But otherwise, don't pass a replacement node. Just insert instead.
+        else {
+          const { node } = internalRender(
+            stringOfPrimitiveNode(forgoChild),
+            undefined,
+            [],
+            fullRerender,
+            boundary
+          );
 
-            if (childNodes.length > forgoChildIndex) {
-              parentElement.insertBefore(node, childNodes[forgoChildIndex]);
-            } else {
-              parentElement.appendChild(node);
-            }
+          if (childNodes.length > forgoChildIndex) {
+            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+          } else {
+            parentElement.appendChild(node);
           }
         }
       } else {
