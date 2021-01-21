@@ -33,13 +33,13 @@ A Forgo Component is a function that returns an object with a render() function.
 import { rerender } from "forgo";
 
 function SimpleTimer() {
-  let seconds = 0; // Look ma no useState
+  let seconds = 0; // Just a regular variable, no hooks!
 
   return {
     render(props, args) {
       setTimeout(() => {
         seconds++;
-        rerender(args.element); // rerender!
+        rerender(args.element); // rerender
       }, 1000);
 
       return <div>{seconds} secs have elapsed...</div>;
@@ -107,15 +107,15 @@ function Component(props) {
 
   return {
     render(props, args) {
-      function onClick() {
+      function onclick() {
         const inputElement = myInputRef.value;
-        alert(inputElement.value); // Read the text input!
+        alert(inputElement.value); // Read the text input.
       }
 
       return (
         <div>
           <input type="text" ref={myInputRef} />
-          <button onclick={onClick}>Click me!</button>
+          <button onclick={onclick}>Click me!</button>
         </div>
       );
     },
@@ -126,7 +126,7 @@ function Component(props) {
 You can access and read form input elements using regular DOM APIs as well. For example, the following code will work just fine if you assign an id to the input element.
 
 ```jsx
-function onClick() {
+function onclick() {
   const inputElement = document.getElementById("myinput");
   alert(inputElement.value);
 }
