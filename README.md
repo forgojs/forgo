@@ -107,7 +107,7 @@ function Component(props) {
 
   return {
     render(props, args) {
-      function onclick() {
+      function onClick() {
         const inputElement = myInputRef.value;
         alert(inputElement.value); // Read the text input.
       }
@@ -115,7 +115,7 @@ function Component(props) {
       return (
         <div>
           <input type="text" ref={myInputRef} />
-          <button onclick={onclick}>Click me!</button>
+          <button onclick={onClick}>Click me!</button>
         </div>
       );
     },
@@ -126,7 +126,7 @@ function Component(props) {
 You can access and read form input elements using regular DOM APIs as well. For example, the following code will work just fine if you assign an id to the input element.
 
 ```jsx
-function onclick() {
+function onClick() {
   const inputElement = document.getElementById("myinput");
   alert(inputElement.value);
 }
@@ -140,14 +140,14 @@ function Component(props) {
 
   return {
     render(props, args) {
-      function oninput(e) {
+      function onInput(e) {
         e.preventDefault();
         alert(e.target.value);
       }
 
       return (
         <div>
-          <input type="text" oninput={oninput} />
+          <input type="text" oninput={onInput} />
         </div>
       );
     },
