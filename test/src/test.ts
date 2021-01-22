@@ -13,6 +13,7 @@ import clearsProps from "./clearsProps";
 import shouldUpdate from "./shouldUpdate";
 import renderPrimitives from "./renderPrimitives";
 import assertIsComponent from "./assertIsComponent";
+import primitiveComponent from "./primitiveComponent";
 
 boundary();
 mount();
@@ -29,3 +30,4 @@ clearsProps();
 shouldUpdate();
 renderPrimitives();
 assertIsComponent();
+primitiveComponent();
