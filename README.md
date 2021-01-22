@@ -144,8 +144,6 @@ Lastly, you can pass an event handler to an input and extract the current value 
 
 ```jsx
 function Component(initialProps) {
-  const myInputRef = {};
-
   return {
     render(props, args) {
       function onInput(e) {
@@ -193,6 +191,67 @@ function Child(initialProps) {
     render(props) {
       return <div>Hello {props.firstName}</div>;
     },
+  };
+}
+```
+
+## Asynchronous data and event-driven renders
+
+Some parts of your application may need to fetch data from asynchronous sources, or respond to events from a WebSocket / Server-Sent Events connection. You can do this by calling `rerender(args.element)` after your asynchronous operation completes. This pattern supports Promises, callbacks, and event-driven logic.
+
+One-time work can be performed in your component's `mount()` method. Your component can store information required for teardown as closure variables and perform the teardown work in its `unmount()` method.
+
+```jsx
+async function fetchData() {
+  // Do something asychronous
+  await new Promise((resolve) => {
+    setTimeout(resolve, 1000);
+  });
+  return ["Hello", "world!"];
+}
+
+
+export function App(props) {
+  // The component won't have this data until the component is mounted
+  // and fetches the data asynchronously
+  let data = null;
+  
+  // The EventSource object we create during `mount()`. WebSockets
+  // or real-time datastores would be handled similarly.
+  let es = null;
+
+  return {
+    render(_props, _args) {
+      if (!data) return <p>Loading...</p>
+
+      return (
+        <div>
+          <header>This data was fetched asynchronously</header>
+          <ul>
+            {data.map((value) =>
+              <li>{value}</li>
+            )}
+          </ul>
+        </div>
+      );
+    },
+    
+    async mount(_props, args) {
+      // You could also do this from a function you created inside the component's
+      // `render()` method, like a click handler
+      data = await fetchData();
+      rerender(args.element);
+      
+      es = new EventSource(`/events`);
+      es.onmessage = (event) => {
+        data = event.data;
+        rerender(args.element);
+      }
+    },
+    
+    unmount() {
+      es?.close();
+    }
   };
 }
 ```
