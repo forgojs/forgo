@@ -9,102 +9,125 @@ import {
   runWithUndefinedProps,
 } from "./script";
 
+const ELEMENT_NODE_TYPE = 1;
+const ATTRIBUTE_NODE_TYPE = 2;
+const TEXT_NODE_TYPE = 3;
+
 export default function renderPrimitives() {
   describe("renders primitives", () => {
-    it("renders undefined", async () => {
-      const dom = new JSDOM(htmlFile(), {
-        runScripts: "outside-only",
-        resources: "usable",
-      });
-      const window = dom.window;
-
-      runWithUndefinedProps(dom);
-
-      await new Promise<void>((resolve) => {
-        window.addEventListener("load", () => {
-          resolve();
+    [true, false].forEach((wrapped) => {
+      const wrappedText = wrapped ? " wrapped in DOM element" : "";
+      it("renders undefined" + wrappedText, async () => {
+        const dom = new JSDOM(htmlFile(), {
+          runScripts: "outside-only",
+          resources: "usable",
         });
-      });
+        const window = dom.window;
 
-      should.equal(
-        window.document.getElementById("mydiv")?.childNodes.length,
-        0
-      );
-    });
+        runWithUndefinedProps(dom, wrapped);
 
-    it("renders null", async () => {
-      const dom = new JSDOM(htmlFile(), {
-        runScripts: "outside-only",
-        resources: "usable",
-      });
-      const window = dom.window;
-
-      runWithNullProps(dom);
-
-      await new Promise<void>((resolve) => {
-        window.addEventListener("load", () => {
-          resolve();
+        await new Promise<void>((resolve) => {
+          window.addEventListener("load", () => {
+            resolve();
+          });
         });
+
+        if (wrapped) {
+          should.equal(
+            window.document.getElementById("mydiv")?.childNodes.length,
+            0
+          );
+        } else {
+          should.equal(
+            window.document.getElementById("root")?.childNodes[0].nodeType,
+            TEXT_NODE_TYPE
+          );
+        }
       });
 
-      should.equal(
-        window.document.getElementById("mydiv")?.childNodes.length,
-        0
-      );
-    });
-
-    it("renders string", async () => {
-      const dom = new JSDOM(htmlFile(), {
-        runScripts: "outside-only",
-        resources: "usable",
-      });
-      const window = dom.window;
-
-      runWithStringProps(dom);
-
-      await new Promise<void>((resolve) => {
-        window.addEventListener("load", () => {
-          resolve();
+      it("renders null" + wrappedText, async () => {
+        const dom = new JSDOM(htmlFile(), {
+          runScripts: "outside-only",
+          resources: "usable",
         });
-      });
+        const window = dom.window;
 
-      window.document.getElementById("mydiv")?.innerHTML.should.equal("hello");
-    });
+        runWithNullProps(dom, wrapped);
 
-    it("renders boolean", async () => {
-      const dom = new JSDOM(htmlFile(), {
-        runScripts: "outside-only",
-        resources: "usable",
-      });
-      const window = dom.window;
-
-      runWithBooleanProps(dom);
-
-      await new Promise<void>((resolve) => {
-        window.addEventListener("load", () => {
-          resolve();
+        await new Promise<void>((resolve) => {
+          window.addEventListener("load", () => {
+            resolve();
+          });
         });
+
+        if (wrapped) {
+          should.equal(
+            window.document.getElementById("mydiv")?.childNodes.length,
+            0
+          );
+        } else {
+          should.equal(
+            window.document.getElementById("root")?.childNodes[0].nodeType,
+            TEXT_NODE_TYPE
+          );
+        }
       });
 
-      window.document.getElementById("mydiv")?.innerHTML.should.equal("true");
-    });
-
-    it("renders number", async () => {
-      const dom = new JSDOM(htmlFile(), {
-        runScripts: "outside-only",
-        resources: "usable",
-      });
-      const window = dom.window;
-
-      runWithNumericProps(dom);
-
-      await new Promise<void>((resolve) => {
-        window.addEventListener("load", () => {
-          resolve();
+      it("renders string" + wrappedText, async () => {
+        const dom = new JSDOM(htmlFile(), {
+          runScripts: "outside-only",
+          resources: "usable",
         });
+        const window = dom.window;
+
+        runWithStringProps(dom, wrapped);
+
+        await new Promise<void>((resolve) => {
+          window.addEventListener("load", () => {
+            resolve();
+          });
+        });
+
+        window.document
+          .getElementById("mydiv")
+          ?.innerHTML.should.equal("hello");
       });
 
-      window.document.getElementById("mydiv")?.innerHTML.should.equal("100");
+      it("renders boolean" + wrappedText, async () => {
+        const dom = new JSDOM(htmlFile(), {
+          runScripts: "outside-only",
+          resources: "usable",
+        });
+        const window = dom.window;
+
+        runWithBooleanProps(dom, wrapped);
+
+        await new Promise<void>((resolve) => {
+          window.addEventListener("load", () => {
+            resolve();
+          });
+        });
+
+        window.document.getElementById("mydiv")?.innerHTML.should.equal("true");
+      });
+
+      it("renders number" + wrappedText, async () => {
+        const dom = new JSDOM(htmlFile(), {
+          runScripts: "outside-only",
+          resources: "usable",
+        });
+        const window = dom.window;
+
+        runWithNumericProps(dom, wrapped);
+
+        await new Promise<void>((resolve) => {
+          window.addEventListener("load", () => {
+            resolve();
+          });
+        });
+
+        window.document.getElementById("mydiv")?.innerHTML.should.equal("100");
+      });
     });
   });
 }

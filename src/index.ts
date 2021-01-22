@@ -47,10 +47,7 @@ export type ForgoErrorArgs = {
   2. unmount() is optional. Gets called just before unmount.
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
-  render: (
-    props: TProps,
-    args: ForgoRenderArgs
-  ) => ForgoNode;
+  render: (props: TProps, args: ForgoRenderArgs) => ForgoNode;
   error?: (
     props: TProps,
     args: ForgoErrorArgs
@@ -76,6 +73,7 @@ export type ForgoElement<
   type: TType;
   key?: any;
   props: TProps;
+  __is_forgo_element__: true;
 };
 
 /*
