@@ -539,7 +539,9 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   const forgoChildren = (Array.isArray(forgoChildrenObj)
     ? forgoChildrenObj
     : [forgoChildrenObj]
-  ).filter((x) => typeof x !== "undefined" && x !== null);
+  )
+    .filter((x) => typeof x !== "undefined" && x !== null)
+    .flat();
 
   let forgoChildIndex = 0;
 

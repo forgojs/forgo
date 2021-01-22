@@ -1,0 +1,32 @@
+import { DOMWindow, JSDOM } from "jsdom";
+import { mount, setCustomEnv } from "../../../dist";
+
+let window: DOMWindow;
+let document: HTMLDocument;
+
+const someIntegers = [1, 2, 3, 4];
+
+function BasicComponent() {
+  return {
+    render() {
+      return (
+        <div>
+          Hello world
+          {someIntegers.map((i) => (
+            <p>{i}</p>
+          ))}
+        </div>
+      );
+    },
+  };
+}
+
+export function run(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<BasicComponent />, document.getElementById("root"));
+  });
+}
