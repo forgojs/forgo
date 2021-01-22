@@ -37,7 +37,7 @@ function BasicComponentNested() {
       return (
         <div>
           Hello world
-          {someIntegers.map((i) => [<p>{i}</p>])}
+          {someIntegers.map((i) => [[[<p>{i}</p>]]])}
         </div>
       );
     },
