@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "0.0.31",
+  "version": "0.0.34",
   "main": "./dist",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {

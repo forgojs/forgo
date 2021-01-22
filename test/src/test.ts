@@ -14,6 +14,7 @@ import shouldUpdate from "./shouldUpdate";
 import renderPrimitives from "./renderPrimitives";
 import assertIsComponent from "./assertIsComponent";
 import primitiveComponent from "./primitiveComponent";
+import rendersArraysInChildren from "./rendersArraysInChildren";
 
 boundary();
 mount();
@@ -31,3 +32,4 @@ shouldUpdate();
 renderPrimitives();
 assertIsComponent();
 primitiveComponent();
+rendersArraysInChildren();
