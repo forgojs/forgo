@@ -197,68 +197,49 @@ function Child(initialProps) {
 
 ## Asynchronous data and event-driven renders
 
-Some parts of your application may need to fetch data from asynchronous sources, or respond to events from a WebSocket / Server-Sent Events connection. You can do this by calling `rerender(args.element)` after your asynchronous operation completes. This pattern supports Promises, callbacks, and event-driven logic.
+Parts of your application might need to fetch data asynchronously, and refresh your component accordingly.
 
-One-time work can be performed in your component's `mount()` method. Your component can store information required for teardown as closure variables and perform the teardown work in its `unmount()` method.
+Here's an example of how to do this:
 
 ```jsx
-async function fetchData() {
-  // Do something asychronous
-  await new Promise((resolve) => {
-    setTimeout(resolve, 1000);
-  });
-  return ["Hello", "world!"];
+async function getMessages() {
+  const data = await fetchMessagesFromServer();
+  return data;
 }
 
-
-export function App(props) {
-  // The component won't have this data until the component is mounted
-  // and fetches the data asynchronously
-  let data = null;
-  
-  // The EventSource object we create during `mount()`. WebSockets
-  // or real-time datastores would be handled similarly.
-  let es = null;
+export function InboxComponent(props) {
+  // This will be null initially.
+  let messages = undefined;
 
   return {
     render(_props, _args) {
-      if (!data) return <p>Loading...</p>
+      // Messages are empty. Fetch asynchronously 
+      if (!messages) {
+        getMessages().then((data) => {
+          messages = data.messages;
+        });
+        return <p>Loading data...</p>;
+      }
 
+      // We have messages to show.
       return (
         <div>
-          <header>This data was fetched asynchronously</header>
+          <header>Your Inbox</header>
           <ul>
-            {data.map((value) =>
-              <li>{value}</li>
-            )}
+            {messages.map((message) => (
+              <li>{message}</li>
+            ))}
           </ul>
         </div>
       );
     },
-    
-    async mount(_props, args) {
-      // You could also do this from a function you created inside the component's
-      // `render()` method, like a click handler
-      data = await fetchData();
-      rerender(args.element);
-      
-      es = new EventSource(`/events`);
-      es.onmessage = (event) => {
-        data = event.data;
-        rerender(args.element);
-      }
-    },
-    
-    unmount() {
-      es?.close();
-    }
   };
 }
 ```
 
 ## Component Unmount
 
-When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function.
+When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function. This can be used for any tear down you might want to do.
 
 ```jsx
 function Greeter(initialProps) {
