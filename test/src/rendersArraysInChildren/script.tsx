@@ -21,12 +21,35 @@ function BasicComponent() {
   };
 }
 
-export function run(dom: JSDOM) {
+export function runArrays(dom: JSDOM) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(<BasicComponent />, document.getElementById("root"));
+  });
+}
+
+function BasicComponentNested() {
+  return {
+    render() {
+      return (
+        <div>
+          Hello world
+          {someIntegers.map((i) => [<p>{i}</p>])}
+        </div>
+      );
+    },
+  };
+}
+
+export function runNestedArrays(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<BasicComponentNested />, document.getElementById("root"));
   });
 }

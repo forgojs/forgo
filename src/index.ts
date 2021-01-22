@@ -536,12 +536,12 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   const childNodes = parentElement.childNodes;
 
   // Children will not be an array if single item
-  const forgoChildren = (Array.isArray(forgoChildrenObj)
-    ? forgoChildrenObj
-    : [forgoChildrenObj]
-  )
-    .filter((x) => typeof x !== "undefined" && x !== null)
-    .flat();
+  const forgoChildren = flatten(
+    (Array.isArray(forgoChildrenObj)
+      ? forgoChildrenObj
+      : [forgoChildrenObj]
+    ).filter((x) => typeof x !== "undefined" && x !== null)
+  );
 
   let forgoChildIndex = 0;
 
@@ -913,6 +913,17 @@ export function rerender(
   } else {
     throw new Error(`Missing node information in rerender() argument.`);
   }
+}
+
+function flatten<T>(array: (T | T[])[], ret: T[] = []): T[] {
+  for (const entry of array) {
+    if (Array.isArray(entry)) {
+      flatten(entry, ret);
+    } else {
+      ret.push(entry);
+    }
+  }
+  return ret;
 }
 
 /*
