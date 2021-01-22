@@ -128,5 +128,22 @@ export default function isForgoElement() {
       mountedDom.innerHTML.should.containEql(BigInt(Number.MAX_SAFE_INTEGER + 1))
     });
 
+    it("renders normal JSX component", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
+      });
+      const window = dom.window;
+  
+      run.runNormalComponent(dom);
+  
+      const mountedDom = await new Promise<any>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve(window.document.getElementById("root"));
+        });
+      });
+      mountedDom.innerHTML.should.containEql("bar")
+    });
+
   });
 }

@@ -71,6 +71,14 @@ function BigIntComponent(): ForgoComponent<ComponentProps> {
   };
 }
 
+function NormalComponent(): ForgoComponent<ComponentProps> {
+  return {
+    render({foo}) {
+      return <div>{foo}</div>
+    },
+  };
+}
+
 export function runStringComponent(dom: JSDOM) {
   window = dom.window;
   document = window.document;
@@ -138,5 +146,15 @@ export function runBigIntComponent(dom: JSDOM) {
 
   window.addEventListener("load", () => {
     mount(<BigIntComponent foo={100} />, "#root")
+  });
+}
+
+export function runNormalComponent(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<NormalComponent foo="bar" />, "#root")
   });
 }
