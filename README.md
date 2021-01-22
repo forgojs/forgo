@@ -27,7 +27,7 @@ An easy way to get a project started is by cloning one of the following template
 
 ## A Forgo Component
 
-A Forgo Component must have a function (called Component Constructor) that returns an object with a render() function (called Component). 
+A Forgo Component must have a function (called Component Constructor) that returns an object with a render() function (called Component).
 
 Here's an Example.
 
@@ -44,7 +44,11 @@ function SimpleTimer(initialProps) {
         rerender(args.element); // rerender
       }, 1000);
 
-      return <div>{seconds} seconds have elapsed... {props.firstName}!</div>;
+      return (
+        <div>
+          {seconds} seconds have elapsed... {props.firstName}!
+        </div>
+      );
     },
   };
 }
@@ -154,6 +158,40 @@ function Component(initialProps) {
           <input type="text" oninput={onInput} />
         </div>
       );
+    },
+  };
+}
+```
+
+## Lists and Keys
+
+Keys help Forgo identify which items in a list have changed, are added, or are removed. While Forgo works well without keys, it is a good idea to add them since it avoids unnecessary component mounting and unmounting in some cases.
+
+As long as they are unique, there is no restriction on what data type you may use for the key; keys could be strings, numbers or even objects. For string keys and numeric keys, Forgo compares them by value; while for object keys, a reference equality check is used.
+
+```jsx
+function Parent() {
+  return {
+    render(props, args) {
+      const people = [
+        { firstName: "jeswin", id: 1 },
+        { firstName: "kai", id: 2 },
+      ];
+      return (
+        <div>
+          {people.map((item) => (
+            <Child key={item.key} firstName={item.firstName} />
+          ))}
+        </div>
+      );
+    },
+  };
+}
+
+function Child(initialProps) {
+  return {
+    render(props) {
+      return <div>Hello {props.firstName}</div>;
     },
   };
 }

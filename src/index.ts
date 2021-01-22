@@ -74,7 +74,7 @@ export type ForgoElement<
   TProps extends ForgoElementProps
 > = {
   type: TType;
-  key?: string | number;
+  key?: any;
   props: TProps;
 };
 
@@ -105,7 +105,7 @@ export type ForgoNode =
   Like for example, a key which uniquely identifies a child element when rendering a list.
 */
 export type NodeAttachedComponentState<TProps> = {
-  key?: string | number;
+  key?: any;
   ctor: ForgoComponentCtor<TProps>;
   component: ForgoComponent<TProps>;
   props: TProps;
