@@ -208,12 +208,12 @@ async function getMessages() {
 }
 
 export function InboxComponent(props) {
-  // This will be null initially.
+  // This will be empty initially.
   let messages = undefined;
 
   return {
     render(_props, _args) {
-      // Messages are empty. Fetch asynchronously 
+      // Messages are empty. Let's fetch them.
       if (!messages) {
         getMessages().then((data) => {
           messages = data.messages;
