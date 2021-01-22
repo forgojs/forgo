@@ -195,7 +195,7 @@ function Child(initialProps) {
 }
 ```
 
-## Asynchronous data and event-driven renders
+## Fetching data asynchronously
 
 Parts of your application might need to fetch data asynchronously, and refresh your component accordingly.
 
