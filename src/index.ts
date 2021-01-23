@@ -51,7 +51,7 @@ export type ForgoComponent<TProps extends ForgoElementProps> = {
   error?: (
     props: TProps,
     args: ForgoErrorArgs
-  ) => ForgoElement<ForgoComponentCtor<TProps>, TProps>;
+  ) => ForgoNode;
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
