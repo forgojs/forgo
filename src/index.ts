@@ -17,11 +17,11 @@ export type ForgoElementProps = {
 };
 
 /*
-  This is the constructor of a ForgoComponent
+  This is the constructor of a ForgoComponent, called a 'Component Constructor'
   
   The terminology is a little different from React here.
-  In say <MyComponent />, the MyComponent is called the ForgoComponentCtor here.
-  This function returns a ForgoComponent.
+  For example, in <MyComponent />, the MyComponent is the Component Constructor.
+  The Component Constructor is defined by the type ForgoComponentCtor, and it returns a Component (of type ForgoComponent).
 */
 export type ForgoComponentCtor<TProps extends ForgoElementProps> = (
   props: TProps
@@ -43,43 +43,54 @@ export type ForgoErrorArgs = {
 
 /*
   ForgoComponent contains three functions.
-  1. render() returns the actual DOM to render. 
-  2. unmount() is optional. Gets called just before unmount.
+  1. render() returns the actual DOM to render.
+  2. error() is called with a subcomponent throws an error.
+  3. mount() is optional. Gets called when attached to a real DOM Node.
+  4. unmount() is optional. Gets called just before unmount.
+  5. shouldUpdate() is optional. Let's you bail out of a render().
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
   render: (props: TProps, args: ForgoRenderArgs) => ForgoNode;
-  error?: (
-    props: TProps,
-    args: ForgoErrorArgs
-  ) => ForgoNode;
+  error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
 };
 
 /*
-  A ForgoElement is the output of the render function.
-  It can represent a DOM Node or a Custom Component.
+  A ForgoNode is the output of the render() function.
+  It can represent:
+  - a primitive type which becomes a DOM Text Node
+  - a DOM Element
+  - or a Custom Component.
   
-  If ForgoElement has a type property which is a string, it represents a native DOM element.
-  eg: The div in <div>Hello</div>
+  If the ForgoNode is a string, number etc, it's a primitive type.
+  eg: "hello"
 
-  If the ForgoElement represents a Custom Component, then the type points to a ForgoComponentCtor.
+  If ForgoNode has a type property which is a string, it represents a native DOM element.
+  eg: The type will be "div" for <div>Hello</div>
+
+  If the ForgoElement represents a Custom Component, then the type points to a ForgoComponentCtor
+  eg: The type will be MyComponent for <MyComponent />
 */
-export type ForgoElement<
-  TType extends string | ForgoComponentCtor<TProps>,
-  TProps extends ForgoElementProps
-> = {
-  type: TType;
+export type ForgoElementBase<TProps extends ForgoElementProps> = {
   key?: any;
   props: TProps;
   __is_forgo_element__: true;
 };
 
-/*
-  ForgoNode is either a ForgoElement or a string.
-  The strings get converted to DOM Text nodes.
-*/
+export type ForgoDOMElement<TProps> = ForgoElementBase<TProps> & {
+  type: string;
+};
+
+export type ForgoCustomComponentElement<TProps> = ForgoElementBase<TProps> & {
+  type: ForgoComponentCtor<TProps>;
+};
+
+export type ForgoElement<TProps extends ForgoElementProps> =
+  | ForgoDOMElement<TProps>
+  | ForgoCustomComponentElement<TProps>;
+
 export type ForgoNode =
   | string
   | number
@@ -88,7 +99,7 @@ export type ForgoNode =
   | null
   | BigInt
   | undefined
-  | ForgoElement<string | ForgoComponentCtor<any>, any>;
+  | ForgoElement<any>;
 
 /*
   Forgo stores Component state on the element on which it is mounted.
@@ -178,7 +189,7 @@ function internalRender(
   // HTML Element
   else if (typeof forgoNode.type === "string") {
     return renderDOMElement(
-      forgoNode as ForgoElement<string, any>,
+      forgoNode as ForgoDOMElement<any>,
       node,
       pendingAttachStates,
       fullRerender,
@@ -189,7 +200,7 @@ function internalRender(
   // We don't renderChildren since that is the CustomComponent's prerogative.
   else {
     return renderCustomComponent(
-      forgoNode as ForgoElement<ForgoComponentCtor<any>, any>,
+      forgoNode as ForgoCustomComponentElement<any>,
       node as Required<ChildNode>,
       pendingAttachStates,
       fullRerender,
@@ -259,7 +270,7 @@ function renderString(
   }
 */
 function renderDOMElement<TProps extends ForgoElementProps>(
-  forgoElement: ForgoElement<string, TProps>,
+  forgoElement: ForgoDOMElement<TProps>,
   node: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
@@ -352,7 +363,7 @@ function boundaryFallback<T>(
   Such as <MySideBar size="large" />
 */
 function renderCustomComponent<TProps extends ForgoElementProps>(
-  forgoElement: ForgoElement<ForgoComponentCtor<TProps>, TProps>,
+  forgoElement: ForgoCustomComponentElement<TProps>,
   node: Required<ChildNode> | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
@@ -525,12 +536,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   The parentElement is the actual DOM element which corresponds to forgoElement.
 */
 function renderChildNodes<TProps extends ForgoElementProps>(
-  forgoElement: ForgoElement<string | ForgoComponentCtor<TProps>, TProps>,
+  forgoParentElement: ForgoElement<TProps>,
   parentElement: HTMLElement,
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
 ) {
-  const { children: forgoChildrenObj } = forgoElement.props;
+  const { children: forgoChildrenObj } = forgoParentElement.props;
   const childNodes = parentElement.childNodes;
 
   // Children will not be an array if single item
@@ -588,7 +599,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
       // This is a Forgo DOM Element
       else if (isForgoDOMElement(forgoChild)) {
         const findResult = findReplacementCandidateForDOMElement(
-          forgoChild as ForgoElement<string, any>,
+          forgoChild,
           childNodes,
           forgoChildIndex
         );
@@ -600,7 +611,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           );
           unloadNodes(nodesToRemove);
           renderDOMElement(
-            forgoChild as ForgoElement<string, any>,
+            forgoChild,
             childNodes[forgoChildIndex],
             [],
             fullRerender
@@ -622,7 +633,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
       // This is a Custom Component
       else {
         const findResult = findReplacementCandidateForCustomComponent(
-          forgoChild as ForgoElement<ForgoComponentCtor<any>, any>,
+          forgoChild,
           childNodes,
           forgoChildIndex
         );
@@ -744,7 +755,7 @@ type CandidateSearchResult =
     b) match by the tagname
 */
 function findReplacementCandidateForDOMElement(
-  forgoElement: ForgoElement<string, any>,
+  forgoElement: ForgoElement<any>,
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
@@ -774,7 +785,7 @@ function findReplacementCandidateForDOMElement(
     b) match by the component constructor
 */
 function findReplacementCandidateForCustomComponent(
-  forgoElement: ForgoElement<ForgoComponentCtor<any>, any>,
+  forgoElement: ForgoCustomComponentElement<any>,
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
@@ -965,7 +976,7 @@ function stringOfPrimitiveNode(node: ForgoNode): string {
 /*
   Get Node Types
 */
-function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
+function isForgoElement(node: ForgoNode): node is ForgoElement<any> {
   return (
     typeof node !== "undefined" &&
     node !== null &&
@@ -973,7 +984,7 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
   );
 }
 
-function isForgoDOMElement(node: ForgoNode): node is ForgoElement<string, any> {
+function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
   return isForgoElement(node) && typeof node.type === "string";
 }
 
