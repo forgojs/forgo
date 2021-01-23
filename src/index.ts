@@ -542,6 +542,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
   );
 
   let forgoChildIndex = 0;
+  let numNodesCreated = 0;
 
   if (forgoChildren) {
     for (
@@ -551,7 +552,7 @@ function renderChildNodes<TProps extends ForgoElementProps>(
     ) {
       const forgoChild = forgoChildren[forgoChildIndex];
 
-      // We have to find a matching node candidate, if any.
+      // This is a primitive node, such as string | number etc.
       if (!isForgoElement(forgoChild)) {
         // If the first node is a text node, we could pass that along.
         // No need to replace here, callee does that.
@@ -559,22 +560,20 @@ function renderChildNodes<TProps extends ForgoElementProps>(
           childNodes[forgoChildIndex] &&
           childNodes[forgoChildIndex].nodeType === TEXT_NODE_TYPE
         ) {
-          internalRender(
+          renderString(
             stringOfPrimitiveNode(forgoChild),
             childNodes[forgoChildIndex],
             [],
-            fullRerender,
-            boundary
+            fullRerender
           );
         }
         // But otherwise, don't pass a replacement node. Just insert instead.
         else {
-          const { node } = internalRender(
+          const { node } = renderString(
             stringOfPrimitiveNode(forgoChild),
             undefined,
             [],
-            fullRerender,
-            boundary
+            fullRerender
           );
 
           if (childNodes.length > forgoChildIndex) {
@@ -583,19 +582,50 @@ function renderChildNodes<TProps extends ForgoElementProps>(
             parentElement.appendChild(node);
           }
         }
-      } else {
-        const findResult =
-          typeof forgoChild.type === "string"
-            ? findReplacementCandidateForDOMElement(
-                forgoChild as ForgoElement<string, any>,
-                childNodes,
-                forgoChildIndex
-              )
-            : findReplacementCandidateForCustomComponent(
-                forgoChild as ForgoElement<ForgoComponentCtor<any>, any>,
-                childNodes,
-                forgoChildIndex
-              );
+        // We have added one node.
+        numNodesCreated++;
+      }
+      // This is a Forgo DOM Element
+      else if (isForgoDOMElement(forgoChild)) {
+        const findResult = findReplacementCandidateForDOMElement(
+          forgoChild as ForgoElement<string, any>,
+          childNodes,
+          forgoChildIndex
+        );
+
+        if (findResult.found) {
+          const nodesToRemove = Array.from(childNodes).slice(
+            forgoChildIndex,
+            findResult.index
+          );
+          unloadNodes(nodesToRemove);
+          renderDOMElement(
+            forgoChild as ForgoElement<string, any>,
+            childNodes[forgoChildIndex],
+            [],
+            fullRerender
+          );
+        } else {
+          const { node } = internalRender(
+            forgoChild,
+            undefined,
+            [],
+            fullRerender
+          );
+          if (childNodes.length > forgoChildIndex) {
+            parentElement.insertBefore(node, childNodes[forgoChildIndex]);
+          } else {
+            parentElement.appendChild(node);
+          }
+        }
+      }
+      // This is a Custom Component
+      else {
+        const findResult = findReplacementCandidateForCustomComponent(
+          forgoChild as ForgoElement<ForgoComponentCtor<any>, any>,
+          childNodes,
+          forgoChildIndex
+        );
 
         if (findResult.found) {
           const nodesToRemove = Array.from(childNodes).slice(
@@ -933,8 +963,7 @@ function stringOfPrimitiveNode(node: ForgoNode): string {
 }
 
 /*
-  Nodes could be strings, numbers, booleans etc.
-  Treat them as strings.
+  Get Node Types
 */
 function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
   return (
@@ -942,6 +971,10 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any, any> {
     node !== null &&
     (node as any).__is_forgo_element__ === true
   );
+}
+
+function isForgoDOMElement(node: ForgoNode): node is ForgoElement<string, any> {
+  return isForgoElement(node) && typeof node.type === "string";
 }
 
 /*
