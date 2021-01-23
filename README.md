@@ -362,6 +362,8 @@ rerender(args.element, newProps, forceRerender);
 Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted.
 
 ```tsx
+import { render } from "forgo";
+
 const { node } = render(<Component />);
 
 window.addEventListener("load", () => {
