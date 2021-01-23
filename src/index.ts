@@ -172,7 +172,7 @@ export function setCustomEnv(value: any) {
 */
 function internalRender(
   forgoNode: ForgoNode,
-  node: ChildNode | undefined,
+  targetNode: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
@@ -181,7 +181,7 @@ function internalRender(
   if (!isForgoElement(forgoNode)) {
     return renderString(
       stringOfPrimitiveNode(forgoNode),
-      node,
+      targetNode,
       pendingAttachStates,
       fullRerender
     );
@@ -190,7 +190,7 @@ function internalRender(
   else if (isForgoDOMElement(forgoNode)) {
     return renderDOMElement(
       forgoNode,
-      node,
+      targetNode,
       pendingAttachStates,
       fullRerender,
       boundary
@@ -201,7 +201,7 @@ function internalRender(
   else {
     return renderCustomComponent(
       forgoNode,
-      node as Required<ChildNode>,
+      targetNode as Required<ChildNode>,
       pendingAttachStates,
       fullRerender,
       boundary
@@ -223,17 +223,17 @@ function internalRender(
 */
 function renderString(
   text: string,
-  node: ChildNode | undefined,
+  targetNode: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean
 ): { node: ChildNode } {
   // Text nodes will always be recreated
   const textNode = env.document.createTextNode(text);
 
-  if (node) {
+  if (targetNode) {
     // We have to get oldStates before attachProps;
     // coz attachProps will overwrite with new states.
-    const oldComponentStates = getForgoState(node)?.components;
+    const oldComponentStates = getForgoState(targetNode)?.components;
 
     attachProps(text, textNode, pendingAttachStates);
 
@@ -248,7 +248,7 @@ function renderString(
       mountComponents(pendingAttachStates, 0);
     }
 
-    node.replaceWith(textNode);
+    targetNode.replaceWith(textNode);
   } else {
     attachProps(text, textNode, pendingAttachStates);
     mountComponents(pendingAttachStates, 0);
@@ -271,30 +271,30 @@ function renderString(
 */
 function renderDOMElement<TProps extends ForgoElementProps>(
   forgoElement: ForgoDOMElement<TProps>,
-  node: ChildNode | undefined,
+  targetNode: ChildNode | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
 ): { node: ChildNode } {
-  if (node) {
+  if (targetNode) {
     let nodeToBindTo: ChildNode;
 
     // if the nodes are not of the same of the same type, we need to replace.
     if (
-      node.nodeType === TEXT_NODE_TYPE ||
-      ((node as HTMLElement).tagName &&
-        (node as HTMLElement).tagName.toLowerCase() !== forgoElement.type)
+      targetNode.nodeType === TEXT_NODE_TYPE ||
+      ((targetNode as HTMLElement).tagName &&
+        (targetNode as HTMLElement).tagName.toLowerCase() !== forgoElement.type)
     ) {
       const newElement = env.document.createElement(forgoElement.type);
-      node.replaceWith(newElement);
+      targetNode.replaceWith(newElement);
       nodeToBindTo = newElement;
     } else {
-      nodeToBindTo = node;
+      nodeToBindTo = targetNode;
     }
 
     // We have to get oldStates before attachProps;
     // coz attachProps will overwrite with new states.
-    const oldComponentStates = getForgoState(node)?.components;
+    const oldComponentStates = getForgoState(targetNode)?.components;
 
     attachProps(forgoElement, nodeToBindTo, pendingAttachStates);
 
@@ -331,7 +331,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 }
 
 function boundaryFallback<T>(
-  node: ChildNode | undefined,
+  targetNode: ChildNode | undefined,
   props: any,
   args: ForgoRenderArgs,
   statesToAttach: NodeAttachedComponentState<any>[],
@@ -347,7 +347,7 @@ function boundaryFallback<T>(
       const newForgoElement = boundary.error(props, errorArgs);
       return internalRender(
         newForgoElement,
-        node,
+        targetNode,
         statesToAttach,
         fullRerender,
         boundary
@@ -364,13 +364,13 @@ function boundaryFallback<T>(
 */
 function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoCustomComponentElement<TProps>,
-  node: Required<ChildNode> | undefined,
+  targetNode: Required<ChildNode> | undefined,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
 ): { node: ChildNode; boundary?: ForgoComponent<any> } {
-  if (node) {
-    const state = getExistingForgoState(node);
+  if (targetNode) {
+    const state = getExistingForgoState(targetNode);
 
     const componentIndex = pendingAttachStates.length;
     const componentState = state.components[componentIndex];
@@ -404,7 +404,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           );
 
           return boundaryFallback(
-            node,
+            targetNode,
             forgoElement.props,
             componentState.args,
             statesToAttach,
@@ -414,7 +414,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
               // Pass it on for rendering...
               return internalRender(
                 newForgoElement,
-                node,
+                targetNode,
                 statesToAttach,
                 fullRerender,
                 boundary
@@ -424,12 +424,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         }
         // shouldUpdate() returned false
         else {
-          return { node, boundary };
+          return { node: targetNode, boundary };
         }
       }
       // not a fullRender and havePropsChanged() returned false
       else {
-        return { node, boundary };
+        return { node: targetNode, boundary };
       }
     }
     // We don't have compatible state, have to create a new component.
@@ -454,7 +454,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       const statesToAttach = pendingAttachStates.concat(newComponentState);
 
       return boundaryFallback(
-        node,
+        targetNode,
         forgoElement.props,
         args,
         statesToAttach,
@@ -467,7 +467,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           // Pass it on for rendering...
           return internalRender(
             newForgoElement,
-            node,
+            targetNode,
             statesToAttach,
             fullRerender,
             boundary
