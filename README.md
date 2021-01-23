@@ -207,16 +207,17 @@ async function getMessages() {
   return data;
 }
 
-export function InboxComponent(props) {
+export function InboxComponent(initialProps) {
   // This will be empty initially.
   let messages = undefined;
 
   return {
-    render(_props, _args) {
+    render(props, args) {
       // Messages are empty. Let's fetch them.
       if (!messages) {
         getMessages().then((data) => {
           messages = data.messages;
+          rerender(args.element);
         });
         return <p>Loading data...</p>;
       }
