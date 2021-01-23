@@ -187,9 +187,9 @@ function internalRender(
     );
   }
   // HTML Element
-  else if (typeof forgoNode.type === "string") {
+  else if (isForgoDOMElement(forgoNode)) {
     return renderDOMElement(
-      forgoNode as ForgoDOMElement<any>,
+      forgoNode,
       node,
       pendingAttachStates,
       fullRerender,
@@ -200,7 +200,7 @@ function internalRender(
   // We don't renderChildren since that is the CustomComponent's prerogative.
   else {
     return renderCustomComponent(
-      forgoNode as ForgoCustomComponentElement<any>,
+      forgoNode,
       node as Required<ChildNode>,
       pendingAttachStates,
       fullRerender,
@@ -536,7 +536,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   The parentElement is the actual DOM element which corresponds to forgoElement.
 */
 function renderChildNodes<TProps extends ForgoElementProps>(
-  forgoParentElement: ForgoElement<TProps>,
+  forgoParentElement: ForgoDOMElement<TProps>,
   parentElement: HTMLElement,
   fullRerender: boolean,
   boundary?: ForgoComponent<any>
@@ -754,8 +754,8 @@ type CandidateSearchResult =
     a) match by the key
     b) match by the tagname
 */
-function findReplacementCandidateForDOMElement(
-  forgoElement: ForgoElement<any>,
+function findReplacementCandidateForDOMElement<TProps>(
+  forgoElement: ForgoDOMElement<TProps>,
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
@@ -784,8 +784,8 @@ function findReplacementCandidateForDOMElement(
     a) match by the key
     b) match by the component constructor
 */
-function findReplacementCandidateForCustomComponent(
-  forgoElement: ForgoCustomComponentElement<any>,
+function findReplacementCandidateForCustomComponent<TProps>(
+  forgoElement: ForgoCustomComponentElement<TProps>,
   nodes: NodeListOf<ChildNode>,
   searchNodesFrom: number
 ): CandidateSearchResult {
@@ -1012,9 +1012,9 @@ export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
 /*
   Throw if component is a non-component
 */
-function assertIsComponent(
-  ctor: ForgoComponentCtor<any>,
-  component: ForgoComponent<any>
+function assertIsComponent<TProps>(
+  ctor: ForgoComponentCtor<TProps>,
+  component: ForgoComponent<TProps>
 ) {
   if (!component.render) {
     throw new Error(
