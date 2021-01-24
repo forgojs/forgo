@@ -32,13 +32,13 @@ This process is easier with degit:
 For JavaScript:
 
 ```sh
-npx degit forgojs/template-javascript#main my-project
+npx degit forgojs/forgo-template-javascript#main my-project
 ```
 
 For TypeScript:
 
 ```sh
-npx degit forgojs/template-typescript#main my-project
+npx degit forgojs/forgo-template-typescript#main my-project
 ```
 
 And then to run it:
