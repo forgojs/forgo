@@ -22,7 +22,7 @@ npm i forgo
 
 ### Starting a Forgo project
 
-There are a couple ready-made templates on GitHub to help you with the initial project scaffolding. These templates use parcel as the bundler/build tool.
+There are a couple ready-made templates on GitHub to help you with the initial project scaffolding. These templates use parcel(v2) as the bundler/build tool.
 
 - [Starter-kit using JavaScript](https://github.com/forgojs/forgo-template-javascript)
 - [Starter-kit using TypeScript](https://github.com/forgojs/forgo-template-typescript)
