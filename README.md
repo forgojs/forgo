@@ -24,8 +24,8 @@ npm i forgo
 
 There are also a couple ready-made templates on GitHub to help you with the initial project scaffolding. These templates use parcel as the bundler/build tool.
 
-- [Starter-kit using JavaScript](https://github.com/forgojs/template-javascript)
-- [Starter-kit using TypeScript](https://github.com/forgojs/template-typescript)
+- [Starter-kit using JavaScript](https://github.com/forgojs/forgo-template-javascript)
+- [Starter-kit using TypeScript](https://github.com/forgojs/forgo-template-typescript)
 
 This process is easier with degit:
 
