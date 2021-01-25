@@ -282,23 +282,6 @@ function Greeter(initialProps) {
 }
 ```
 
-## Component mount
-
-You'd rarely have to use this. mount() gets called with the same arguments as render () but after getting mounted on a real DOM node. At this point you can expect args.element.node to be populated, where args is the second parameter to mount() and render().
-
-```jsx
-function Greeter(initialProps) {
-  return {
-    render(props, args) {
-      return <div id="hello">Hello {props.firstName}</div>;
-    },
-    mount(props, args) {
-      console.log(`Mounted on node with id ${args.element.node.id}`);
-    },
-  };
-}
-```
-
 ## Bailing out of a render
 
 When the shouldUpdate() function is defined for a component, Forgo will call it with newProps and oldProps and check if the return value is true before rendering the component. Returning false will skip rendering the component.
