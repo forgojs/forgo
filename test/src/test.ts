@@ -1,5 +1,5 @@
-import boundary from "./boundary";
 import mount from "./mount";
+import boundary from "./boundary";
 import passProps from "./passProps";
 import elementRef from "./elementRef";
 import rerender from "./rerender";
@@ -15,8 +15,8 @@ import renderPrimitives from "./renderPrimitives";
 import assertIsComponent from "./assertIsComponent";
 import rendersArraysInChildren from "./rendersArraysInChildren";
 
-boundary();
 mount();
+boundary();
 passProps();
 elementRef();
 rerender();
