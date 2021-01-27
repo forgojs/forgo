@@ -10,14 +10,6 @@ import {
 let window: DOMWindow;
 let document: HTMLDocument;
 
-function GoodComponent() {
-  return {
-    render() {
-      return <p>GoodComponent rendered!</p>;
-    },
-  };
-}
-
 function ErrorComponent() {
   return {
     render() {
@@ -52,10 +44,6 @@ function App() {
     render() {
       return (
         <div>
-          <ErrorBoundary name="GoodComponent">
-            <GoodComponent />
-          </ErrorBoundary>
-
           <ErrorBoundary name="ErrorComponent">
             <ErrorComponent />
           </ErrorBoundary>

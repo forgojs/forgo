@@ -19,7 +19,6 @@ export default function boundary() {
       });
     });
 
-    innerHtml.should.containEql("GoodComponent rendered!");
     innerHtml.should.containEql(
       "Error in ErrorComponent: Some error occurred :("
     );

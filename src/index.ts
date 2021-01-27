@@ -192,7 +192,6 @@ export type RenderResult = {
   nodesAdded: number;
   nodesRemoved: number;
   nodes: ChildNode[];
-  boundary: ForgoComponent<any> | undefined;
 };
 
 /*
@@ -208,8 +207,7 @@ function internalRender(
   forgoNode: ForgoNode | ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean,
-  boundary: ForgoComponent<any> | undefined
+  fullRerender: boolean
 ): RenderResult {
   // Array of Nodes
   if (Array.isArray(forgoNode)) {
@@ -217,8 +215,7 @@ function internalRender(
       forgoNode,
       nodeInsertionOptions,
       pendingAttachStates,
-      fullRerender,
-      boundary
+      fullRerender
     );
   }
   // Primitive Nodes
@@ -231,8 +228,7 @@ function internalRender(
       forgoNode,
       nodeInsertionOptions,
       pendingAttachStates,
-      fullRerender,
-      boundary
+      fullRerender
     );
   }
   // Custom Component.
@@ -241,8 +237,7 @@ function internalRender(
       forgoNode,
       nodeInsertionOptions,
       pendingAttachStates,
-      fullRerender,
-      boundary
+      fullRerender
     );
   }
 }
@@ -276,7 +271,6 @@ function renderText(
       nodesAdded: 1,
       nodesRemoved: 0,
       nodes: [textNode],
-      boundary: undefined,
     };
   }
   // We have to replace an existing node
@@ -289,7 +283,6 @@ function renderText(
       nodesAdded: 1,
       nodesRemoved: 1,
       nodes: [textNode],
-      boundary: undefined,
     };
   }
   // We have to find a node to replace.
@@ -306,7 +299,6 @@ function renderText(
           nodesAdded: 1,
           nodesRemoved: 1,
           nodes: [textNode],
-          boundary: undefined,
         };
       } else {
         attachProps(forgoNode, textNode, pendingAttachStates);
@@ -316,7 +308,6 @@ function renderText(
           nodesAdded: 1,
           nodesRemoved: 0,
           nodes: [textNode],
-          boundary: undefined,
         };
       }
     }
@@ -338,7 +329,6 @@ function renderText(
         nodesAdded: 1,
         nodesRemoved: 0,
         nodes: [textNode],
-        boundary: undefined,
       };
     }
   }
@@ -360,15 +350,14 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   forgoElement: ForgoDOMElement<TProps>,
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean,
-  boundary: ForgoComponent<any> | undefined
+  fullRerender: boolean
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
     let newElement: HTMLElement = env.document.createElement(forgoElement.type);
     attachProps(forgoElement, newElement, pendingAttachStates);
     renderDOMElementChildNodes(newElement);
-    return { nodesAdded: 1, nodesRemoved: 1, nodes: [newElement], boundary };
+    return { nodesAdded: 1, nodesRemoved: 1, nodes: [newElement] };
   }
   // We have to replace an existing node
   else if (nodeInsertionOptions.type === "replace") {
@@ -398,7 +387,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       nodesAdded: 1,
       nodesRemoved: 1,
       nodes: [elementToBindTo],
-      boundary,
     };
   }
   // We have to find a node to replace.
@@ -431,7 +419,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           nodesRemoved:
             searchResult.index - nodeInsertionOptions.currentNodeIndex + 1,
           nodes: [targetNode],
-          boundary,
         };
       } else {
         const newElement = addNewDOMElement(
@@ -443,7 +430,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           nodesAdded: 1,
           nodesRemoved: 0,
           nodes: [newElement],
-          boundary,
         };
       }
     } else {
@@ -456,7 +442,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
         nodesAdded: 1,
         nodesRemoved: 0,
         nodes: [newElement],
-        boundary,
       };
     }
   }
@@ -484,8 +469,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           length: parentElement.childNodes.length - currentChildNodeIndex,
         },
         [],
-        fullRerender,
-        boundary
+        fullRerender
       );
       currentChildNodeIndex += childNodesAdded;
     }
@@ -515,8 +499,8 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoCustomComponentElement<TProps>,
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean,
-  boundary: ForgoComponent<any> | undefined
+  fullRerender: boolean
+  // boundary: ForgoComponent<any> | undefined
 ): RenderResult {
   const componentIndex = pendingAttachStates.length;
 
@@ -608,6 +592,10 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           componentState.args
         );
 
+        const boundary = componentState.component.error
+          ? componentState.component
+          : undefined;
+
         return boundaryFallback(
           forgoElement.props,
           componentState.args,
@@ -619,8 +607,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
               newForgoElement,
               nodeInsertionOptions,
               statesToAttach,
-              fullRerender,
-              boundary
+              fullRerender
             );
           }
         );
@@ -631,7 +618,6 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           nodesAdded: componentState.numNodes,
           nodesRemoved: 0,
           nodes: [componentState.args.element.node as ChildNode],
-          boundary,
         };
       }
     }
@@ -641,7 +627,6 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         nodesAdded: componentState.numNodes,
         nodesRemoved: 0,
         nodes: [componentState.args.element.node as ChildNode],
-        boundary,
       };
     }
   }
@@ -653,7 +638,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     const component = ctor(forgoElement.props);
     assertIsComponent(ctor, component);
 
-    boundary = component.error ? component : boundary;
+    const boundary = component.error ? component : undefined;
 
     // Create new component state
     // ... and push it to pendingAttachStates
@@ -682,8 +667,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           newForgoElement,
           nodeInsertionOptions,
           statesToAttach,
-          fullRerender,
-          boundary
+          fullRerender
         );
       }
     );
@@ -706,8 +690,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           newForgoElement,
           nodeInsertionOptions,
           statesToAttach,
-          fullRerender,
-          boundary
+          fullRerender
         );
       } else {
         throw error;
@@ -720,8 +703,7 @@ function renderArray(
   forgoElement: ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean,
-  boundary: ForgoComponent<any> | undefined
+  fullRerender: boolean
 ): RenderResult {
   throw new Error("Not implemented.");
 }
@@ -965,8 +947,7 @@ export function mount(
         parentElement,
       },
       [],
-      true,
-      undefined
+      true
     );
   } else {
     throw new Error(
@@ -988,8 +969,7 @@ export function render(forgoNode: ForgoNode) {
       type: "detached",
     },
     [],
-    true,
-    undefined
+    true
   );
   return { node: renderResult.nodes[0], nodes: renderResult.nodes };
 }
@@ -1048,8 +1028,7 @@ export function rerender(
               .parentElement as HTMLElement,
           },
           statesToAttach,
-          fullRerender,
-          undefined
+          fullRerender
         );
       }
     } else {
