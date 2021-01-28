@@ -264,13 +264,13 @@ function renderText(
 
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
+    syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
     return { nodes: [textNode] };
   }
   // We have to replace an existing node
   else if (nodeInsertionOptions.type === "replace") {
     let targetNode = nodeInsertionOptions.node;
-    syncUpdatedStates(forgoNode, textNode, targetNode, pendingAttachStates);
+    syncStateAndProps(forgoNode, textNode, targetNode, pendingAttachStates);
     targetNode.replaceWith(textNode);
     return { nodes: [textNode] };
   }
@@ -281,11 +281,11 @@ function renderText(
     if (nodeInsertionOptions.length) {
       let targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
       if (targetNode.nodeType === TEXT_NODE_TYPE) {
-        syncUpdatedStates(forgoNode, textNode, targetNode, pendingAttachStates);
+        syncStateAndProps(forgoNode, textNode, targetNode, pendingAttachStates);
         targetNode.replaceWith(textNode);
         return { nodes: [textNode] };
       } else {
-        syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
+        syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
         const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
         return { nodes: [textNode] };
@@ -294,7 +294,7 @@ function renderText(
     // There are no target nodes available
     else {
       const childNodes = nodeInsertionOptions.parentElement.childNodes;
-      syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
+      syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
       if (
         childNodes.length === 0 ||
         nodeInsertionOptions.currentNodeIndex === 0
@@ -330,7 +330,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
     let newElement: HTMLElement = env.document.createElement(forgoElement.type);
-    syncUpdatedStates(
+    syncStateAndProps(
       forgoElement,
       newElement,
       newElement,
@@ -355,7 +355,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       nodeInsertionOptions.node.replaceWith(elementToBindTo);
     }
 
-    syncUpdatedStates(
+    syncStateAndProps(
       forgoElement,
       elementToBindTo,
       nodeInsertionOptions.node,
@@ -387,7 +387,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 
         const targetNode = childNodes[searchResult.index] as HTMLElement;
 
-        syncUpdatedStates(
+        syncStateAndProps(
           forgoElement,
           targetNode,
           targetNode,
@@ -456,7 +456,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       forgoElement.props.ref.value = newElement;
     }
     parentElement.insertBefore(newElement, oldNode);
-    syncUpdatedStates(
+    syncStateAndProps(
       forgoElement,
       newElement,
       newElement,
@@ -482,7 +482,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    return addNewCustomComponent();
+    return addNewComponent();
   }
   // We have to replace an existing node
   else if (nodeInsertionOptions.type === "replace") {
@@ -496,7 +496,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     if (haveCompatibleState) {
       return renderExistingComponent(componentState);
     } else {
-      return addNewCustomComponent();
+      return addNewComponent();
     }
   }
   // We have to find a node to replace.
@@ -530,16 +530,16 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           const renderResult = renderExistingComponent(componentState);
           return { nodes: renderResult.nodes };
         } else {
-          const renderResult = addNewCustomComponent();
+          const renderResult = addNewComponent();
           return { nodes: renderResult.nodes };
         }
       }
       // No matching node
       else {
-        return addNewCustomComponent();
+        return addNewComponent();
       }
     } else {
-      return addNewCustomComponent();
+      return addNewComponent();
     }
   }
 
@@ -601,7 +601,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     }
   }
 
-  function addNewCustomComponent(): RenderResult {
+  function addNewComponent(): RenderResult {
     const args: ForgoRenderArgs = { element: { componentIndex, numNodes: 1 } };
 
     const ctor = forgoElement.type;
@@ -678,7 +678,7 @@ function renderArray(
   throw new Error("Not implemented.");
 }
 
-function syncUpdatedStates(
+function syncStateAndProps(
   forgoNode: ForgoNode,
   newNode: ChildNode,
   targetNode: ChildNode,
