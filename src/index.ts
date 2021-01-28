@@ -168,18 +168,11 @@ export function setCustomEnv(value: any) {
 /*
   NodeReplacementOptions decide how nodes get attached by the callee function.
   type = "detached" does not attach the node to the parent.
-  type = "replace" attaches the newly created node on to a specific node.
   type = "search" requires the callee function to search for a compatible replacement.
 */
 export type NodeInsertionOptions =
   | {
       type: "detached";
-    }
-  | {
-      type: "replace";
-      parentElement: HTMLElement;
-      node: ChildNode;
-      nodes: ChildNode[];
     }
   | {
       type: "search";
@@ -267,13 +260,6 @@ function renderText(
     syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
     return { nodes: [textNode] };
   }
-  // We have to replace an existing node
-  else if (nodeInsertionOptions.type === "replace") {
-    let targetNode = nodeInsertionOptions.node;
-    syncStateAndProps(forgoNode, textNode, targetNode, pendingAttachStates);
-    targetNode.replaceWith(textNode);
-    return { nodes: [textNode] };
-  }
   // We have to find a node to replace.
   else {
     // If we're searching in a list, we replace if the current node is a text node.
@@ -338,32 +324,6 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     );
     renderDOMElementChildNodes(newElement);
     return { nodes: [newElement] };
-  }
-  // We have to replace an existing node
-  else if (nodeInsertionOptions.type === "replace") {
-    const canReuseExistingElement =
-      nodeInsertionOptions.node.nodeType === ELEMENT_NODE_TYPE &&
-      (nodeInsertionOptions.node as HTMLElement).tagName.toLowerCase() ===
-        forgoElement.type;
-
-    let elementToBindTo: HTMLElement;
-
-    if (canReuseExistingElement) {
-      elementToBindTo = nodeInsertionOptions.node as HTMLElement;
-    } else {
-      elementToBindTo = env.document.createElement(forgoElement.type);
-      nodeInsertionOptions.node.replaceWith(elementToBindTo);
-    }
-
-    syncStateAndProps(
-      forgoElement,
-      elementToBindTo,
-      nodeInsertionOptions.node,
-      pendingAttachStates
-    );
-    renderDOMElementChildNodes(elementToBindTo);
-
-    return { nodes: [elementToBindTo] };
   }
   // We have to find a node to replace.
   else {
@@ -483,21 +443,6 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
     return addNewComponent();
-  }
-  // We have to replace an existing node
-  else if (nodeInsertionOptions.type === "replace") {
-    const state = getExistingForgoState(nodeInsertionOptions.node);
-
-    const componentIndex = pendingAttachStates.length;
-    const componentState = state.components[componentIndex];
-    const haveCompatibleState =
-      componentState && componentState.ctor === forgoElement.type;
-
-    if (haveCompatibleState) {
-      return renderExistingComponent(componentState);
-    } else {
-      return addNewComponent();
-    }
   }
   // We have to find a node to replace.
   else {
