@@ -519,10 +519,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           )
         );
 
-        const numNodesRemoved =
-          searchResult.index - nodeInsertionOptions.currentNodeIndex;
-
-        const targetNode = childNodes[searchResult.index];
+        const targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         const state = getExistingForgoState(targetNode);
         const componentState = state.components[componentIndex];
 
