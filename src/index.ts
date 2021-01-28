@@ -189,8 +189,6 @@ export type NodeInsertionOptions =
     };
 
 export type RenderResult = {
-  nodesAdded: number;
-  nodesRemoved: number;
   nodes: ChildNode[];
 };
 
@@ -266,24 +264,15 @@ function renderText(
 
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    attachProps(forgoNode, textNode, pendingAttachStates);
-    return {
-      nodesAdded: 1,
-      nodesRemoved: 0,
-      nodes: [textNode],
-    };
+    syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
+    return { nodes: [textNode] };
   }
   // We have to replace an existing node
   else if (nodeInsertionOptions.type === "replace") {
     let targetNode = nodeInsertionOptions.node;
-    syncUpdatedStates(forgoNode, targetNode, pendingAttachStates);
-    attachProps(forgoNode, textNode, pendingAttachStates);
+    syncUpdatedStates(forgoNode, textNode, targetNode, pendingAttachStates);
     targetNode.replaceWith(textNode);
-    return {
-      nodesAdded: 1,
-      nodesRemoved: 1,
-      nodes: [textNode],
-    };
+    return { nodes: [textNode] };
   }
   // We have to find a node to replace.
   else {
@@ -292,30 +281,20 @@ function renderText(
     if (nodeInsertionOptions.length) {
       let targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
       if (targetNode.nodeType === TEXT_NODE_TYPE) {
-        syncUpdatedStates(forgoNode, targetNode, pendingAttachStates);
-        attachProps(forgoNode, textNode, pendingAttachStates);
+        syncUpdatedStates(forgoNode, textNode, targetNode, pendingAttachStates);
         targetNode.replaceWith(textNode);
-        return {
-          nodesAdded: 1,
-          nodesRemoved: 1,
-          nodes: [textNode],
-        };
+        return { nodes: [textNode] };
       } else {
-        attachProps(forgoNode, textNode, pendingAttachStates);
+        syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
         const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
-        return {
-          nodesAdded: 1,
-          nodesRemoved: 0,
-          nodes: [textNode],
-        };
+        return { nodes: [textNode] };
       }
     }
     // There are no target nodes available
     else {
       const childNodes = nodeInsertionOptions.parentElement.childNodes;
-
-      attachProps(forgoNode, textNode, pendingAttachStates);
+      syncUpdatedStates(forgoNode, textNode, textNode, pendingAttachStates);
       if (
         childNodes.length === 0 ||
         nodeInsertionOptions.currentNodeIndex === 0
@@ -325,11 +304,7 @@ function renderText(
         const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
       }
-      return {
-        nodesAdded: 1,
-        nodesRemoved: 0,
-        nodes: [textNode],
-      };
+      return { nodes: [textNode] };
     }
   }
 }
@@ -355,9 +330,14 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
     let newElement: HTMLElement = env.document.createElement(forgoElement.type);
-    attachProps(forgoElement, newElement, pendingAttachStates);
+    syncUpdatedStates(
+      forgoElement,
+      newElement,
+      newElement,
+      pendingAttachStates
+    );
     renderDOMElementChildNodes(newElement);
-    return { nodesAdded: 1, nodesRemoved: 1, nodes: [newElement] };
+    return { nodes: [newElement] };
   }
   // We have to replace an existing node
   else if (nodeInsertionOptions.type === "replace") {
@@ -377,17 +357,13 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 
     syncUpdatedStates(
       forgoElement,
+      elementToBindTo,
       nodeInsertionOptions.node,
       pendingAttachStates
     );
-    attachProps(forgoElement, elementToBindTo, pendingAttachStates);
     renderDOMElementChildNodes(elementToBindTo);
 
-    return {
-      nodesAdded: 1,
-      nodesRemoved: 1,
-      nodes: [elementToBindTo],
-    };
+    return { nodes: [elementToBindTo] };
   }
   // We have to find a node to replace.
   else {
@@ -405,44 +381,35 @@ function renderDOMElement<TProps extends ForgoElementProps>(
         unloadNodes(
           Array.from(childNodes).slice(
             nodeInsertionOptions.currentNodeIndex,
-            searchResult.index - nodeInsertionOptions.currentNodeIndex
+            searchResult.index
           )
         );
 
         const targetNode = childNodes[searchResult.index] as HTMLElement;
-        syncUpdatedStates(forgoElement, targetNode, pendingAttachStates);
-        attachProps(forgoElement, targetNode, pendingAttachStates);
+
+        syncUpdatedStates(
+          forgoElement,
+          targetNode,
+          targetNode,
+          pendingAttachStates
+        );
+
         renderDOMElementChildNodes(targetNode);
 
-        return {
-          nodesAdded: 1,
-          nodesRemoved:
-            searchResult.index - nodeInsertionOptions.currentNodeIndex + 1,
-          nodes: [targetNode],
-        };
+        return { nodes: [targetNode] };
       } else {
         const newElement = addNewDOMElement(
           nodeInsertionOptions.parentElement,
           childNodes[nodeInsertionOptions.currentNodeIndex]
         );
-        renderDOMElementChildNodes(newElement);
-        return {
-          nodesAdded: 1,
-          nodesRemoved: 0,
-          nodes: [newElement],
-        };
+        return { nodes: [newElement] };
       }
     } else {
       const newElement = addNewDOMElement(
         nodeInsertionOptions.parentElement,
         childNodes[nodeInsertionOptions.currentNodeIndex]
       );
-      renderDOMElementChildNodes(newElement);
-      return {
-        nodesAdded: 1,
-        nodesRemoved: 0,
-        nodes: [newElement],
-      };
+      return { nodes: [newElement] };
     }
   }
 
@@ -460,7 +427,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     let currentChildNodeIndex = 0;
 
     for (const forgoChild of forgoChildren) {
-      const { nodesAdded: childNodesAdded } = internalRender(
+      const { nodes } = internalRender(
         forgoChild,
         {
           type: "search",
@@ -471,7 +438,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
         [],
         fullRerender
       );
-      currentChildNodeIndex += childNodesAdded;
+      currentChildNodeIndex += nodes.length;
     }
 
     // Get rid the the remaining nodes
@@ -485,8 +452,17 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     oldNode: ChildNode
   ): HTMLElement {
     const newElement = env.document.createElement(forgoElement.type);
+    if (forgoElement.props.ref) {
+      forgoElement.props.ref.value = newElement;
+    }
     parentElement.insertBefore(newElement, oldNode);
-    attachProps(forgoElement, newElement, pendingAttachStates);
+    syncUpdatedStates(
+      forgoElement,
+      newElement,
+      newElement,
+      pendingAttachStates
+    );
+    renderDOMElementChildNodes(newElement);
     return newElement;
   }
 }
@@ -539,9 +515,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         unloadNodes(
           Array.from(childNodes).slice(
             nodeInsertionOptions.currentNodeIndex,
-            searchResult.index - nodeInsertionOptions.currentNodeIndex
+            searchResult.index
           )
         );
+
+        const numNodesRemoved =
+          searchResult.index - nodeInsertionOptions.currentNodeIndex;
 
         const targetNode = childNodes[searchResult.index];
         const state = getExistingForgoState(targetNode);
@@ -551,9 +530,11 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           componentState && componentState.ctor === forgoElement.type;
 
         if (haveCompatibleState) {
-          return renderExistingComponent(componentState);
+          const renderResult = renderExistingComponent(componentState);
+          return { nodes: renderResult.nodes };
         } else {
-          return addNewCustomComponent();
+          const renderResult = addNewCustomComponent();
+          return { nodes: renderResult.nodes };
         }
       }
       // No matching node
@@ -596,7 +577,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           ? componentState.component
           : undefined;
 
-        return boundaryFallback(
+        return withErrorBoundary(
           forgoElement.props,
           componentState.args,
           statesToAttach,
@@ -614,20 +595,12 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       }
       // shouldUpdate() returned false
       else {
-        return {
-          nodesAdded: componentState.numNodes,
-          nodesRemoved: 0,
-          nodes: [componentState.args.element.node as ChildNode],
-        };
+        return { nodes: [componentState.args.element.node as ChildNode] };
       }
     }
     // not a fullRender and havePropsChanged() returned false
     else {
-      return {
-        nodesAdded: componentState.numNodes,
-        nodesRemoved: 0,
-        nodes: [componentState.args.element.node as ChildNode],
-      };
+      return { nodes: [componentState.args.element.node as ChildNode] };
     }
   }
 
@@ -653,7 +626,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
     const statesToAttach = pendingAttachStates.concat(newComponentState);
 
-    return boundaryFallback(
+    return withErrorBoundary(
       forgoElement.props,
       args,
       statesToAttach,
@@ -673,7 +646,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     );
   }
 
-  function boundaryFallback(
+  function withErrorBoundary(
     props: TProps,
     args: ForgoRenderArgs,
     statesToAttach: NodeAttachedComponentState<any>[],
@@ -710,6 +683,7 @@ function renderArray(
 
 function syncUpdatedStates(
   forgoNode: ForgoNode,
+  newNode: ChildNode,
   targetNode: ChildNode,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ) {
@@ -717,12 +691,17 @@ function syncUpdatedStates(
   // coz attachProps will overwrite with new states.
   const oldComponentStates = getForgoState(targetNode)?.components;
 
+  attachProps(forgoNode, newNode, pendingAttachStates);
+
   if (oldComponentStates) {
     const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
       pendingAttachStates,
       oldComponentStates
     );
     unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
+    mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
+  } else {
+    mountComponents(pendingAttachStates, 0);
   }
 }
 
@@ -734,11 +713,11 @@ function syncUpdatedStates(
 */
 function unloadNodes(nodes: ChildNode[]) {
   for (const node of nodes) {
-    node.remove();
     const state = getForgoState(node);
     if (state) {
       unmountComponents(state.components, 0);
     }
+    node.remove();
   }
 }
 
@@ -780,6 +759,18 @@ function unmountComponents(
     const state = states[j];
     if (state.component.unmount) {
       state.component.unmount(state.props, state.args);
+    }
+  }
+}
+
+function mountComponents(
+  states: NodeAttachedComponentState<any>[],
+  from: number
+) {
+  for (let j = from; j < states.length; j++) {
+    const state = states[j];
+    if (state.component.mount) {
+      state.component.mount(state.props, state.args);
     }
   }
 }
