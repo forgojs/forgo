@@ -1,5 +1,11 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../";
+import {
+  ForgoRenderArgs,
+  ForgoAfterRenderArgs,
+  mount,
+  rerender,
+  setCustomEnv,
+} from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -12,7 +18,8 @@ function Component() {
       counter++;
       return <div id="hello">Hello world</div>;
     },
-    afterRender(props: any, args: ForgoRenderArgs) {
+    afterRender(props: any, args: ForgoAfterRenderArgs) {
+      (window as any).previousNode = args.previousNode;
       (window as any).componentCounter = counter * 10;
     },
   };
@@ -26,7 +33,8 @@ function ComponentOnTextNode() {
       counter++;
       return "Hello world";
     },
-    afterRender(props: any, args: ForgoRenderArgs) {
+    afterRender(props: any, args: ForgoAfterRenderArgs) {
+      (window as any).previousNode = args.previousNode;
       (window as any).componentCounter = counter * 10;
     },
   };

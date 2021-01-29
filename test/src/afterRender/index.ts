@@ -20,10 +20,13 @@ export default function componentMount() {
         });
       });
 
+      should.equal((window as any).previousNode, undefined);
       should.equal((window as any).componentCounter, 10);
       (window as any).renderAgain();
+      should.equal((window as any).previousNode.nodeType, 1);
       should.equal((window as any).componentCounter, 20);
       (window as any).renderAgain();
+      should.equal((window as any).previousNode.nodeType, 1);
       should.equal((window as any).componentCounter, 30);
     });
 
@@ -42,10 +45,13 @@ export default function componentMount() {
         });
       });
 
+      should.equal((window as any).previousNode, undefined);
       should.equal((window as any).componentCounter, 10);
       (window as any).renderAgain();
+      should.equal((window as any).previousNode.nodeType, 3);
       should.equal((window as any).componentCounter, 20);
       (window as any).renderAgain();
+      should.equal((window as any).previousNode.nodeType, 3);
       should.equal((window as any).componentCounter, 30);
     });
   });

@@ -301,7 +301,7 @@ function Greeter(initialProps) {
 
 ## The AfterRender Event
 
-Again, if you're an application developer you'd rarely need to use this. The afterRender() event runs every time after the render() runs, but after the rendered elements have been attached to actual DOM nodes.
+Again, if you're an application developer you'd rarely need to use this. The afterRender() event runs every time after the render() runs, but after the rendered elements have been attached to actual DOM nodes. The 'previousNode' property of args will give you the node to which the component was previously attached, if it has changed due to the render().
 
 ```jsx
 function Greeter(initialProps) {
@@ -310,7 +310,9 @@ function Greeter(initialProps) {
       return <div id="hello">Hello {props.firstName}</div>;
     },
     afterRender(props, args) {
-      console.log(`This component is mounted on ${args.element.node.id}`);
+      console.log(
+        `This component is mounted on ${args.element.node.id}, and previously to ${args.previousNode.id}`
+      );
     },
   };
 }
