@@ -616,6 +616,10 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   }
 }
 
+/*
+  Render an array of components
+  Called when a CustomComponent returns an array (or fragment) in its render method.  
+*/
 function renderArray(
   forgoNodes: ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
@@ -627,6 +631,9 @@ function renderArray(
   throw new Error("Not implemented.");
 }
 
+/*
+  Sync component states and props between a newNode and an oldNode.
+*/
 function syncStateAndProps(
   forgoNode: ForgoNode,
   newNode: ChildNode,
@@ -697,6 +704,11 @@ function findIndexOfFirstIncompatibleState(
   return i;
 }
 
+/*
+  Unmount components above an index.
+  This is going to be passed a stale state[]
+  The from param is the index at which stale state[] differs from new state[]
+*/
 function unmountComponents(
   states: NodeAttachedComponentState<any>[],
   from: number
@@ -709,6 +721,11 @@ function unmountComponents(
   }
 }
 
+/*
+  Mount components above an index.
+  This is going to be passed the new state[].
+  The from param is the index at which stale state[] differs from new state[]
+*/
 function mountComponents(
   states: NodeAttachedComponentState<any>[],
   from: number
