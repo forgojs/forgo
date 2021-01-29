@@ -18,6 +18,20 @@ function Component() {
   };
 }
 
+function ComponentOnTextNode() {
+  let counter: number = 0;
+  return {
+    render(props: any, args: ForgoRenderArgs) {
+      (window as any).renderAgain = () => rerender(args.element);
+      counter++;
+      return "Hello world";
+    },
+    afterRender(props: any, args: ForgoRenderArgs) {
+      (window as any).componentCounter = counter * 10;
+    },
+  };
+}
+
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
@@ -25,5 +39,15 @@ export function run(dom: JSDOM) {
 
   window.addEventListener("load", () => {
     mount(<Component />, window.document.getElementById("root"));
+  });
+}
+
+export function runWithTextNode(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<ComponentOnTextNode />, window.document.getElementById("root"));
   });
 }

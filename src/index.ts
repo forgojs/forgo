@@ -840,16 +840,6 @@ function attachProps(
     };
 
     setForgoState(node, state);
-
-    previousNodes.forEach((previousNode, i) => {
-      const component = pendingAttachStates[i].component;
-      if (component.afterRender) {
-        component.afterRender(forgoNode.props, {
-          ...pendingAttachStates[i].args,
-          previousNode,
-        });
-      }
-    });
   } else {
     // Now attach the internal forgo state.
     const state: NodeAttachedState = {
@@ -858,6 +848,17 @@ function attachProps(
 
     setForgoState(node, state);
   }
+
+  // Run afterRender() is defined.
+  previousNodes.forEach((previousNode, i) => {
+    const state = pendingAttachStates[i];
+    if (state.component.afterRender) {
+      state.component.afterRender(state.props, {
+        ...pendingAttachStates[i].args,
+        previousNode,
+      });
+    }
+  });
 }
 
 /*
