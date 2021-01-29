@@ -658,10 +658,11 @@ function renderComponentAndRemoveStaleNodes<TProps>(
     statesToAttach
   );
 
-  const currentTotalNodes = insertionOptions.parentElement.childNodes.length;
+  const totalNodesAfterRender =
+    insertionOptions.parentElement.childNodes.length;
 
   const numNodesRemoved =
-    totalNodesBeforeRender + renderResult.nodes.length - currentTotalNodes;
+    totalNodesBeforeRender + renderResult.nodes.length - totalNodesAfterRender;
 
   const newIndex =
     insertionOptions.currentNodeIndex + renderResult.nodes.length;
@@ -691,19 +692,45 @@ function renderArray(
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
-  let allNodes: ChildNode[] = [];
-
-  for (const forgoNode of forgoNodes) {
-    const { nodes } = internalRender(
-      forgoNode,
-      //TODO
-      {} as any,
-      pendingAttachStates
+  if (nodeInsertionOptions.type === "detached") {
+    throw new Error(
+      "Arrays and fragments cannot be rendered at the top level."
     );
-    allNodes = allNodes.concat(nodes);
-  }
+  } else {
+    let allNodes: ChildNode[] = [];
 
-  return { nodes: allNodes };
+    let currentNodeIndex = nodeInsertionOptions.currentNodeIndex;
+    let numNodes = nodeInsertionOptions.length;
+
+    for (const forgoNode of forgoNodes) {
+      const totalNodesBeforeRender =
+        nodeInsertionOptions.parentElement.childNodes.length;
+
+      const insertionOptions: SearchableNodeInsertionOptions = {
+        ...nodeInsertionOptions,
+        currentNodeIndex,
+        length: numNodes,
+      };
+
+      const { nodes } = internalRender(
+        forgoNode,
+        insertionOptions,
+        pendingAttachStates
+      );
+      const totalNodesAfterRender =
+        nodeInsertionOptions.parentElement.childNodes.length;
+
+      const numNodesRemoved =
+        totalNodesBeforeRender + nodes.length - totalNodesAfterRender;
+
+      currentNodeIndex += nodes.length;
+      numNodes -= numNodesRemoved;
+
+      allNodes = allNodes.concat(nodes);
+    }
+
+    return { nodes: allNodes };
+  }
 }
 
 /*

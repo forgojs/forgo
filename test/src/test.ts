@@ -15,6 +15,7 @@ import assertIsComponent from "./assertIsComponent";
 import rendersArraysInChildren from "./rendersArraysInChildren";
 import rerenderChild from "./rerenderChild";
 import afterRender from "./afterRender";
+import componentFragment from "./componentFragment";
 
 mount();
 boundary();
@@ -33,3 +34,4 @@ assertIsComponent();
 rendersArraysInChildren();
 rerenderChild();
 afterRender();
+componentFragment();
