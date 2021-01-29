@@ -30,16 +30,18 @@ export type ForgoComponentCtor<TProps extends ForgoElementProps> = (
 export type ForgoElementArg = {
   node?: ChildNode;
   componentIndex: number;
-  numNodes: number;
 };
 
 export type ForgoRenderArgs = {
   element: ForgoElementArg;
 };
 
-export type ForgoErrorArgs = {
-  element: ForgoElementArg;
+export type ForgoErrorArgs = ForgoRenderArgs & {
   error: any;
+};
+
+export type ForgoAfterRenderArgs = ForgoRenderArgs & {
+  previousNode?: ChildNode;
 };
 
 /*
@@ -52,7 +54,7 @@ export type ForgoErrorArgs = {
 */
 export type ForgoComponent<TProps extends ForgoElementProps> = {
   render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
-  afterRender?: (props: TProps, args: ForgoRenderArgs) => void;
+  afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
   error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
@@ -547,7 +549,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
   }
 
   function addNewComponent(): RenderResult {
-    const args: ForgoRenderArgs = { element: { componentIndex, numNodes: 1 } };
+    const args: ForgoRenderArgs = { element: { componentIndex } };
 
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
@@ -615,11 +617,13 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 }
 
 function renderArray(
-  forgoElement: ForgoNode[],
+  forgoNodes: ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[],
   fullRerender: boolean
 ): RenderResult {
+  for (const forgoNode of forgoNodes) {
+  }
   throw new Error("Not implemented.");
 }
 
@@ -793,10 +797,16 @@ function attachProps(
   node: ChildNode,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ) {
+  // Capture previous nodes if afterRender is defined;
+  const previousNodes: (ChildNode | undefined)[] = [];
+
   // We have to inject node into the args object.
   // components are already holding a reference to the args object.
   // They don't know yet that args.element.node is undefined.
   for (const state of pendingAttachStates) {
+    previousNodes.push(
+      state.component.afterRender ? state.args.element.node : undefined
+    );
     state.args.element.node = node;
   }
 
@@ -830,6 +840,16 @@ function attachProps(
     };
 
     setForgoState(node, state);
+
+    previousNodes.forEach((previousNode, i) => {
+      const component = pendingAttachStates[i].component;
+      if (component.afterRender) {
+        component.afterRender(forgoNode.props, {
+          ...pendingAttachStates[i].args,
+          previousNode,
+        });
+      }
+    });
   } else {
     // Now attach the internal forgo state.
     const state: NodeAttachedState = {
@@ -948,21 +968,29 @@ export function rerender(
             props: effectiveProps,
           });
 
-        const nodeIndex = Array.from(
-          ((element.node as ChildNode).parentElement as HTMLElement).childNodes
-        ).findIndex((x) => x === element.node);
-        internalRender(
-          forgoNode,
-          {
-            type: "search",
-            currentNodeIndex: nodeIndex,
-            length: element.numNodes,
-            parentElement: (element.node as ChildNode)
-              .parentElement as HTMLElement,
-          },
-          statesToAttach,
-          fullRerender
-        );
+        const parentElement = (element.node as ChildNode).parentElement;
+
+        if (parentElement !== null) {
+          const nodeIndex = Array.from(parentElement.childNodes).findIndex(
+            (x) => x === element.node
+          );
+
+          internalRender(
+            forgoNode,
+            {
+              type: "search",
+              currentNodeIndex: nodeIndex,
+              length: componentState.numNodes,
+              parentElement,
+            },
+            statesToAttach,
+            fullRerender
+          );
+        } else {
+          throw new Error(
+            `Rerender was called on a node without a parent element.`
+          );
+        }
       }
     } else {
       throw new Error(`Missing forgo state on node.`);

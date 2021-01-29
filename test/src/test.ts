@@ -15,6 +15,7 @@ import renderPrimitives from "./renderPrimitives";
 import assertIsComponent from "./assertIsComponent";
 import rendersArraysInChildren from "./rendersArraysInChildren";
 import rerenderChild from "./rerenderChild";
+import afterRender from "./afterRender";
 
 mount();
 boundary();
@@ -33,3 +34,4 @@ renderPrimitives();
 assertIsComponent();
 rendersArraysInChildren();
 rerenderChild();
+afterRender();
