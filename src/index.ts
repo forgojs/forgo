@@ -206,17 +206,11 @@ export type RenderResult = {
 function internalRender(
   forgoNode: ForgoNode | ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
-  pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
+  pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
   // Array of Nodes
   if (Array.isArray(forgoNode)) {
-    return renderArray(
-      forgoNode,
-      nodeInsertionOptions,
-      pendingAttachStates,
-      fullRerender
-    );
+    return renderArray(forgoNode, nodeInsertionOptions, pendingAttachStates);
   }
   // Primitive Nodes
   else if (!isForgoElement(forgoNode)) {
@@ -227,8 +221,7 @@ function internalRender(
     return renderDOMElement(
       forgoNode,
       nodeInsertionOptions,
-      pendingAttachStates,
-      fullRerender
+      pendingAttachStates
     );
   }
   // Custom Component.
@@ -236,8 +229,7 @@ function internalRender(
     return renderCustomComponent(
       forgoNode,
       nodeInsertionOptions,
-      pendingAttachStates,
-      fullRerender
+      pendingAttachStates
     );
   }
 }
@@ -319,8 +311,7 @@ function renderText(
 function renderDOMElement<TProps extends ForgoElementProps>(
   forgoElement: ForgoDOMElement<TProps>,
   nodeInsertionOptions: NodeInsertionOptions,
-  pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
+  pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
@@ -404,8 +395,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           currentNodeIndex: currentChildNodeIndex,
           length: parentElement.childNodes.length - currentChildNodeIndex,
         },
-        [],
-        fullRerender
+        []
       );
       currentChildNodeIndex += nodes.length;
     }
@@ -443,8 +433,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 function renderCustomComponent<TProps extends ForgoElementProps>(
   forgoElement: ForgoCustomComponentElement<TProps>,
   nodeInsertionOptions: NodeInsertionOptions,
-  pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
+  pendingAttachStates: NodeAttachedComponentState<any>[]
   // boundary: ForgoComponent<any> | undefined
 ): RenderResult {
   const componentIndex = pendingAttachStates.length;
@@ -502,67 +491,68 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
     componentState: NodeAttachedComponentState<TProps>
   ): RenderResult {
     if (
-      fullRerender ||
-      havePropsChanged(forgoElement.props, componentState.props)
+      !componentState.component.shouldUpdate ||
+      componentState.component.shouldUpdate(
+        forgoElement.props,
+        componentState.props
+      )
     ) {
-      if (
-        !componentState.component.shouldUpdate ||
-        componentState.component.shouldUpdate(
-          forgoElement.props,
-          componentState.props
-        )
-      ) {
-        // Since we have compatible state already stored,
-        // we'll push the savedComponentState into pending states for later attachment.
-        const newComponentState = {
-          ...componentState,
-          props: forgoElement.props,
-        };
+      // Since we have compatible state already stored,
+      // we'll push the savedComponentState into pending states for later attachment.
+      const newComponentState = {
+        ...componentState,
+        props: forgoElement.props,
+      };
 
-        const statesToAttach = pendingAttachStates.concat(newComponentState);
+      const statesToAttach = pendingAttachStates.concat(newComponentState);
 
-        // Get a new element by calling render on existing component.
-        const newForgoNode = newComponentState.component.render(
-          forgoElement.props,
-          newComponentState.args
-        );
+      // Get a new element by calling render on existing component.
+      const newForgoNode = newComponentState.component.render(
+        forgoElement.props,
+        newComponentState.args
+      );
 
-        const boundary = newComponentState.component.error
-          ? newComponentState.component
-          : undefined;
+      const boundary = newComponentState.component.error
+        ? newComponentState.component
+        : undefined;
 
-        return withErrorBoundary(
-          forgoElement.props,
-          newComponentState.args,
-          statesToAttach,
-          boundary,
-          () => {
-            // Create new node insertion options.
-            const insertionOptions: NodeInsertionOptions = {
-              type: "search",
-              currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
-              length: newComponentState.numNodes,
-              parentElement: nodeInsertionOptions.parentElement,
-            };
+      return withErrorBoundary(
+        forgoElement.props,
+        newComponentState.args,
+        statesToAttach,
+        boundary,
+        () => {
+          // Create new node insertion options.
+          const insertionOptions: NodeInsertionOptions = {
+            type: "search",
+            currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
+            length: newComponentState.numNodes,
+            parentElement: nodeInsertionOptions.parentElement,
+          };
 
-            return renderComponentAndRemoveStaleNodes(
-              newForgoNode,
-              insertionOptions,
-              statesToAttach,
-              fullRerender,
-              newComponentState
-            );
-          }
-        );
-      }
-      // shouldUpdate() returned false
-      else {
-        return { nodes: [componentState.args.element.node as ChildNode] };
-      }
+          return renderComponentAndRemoveStaleNodes(
+            newForgoNode,
+            insertionOptions,
+            statesToAttach,
+            newComponentState
+          );
+        }
+      );
     }
-    // not a fullRender and havePropsChanged() returned false
+    // shouldUpdate() returned false
     else {
-      return { nodes: [componentState.args.element.node as ChildNode] };
+      const allNodes = Array.from(
+        nodeInsertionOptions.parentElement.childNodes
+      );
+      const indexOfNode = allNodes.findIndex(
+        (x) => x === componentState.args.element.node
+      );
+      return {
+        nodes: allNodes.slice(
+          indexOfNode,
+          indexOfNode + componentState.numNodes
+        ),
+      };
     }
   }
 
@@ -612,8 +602,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         const renderResult = internalRender(
           newForgoElement,
           insertionOptions,
-          statesToAttach,
-          fullRerender
+          statesToAttach
         );
 
         // In case we rendered an array, set the node to the first node.
@@ -644,8 +633,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         return internalRender(
           newForgoElement,
           nodeInsertionOptions,
-          statesToAttach,
-          fullRerender
+          statesToAttach
         );
       } else {
         throw error;
@@ -658,7 +646,6 @@ function renderComponentAndRemoveStaleNodes<TProps>(
   forgoNode: ForgoNode,
   insertionOptions: SearchableNodeInsertionOptions,
   statesToAttach: NodeAttachedComponentState<any>[],
-  fullRerender: boolean,
   componentState: NodeAttachedComponentState<TProps>
 ): RenderResult {
   const totalNodesBeforeRender =
@@ -668,8 +655,7 @@ function renderComponentAndRemoveStaleNodes<TProps>(
   const renderResult = internalRender(
     forgoNode,
     insertionOptions,
-    statesToAttach,
-    fullRerender
+    statesToAttach
   );
 
   const currentTotalNodes = insertionOptions.parentElement.childNodes.length;
@@ -703,8 +689,7 @@ function renderComponentAndRemoveStaleNodes<TProps>(
 function renderArray(
   forgoNodes: ForgoNode[],
   nodeInsertionOptions: NodeInsertionOptions,
-  pendingAttachStates: NodeAttachedComponentState<any>[],
-  fullRerender: boolean
+  pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
   let allNodes: ChildNode[] = [];
 
@@ -713,8 +698,7 @@ function renderArray(
       forgoNode,
       //TODO
       {} as any,
-      pendingAttachStates,
-      fullRerender
+      pendingAttachStates
     );
     allNodes = allNodes.concat(nodes);
   }
@@ -970,19 +954,6 @@ function attachProps(
 }
 
 /*
-  Compare old props and new props.
-  We don't rerender if props remain the same.
-*/
-function havePropsChanged(newProps: any, oldProps: any) {
-  const oldKeys = Object.keys(oldProps);
-  const newKeys = Object.keys(newProps);
-  return (
-    oldKeys.length !== newKeys.length ||
-    oldKeys.some((key) => oldProps[key] !== newProps[key])
-  );
-}
-
-/*
   Mount will render the DOM as a child of the specified container element.
 */
 export function mount(
@@ -1008,8 +979,7 @@ export function mount(
         length: 0,
         parentElement,
       },
-      [],
-      true
+      []
     );
   } else {
     throw new Error(
@@ -1030,8 +1000,7 @@ export function render(forgoNode: ForgoNode) {
     {
       type: "detached",
     },
-    [],
-    true
+    []
   );
   return { node: renderResult.nodes[0], nodes: renderResult.nodes };
 }
@@ -1067,11 +1036,6 @@ export function rerender(
             componentState.props
           )
         ) {
-          const forgoNode = componentState.component.render(
-            effectiveProps,
-            componentState.args
-          );
-
           const newComponentState = {
             ...componentState,
             props: effectiveProps,
@@ -1080,6 +1044,11 @@ export function rerender(
           const statesToAttach = state.components
             .slice(0, element.componentIndex)
             .concat(newComponentState);
+
+          const forgoNode = componentState.component.render(
+            effectiveProps,
+            componentState.args
+          );
 
           const nodeIndex = Array.from(parentElement.childNodes).findIndex(
             (x) => x === element.node
@@ -1096,7 +1065,6 @@ export function rerender(
             forgoNode,
             insertionOptions,
             statesToAttach,
-            fullRerender,
             newComponentState
           );
         }

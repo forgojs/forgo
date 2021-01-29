@@ -391,16 +391,11 @@ function TodoList(initialProps) {
 }
 ```
 
-But there are a couple of handy options to rerender, 'newProps' and 'forceRerender'.
-
-newProps let you pass a new set of props while rerendering. If you'd like previous props to be used, pass undefined here.
-
-forceRerender defaults to true, but when set to false skips child component rendering if props haven't changed.
+But you could pass newProps as well while rerendering. If you'd like previous props to be used, pass undefined here.
 
 ```js
 const newProps = { name: "Kai" };
-const forceRerender = false;
-rerender(args.element, newProps, forceRerender);
+rerender(args.element, newProps);
 ```
 
 ## Rendering without mounting
