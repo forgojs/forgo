@@ -13,7 +13,7 @@ export type ForgoRef<T> = {
 
 export type ForgoElementProps = {
   ref?: ForgoRef<HTMLElement>;
-  children?: ForgoNode[];
+  children?: ForgoNode | ForgoNode[];
 };
 
 /*
@@ -91,9 +91,14 @@ export type ForgoCustomComponentElement<TProps> = ForgoElementBase<TProps> & {
   type: ForgoComponentCtor<TProps>;
 };
 
+export type ForgoFragment = ForgoElementBase<any> & {
+  type: typeof Fragment;
+};
+
 export type ForgoElement<TProps extends ForgoElementProps> =
   | ForgoDOMElement<TProps>
-  | ForgoCustomComponentElement<TProps>;
+  | ForgoCustomComponentElement<TProps>
+  | ForgoFragment;
 
 export type ForgoPrimitiveNode =
   | string
@@ -195,6 +200,12 @@ export type RenderResult = {
 };
 
 /*
+  Fragment constructor.
+  We simply use it as a marker in jsx-runtime.
+*/
+export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
+
+/*
   This is the main render function.
   forgoNode is the node to render.
  
@@ -223,6 +234,8 @@ function internalRender(
       nodeInsertionOptions,
       pendingAttachStates
     );
+  } else if (isForgoFragment(forgoNode)) {
+    return renderFragment(forgoNode, nodeInsertionOptions, pendingAttachStates);
   }
   // Custom Component.
   else {
@@ -692,6 +705,7 @@ function renderArray(
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
+  const flattenedNodes = flatten(forgoNodes);
   if (nodeInsertionOptions.type === "detached") {
     throw new Error(
       "Arrays and fragments cannot be rendered at the top level."
@@ -702,7 +716,7 @@ function renderArray(
     let currentNodeIndex = nodeInsertionOptions.currentNodeIndex;
     let numNodes = nodeInsertionOptions.length;
 
-    for (const forgoNode of forgoNodes) {
+    for (const forgoNode of flattenedNodes) {
       const totalNodesBeforeRender =
         nodeInsertionOptions.parentElement.childNodes.length;
 
@@ -731,6 +745,21 @@ function renderArray(
 
     return { nodes: allNodes };
   }
+}
+
+/*
+  Render a Fragment
+*/
+function renderFragment(
+  fragment: ForgoFragment,
+  nodeInsertionOptions: NodeInsertionOptions,
+  pendingAttachStates: NodeAttachedComponentState<any>[]
+): RenderResult {
+  return renderArray(
+    flatten(fragment),
+    nodeInsertionOptions,
+    pendingAttachStates
+  );
 }
 
 /*
@@ -1119,9 +1148,19 @@ export function rerender(
   }
 }
 
-function flatten<T>(array: (T | T[])[], ret: T[] = []): T[] {
-  for (const entry of array) {
-    if (Array.isArray(entry)) {
+function flatten(
+  itemOrItems: ForgoNode | ForgoNode[],
+  ret: ForgoNode[] = []
+): ForgoNode[] {
+  const items = Array.isArray(itemOrItems)
+    ? itemOrItems
+    : isForgoFragment(itemOrItems)
+    ? Array.isArray(itemOrItems.props.children)
+      ? itemOrItems.props.children
+      : [itemOrItems.props.children]
+    : [itemOrItems];
+  for (const entry of items) {
+    if (Array.isArray(entry) || isForgoFragment(entry)) {
       flatten(entry, ret);
     } else {
       ret.push(entry);
@@ -1151,6 +1190,16 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any> {
 
 function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
   return isForgoElement(node) && typeof node.type === "string";
+}
+
+function isForgoCustomComponent(
+  node: ForgoNode
+): node is ForgoCustomComponentElement<any> {
+  return isForgoElement(node) && typeof node.type !== "string";
+}
+
+function isForgoFragment(node: ForgoNode): node is ForgoFragment {
+  return isForgoElement(node) && node.type === Fragment;
 }
 
 /*

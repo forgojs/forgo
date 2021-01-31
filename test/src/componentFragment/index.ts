@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile";
 import { run } from "./script";
-import * as should from "should";
+import "should";
 
 export default function componentUnmount() {
   it("renders component returning a fragment", async () => {
@@ -19,6 +19,9 @@ export default function componentUnmount() {
       });
     });
 
-    
+    const rootElem = window.document.getElementById("root") as HTMLElement;
+    rootElem.innerHTML.should.containEql(
+      "<div>1</div><div>2</div><div>3</div>"
+    );
   });
 }
