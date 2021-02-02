@@ -1248,7 +1248,7 @@ export function getForgoState(node: ChildNode): NodeAttachedState | undefined {
 }
 
 /*
-  Same as above, but will never be undefined. (Caller makes sure.)
+  Same as above, but throws if undefined. (Caller must make sure.)
 */
 function getExistingForgoState(node: ChildNode): NodeAttachedState {
   if (node.__forgo) {
