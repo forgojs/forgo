@@ -21,6 +21,6 @@ export default function componentUnmount() {
 
     window.renderAgain();
 
-    should.equal(window.unmountCounter, 0);
+    should.equal(window.unmountCounter, 1);
   });
 }

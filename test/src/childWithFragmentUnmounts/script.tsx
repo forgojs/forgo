@@ -12,9 +12,6 @@ function Component() {
       counter++;
       return counter === 1 ? <Child /> : <p>1</p>;
     },
-    unmount() {
-      window.unmountCounter++;
-    },
   };
 }
 
@@ -28,6 +25,9 @@ function Child() {
           <div>3</div>
         </>
       );
+    },
+    unmount() {
+      window.unmountCounter++;
     },
   };
 }
