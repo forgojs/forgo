@@ -889,15 +889,20 @@ function findReplacementCandidateForDOMElement<TProps>(
 ): CandidateSearchResult {
   for (let i = searchFrom; i < searchFrom + length; i++) {
     const node = nodes[i] as ChildNode;
+    const stateOnNode = getForgoState(node);
     if (forgoElement.key) {
-      const stateOnNode = getForgoState(node);
       if (stateOnNode?.key === forgoElement.key) {
         return { found: true, index: i };
       }
     } else {
       if (node.nodeType === ELEMENT_NODE_TYPE) {
         const element = node as HTMLElement;
-        if (element.tagName.toLowerCase() === forgoElement.type) {
+        // If the candidate has a key defined, 
+        //  we don't match it with an unkeyed forgo element
+        if (
+          element.tagName.toLowerCase() === forgoElement.type &&
+          (!stateOnNode || !stateOnNode.key)
+        ) {
           return { found: true, index: i };
         }
       }
