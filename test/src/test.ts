@@ -18,6 +18,8 @@ import afterRender from "./afterRender";
 import componentFragment from "./componentFragment";
 import fragmentMountRunsOnce from "./fragmentMountRunsOnce";
 import fragmentUnmountRunsOnce from "./fragmentUnmountRunsOnce";
+import replacingFragmentWithNodeWontUnmount from "./replacingFragmentWithNodeWontUnmount";
+import childWithFragmentUnmounts from "./childWithFragmentUnmounts";
 
 mount();
 boundary();
@@ -39,3 +41,5 @@ afterRender();
 componentFragment();
 fragmentMountRunsOnce();
 fragmentUnmountRunsOnce();
+replacingFragmentWithNodeWontUnmount();
+childWithFragmentUnmounts();
