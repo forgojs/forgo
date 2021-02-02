@@ -26,6 +26,7 @@ export default function replaceByKey() {
           });
         });
 
+        console.log(window.document.body.innerHTML);
         window.document.body.innerHTML.should.containEql("Hello 2X");
         should.deepEqual(window.unmountedElements, ["1", "3"]);
       });

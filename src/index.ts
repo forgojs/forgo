@@ -129,7 +129,7 @@ export type NodeAttachedComponentState<TProps> = {
   component: ForgoComponent<TProps>;
   props: TProps;
   args: ForgoRenderArgs;
-  numNodes: number;
+  nodes: ChildNode[];
 };
 
 /*
@@ -355,7 +355,8 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           Array.from(childNodes).slice(
             nodeInsertionOptions.currentNodeIndex,
             searchResult.index
-          )
+          ),
+          pendingAttachStates
         );
 
         const targetNode = childNodes[searchResult.index] as HTMLElement;
@@ -414,9 +415,12 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     }
 
     // Get rid the the remaining nodes
-    unloadNodes(
-      Array.from(parentElement.childNodes).slice(currentChildNodeIndex)
+    const nodesToRemove = Array.from(parentElement.childNodes).slice(
+      currentChildNodeIndex
     );
+    if (nodesToRemove.length) {
+      unloadNodes(nodesToRemove, []);
+    }
   }
 
   function addNewDOMElement(
@@ -467,15 +471,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       );
 
       if (searchResult.found) {
-        // Get rid of unwanted nodes.
-        unloadNodes(
-          Array.from(childNodes).slice(
-            nodeInsertionOptions.currentNodeIndex,
-            searchResult.index
-          )
-        );
-
-        const targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
+        const targetNode = childNodes[searchResult.index];
         const state = getExistingForgoState(targetNode);
         const componentState = state.components[componentIndex];
 
@@ -483,8 +479,24 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           componentState && componentState.ctor === forgoElement.type;
 
         if (haveCompatibleState) {
+          // Get rid of unwanted nodes.
+          unloadNodes(
+            Array.from(childNodes).slice(
+              nodeInsertionOptions.currentNodeIndex,
+              searchResult.index
+            ),
+            pendingAttachStates.concat(componentState)
+          );
           return renderExistingComponent(nodeInsertionOptions, componentState);
         } else {
+          // Get rid of unwanted nodes.
+          unloadNodes(
+            Array.from(childNodes).slice(
+              nodeInsertionOptions.currentNodeIndex,
+              searchResult.index
+            ),
+            pendingAttachStates
+          );
           return addNewComponent();
         }
       }
@@ -539,7 +551,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
           const insertionOptions: NodeInsertionOptions = {
             type: "search",
             currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
-            length: newComponentState.numNodes,
+            length: newComponentState.nodes.length,
             parentElement: nodeInsertionOptions.parentElement,
           };
 
@@ -563,14 +575,16 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
       return {
         nodes: allNodes.slice(
           indexOfNode,
-          indexOfNode + componentState.numNodes
+          indexOfNode + componentState.nodes.length
         ),
       };
     }
   }
 
   function addNewComponent(): RenderResult {
-    const args: ForgoRenderArgs = { element: { componentIndex } };
+    const args: ForgoRenderArgs = {
+      element: { componentIndex },
+    };
 
     const ctor = forgoElement.type;
     const component = ctor(forgoElement.props);
@@ -580,13 +594,13 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
     // Create new component state
     // ... and push it to pendingAttachStates
-    const newComponentState = {
+    const newComponentState: NodeAttachedComponentState<any> = {
       key: forgoElement.key,
       ctor,
       component,
       props: forgoElement.props,
       args,
-      numNodes: 0,
+      nodes: [],
     };
 
     const statesToAttach = pendingAttachStates.concat(newComponentState);
@@ -620,7 +634,7 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
 
         // In case we rendered an array, set the node to the first node.
         // And set numNodes.
-        newComponentState.numNodes = renderResult.nodes.length;
+        newComponentState.nodes = renderResult.nodes;
         if (renderResult.nodes.length > 1) {
           newComponentState.args.element.node = renderResult.nodes[0];
         }
@@ -682,13 +696,13 @@ function renderComponentAndRemoveStaleNodes<TProps>(
 
   const nodesToRemove = Array.from(
     insertionOptions.parentElement.childNodes
-  ).slice(newIndex, newIndex + componentState.numNodes - numNodesRemoved);
+  ).slice(newIndex, newIndex + componentState.nodes.length - numNodesRemoved);
 
-  unloadNodes(nodesToRemove);
+  unloadNodes(nodesToRemove, statesToAttach);
 
   // In case we rendered an array, set the node to the first node.
   // And set numNodes.
-  componentState.numNodes = renderResult.nodes.length;
+  componentState.nodes = renderResult.nodes;
   if (renderResult.nodes.length > 1) {
     componentState.args.element.node = renderResult.nodes[0];
   }
@@ -706,6 +720,7 @@ function renderArray(
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
   const flattenedNodes = flatten(forgoNodes);
+  const topmostComponentState = pendingAttachStates.slice(-1)[0];
   if (nodeInsertionOptions.type === "detached") {
     throw new Error(
       "Arrays and fragments cannot be rendered at the top level."
@@ -731,6 +746,10 @@ function renderArray(
         insertionOptions,
         pendingAttachStates
       );
+
+      allNodes = allNodes.concat(nodes);
+      topmostComponentState.nodes = allNodes;
+
       const totalNodesAfterRender =
         nodeInsertionOptions.parentElement.childNodes.length;
 
@@ -739,8 +758,6 @@ function renderArray(
 
       currentNodeIndex += nodes.length;
       numNodes -= numNodesRemoved;
-
-      allNodes = allNodes.concat(nodes);
     }
 
     return { nodes: allNodes };
@@ -795,13 +812,21 @@ function syncStateAndProps(
   a) Remove the node
   b) Calls unload on all attached components
 */
-function unloadNodes(nodes: ChildNode[]) {
+function unloadNodes(
+  nodes: ChildNode[],
+  pendingAttachStates: NodeAttachedComponentState<any>[]
+) {
   for (const node of nodes) {
+    node.remove();
     const state = getForgoState(node);
     if (state) {
-      unmountComponents(state.components, 0);
-    }
-    node.remove();
+      const oldComponentStates = state.components;
+      const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+        pendingAttachStates,
+        oldComponentStates
+      );
+      unmountComponents(state.components, indexOfFirstIncompatibleState);
+    }    
   }
 }
 
@@ -823,7 +848,7 @@ function findIndexOfFirstIncompatibleState(
   for (const newState of newStates) {
     if (oldStates.length > i) {
       const oldState = oldStates[i];
-      if (oldState.ctor !== newState.ctor) {
+      if (oldState.component !== newState.component) {
         break;
       }
       i++;
@@ -847,7 +872,21 @@ function unmountComponents(
   for (let j = from; j < states.length; j++) {
     const state = states[j];
     if (state.component.unmount) {
-      state.component.unmount(state.props, state.args);
+      if (
+        state.nodes.every((x) => {
+          if (!x.isConnected) {
+            return true;
+          } else {
+            const componentState = getExistingForgoState(x);
+            return (
+              !componentState.components[j] ||
+              componentState.components[j].component !== state.component
+            );
+          }
+        })
+      ) {
+        state.component.unmount(state.props, state.args);
+      }
     }
   }
 }
@@ -863,7 +902,7 @@ function mountComponents(
 ) {
   for (let j = from; j < states.length; j++) {
     const state = states[j];
-    if (state.component.mount) {
+    if (state.component.mount && state.nodes.length === 0) {
       state.component.mount(state.props, state.args);
     }
   }
@@ -897,7 +936,7 @@ function findReplacementCandidateForDOMElement<TProps>(
     } else {
       if (node.nodeType === ELEMENT_NODE_TYPE) {
         const element = node as HTMLElement;
-        // If the candidate has a key defined, 
+        // If the candidate has a key defined,
         //  we don't match it with an unkeyed forgo element
         if (
           element.tagName.toLowerCase() === forgoElement.type &&
@@ -1118,7 +1157,7 @@ export function rerender(
           const insertionOptions: SearchableNodeInsertionOptions = {
             type: "search",
             currentNodeIndex: nodeIndex,
-            length: componentState.numNodes,
+            length: componentState.nodes.length,
             parentElement,
           };
 
@@ -1136,7 +1175,7 @@ export function rerender(
           return {
             nodes: allNodes.slice(
               indexOfNode,
-              indexOfNode + componentState.numNodes
+              indexOfNode + componentState.nodes.length
             ),
           };
         }
@@ -1195,12 +1234,6 @@ function isForgoElement(node: ForgoNode): node is ForgoElement<any> {
 
 function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
   return isForgoElement(node) && typeof node.type === "string";
-}
-
-function isForgoCustomComponent(
-  node: ForgoNode
-): node is ForgoCustomComponentElement<any> {
-  return isForgoElement(node) && typeof node.type !== "string";
 }
 
 function isForgoFragment(node: ForgoNode): node is ForgoFragment {

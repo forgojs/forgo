@@ -16,6 +16,8 @@ import rendersArraysInChildren from "./rendersArraysInChildren";
 import rerenderChild from "./rerenderChild";
 import afterRender from "./afterRender";
 import componentFragment from "./componentFragment";
+import fragmentMountRunsOnce from "./fragmentMountRunsOnce";
+import fragmentUnmountRunsOnce from "./fragmentUnmountRunsOnce";
 
 mount();
 boundary();
@@ -35,3 +37,5 @@ rendersArraysInChildren();
 rerenderChild();
 afterRender();
 componentFragment();
+fragmentMountRunsOnce();
+fragmentUnmountRunsOnce();
