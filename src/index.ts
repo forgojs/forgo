@@ -174,7 +174,9 @@ let env: EnvType = {
   document: documentObject,
 };
 
-const isString = (val: unknown): val is string => typeof val === "string";
+function isString(val: unknown): val is string {
+  return typeof val === "string";
+}
 
 export function setCustomEnv(value: any) {
   env = value;
@@ -1106,31 +1108,31 @@ function attachProps(
 export function mount(
   forgoNode: ForgoNode,
   container: Element | string | null
-) {
+): RenderResult {
   let parentElement = (isString(container)
     ? env.document.querySelector(container)
     : container) as Element;
 
-  if (parentElement.nodeType !== ELEMENT_NODE_TYPE) {
-    throw new Error(
-      "The container argument to mount() should be an HTML element."
-    );
-  }
-
   if (parentElement) {
-    internalRender(
-      forgoNode,
-      {
-        type: "search",
-        currentNodeIndex: 0,
-        length: 0,
-        parentElement,
-      },
-      []
-    );
+    if (parentElement.nodeType === ELEMENT_NODE_TYPE) {
+      return internalRender(
+        forgoNode,
+        {
+          type: "search",
+          currentNodeIndex: 0,
+          length: 0,
+          parentElement,
+        },
+        []
+      );
+    } else {
+      throw new Error(
+        "The container argument to the mount() function should be an HTML element."
+      );
+    }
   } else {
     throw new Error(
-      `Mount was called on a non-element (${
+      `The mount() function was called on a non-element (${
         typeof container === "string" ? container : container?.tagName
       }).`
     );
@@ -1163,8 +1165,7 @@ export function render(forgoNode: ForgoNode) {
 */
 export function rerender(
   element: ForgoElementArg | undefined,
-  props = undefined,
-  fullRerender = true
+  props?: any
 ): RenderResult {
   if (element && element.node) {
     const parentElement = element.node.parentElement;
@@ -1231,7 +1232,7 @@ export function rerender(
       }
     } else {
       throw new Error(
-        `Rerender was called on a node without a parent element.`
+        `The rerender() function was called on a node without a parent element.`
       );
     }
   } else {
@@ -1239,6 +1240,10 @@ export function rerender(
   }
 }
 
+/*
+  This recursively flattens an array or a Fragment.
+  Fragments are treated as arrays, with the children prop being array items.
+*/
 function flatten(
   itemOrItems: ForgoNode | ForgoNode[],
   ret: ForgoNode[] = []
