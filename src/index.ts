@@ -336,7 +336,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    let newElement: Element = createElement(forgoElement);
+    let newElement: Element = createElement(forgoElement, undefined);
 
     syncStateAndProps(
       forgoElement,
@@ -436,7 +436,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     parentElement: Element,
     oldNode: ChildNode
   ): Element {
-    const newElement = createElement(forgoElement);
+    const newElement = createElement(forgoElement, parentElement);
 
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
@@ -1021,7 +1021,7 @@ function attachProps(
       const currentEntries = Object.entries(currentState.props);
       for (const [key, value] of currentEntries) {
         if (key !== "children" && key !== "xmlns") {
-          if (node.nodeType !== ELEMENT_NODE_TYPE) {
+          if (node.nodeType === ELEMENT_NODE_TYPE) {
             const namespaceURI = (node as Element).namespaceURI;
             if (
               namespaceURI !== MATH_NAMESPACE &&
@@ -1031,7 +1031,7 @@ function attachProps(
             } else {
               (node as Element).removeAttribute(key);
             }
-          } 
+          }
           // Not an element.
           else {
             (node as any)[key] = undefined;
@@ -1045,7 +1045,7 @@ function attachProps(
     const entries = Object.entries(forgoNode.props);
     for (const [key, value] of entries) {
       if (key !== "children" && key !== "xmlns") {
-        if (node.nodeType !== ELEMENT_NODE_TYPE) {
+        if (node.nodeType === ELEMENT_NODE_TYPE) {
           const namespaceURI = (node as Element).namespaceURI;
           if (
             namespaceURI !== MATH_NAMESPACE &&
@@ -1063,7 +1063,7 @@ function attachProps(
               (node as any)[key] = value;
             }
           }
-        } 
+        }
         // Not an element.
         else {
           (node as any)[key] = value;
@@ -1260,9 +1260,14 @@ function flatten(
   return ret;
 }
 
-function createElement(forgoElement: ForgoDOMElement<any>) {
-  return forgoElement.props.xmlns
-    ? env.document.createElementNS(forgoElement.props.xmlns, forgoElement.type)
+function createElement(
+  forgoElement: ForgoDOMElement<any>,
+  parentElement: Element | undefined
+) {
+  const namespaceURI =
+    forgoElement.props.xmlns ?? (parentElement && parentElement.namespaceURI);
+  return namespaceURI
+    ? env.document.createElementNS(namespaceURI, forgoElement.type)
     : env.document.createElement(forgoElement.type);
 }
 
