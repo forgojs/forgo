@@ -12,7 +12,8 @@ export type ForgoRef<T> = {
 };
 
 export type ForgoElementProps = {
-  ref?: ForgoRef<HTMLElement>;
+  xmlns?: string;
+  ref?: ForgoRef<Element>;
   children?: ForgoNode | ForgoNode[];
 };
 
@@ -183,7 +184,7 @@ export type DetachedNodeInsertionOptions = {
 
 export type SearchableNodeInsertionOptions = {
   type: "search";
-  parentElement: HTMLElement;
+  parentElement: Element;
   currentNodeIndex: number;
   length: number;
 };
@@ -328,7 +329,12 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    let newElement: HTMLElement = env.document.createElement(forgoElement.type);
+    let newElement: Element = forgoElement.props.xmlns
+      ? env.document.createElementNS(
+          forgoElement.props.xmlns,
+          forgoElement.type
+        )
+      : env.document.createElement(forgoElement.type);
     syncStateAndProps(
       forgoElement,
       newElement,
@@ -359,7 +365,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           pendingAttachStates
         );
 
-        const targetNode = childNodes[searchResult.index] as HTMLElement;
+        const targetNode = childNodes[searchResult.index] as Element;
 
         syncStateAndProps(
           forgoElement,
@@ -387,7 +393,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     }
   }
 
-  function renderDOMChildNodes(parentElement: HTMLElement) {
+  function renderDOMChildNodes(parentElement: Element) {
     const forgoChildrenObj = forgoElement.props.children;
 
     // Children will not be an array if single item
@@ -424,9 +430,9 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   }
 
   function addNewDOMElement(
-    parentElement: HTMLElement,
+    parentElement: Element,
     oldNode: ChildNode
-  ): HTMLElement {
+  ): Element {
     const newElement = env.document.createElement(forgoElement.type);
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
@@ -826,7 +832,7 @@ function unloadNodes(
         oldComponentStates
       );
       unmountComponents(state.components, indexOfFirstIncompatibleState);
-    }    
+    }
   }
 }
 
@@ -935,7 +941,7 @@ function findReplacementCandidateForDOMElement<TProps>(
       }
     } else {
       if (node.nodeType === ELEMENT_NODE_TYPE) {
-        const element = node as HTMLElement;
+        const element = node as Element;
         // If the candidate has a key defined,
         //  we don't match it with an unkeyed forgo element
         if (
@@ -1058,11 +1064,11 @@ function attachProps(
 */
 export function mount(
   forgoNode: ForgoNode,
-  container: HTMLElement | string | null
+  container: Element | string | null
 ) {
   let parentElement = (isString(container)
     ? env.document.querySelector(container)
-    : container) as HTMLElement;
+    : container) as Element;
 
   if (parentElement.nodeType !== ELEMENT_NODE_TYPE) {
     throw new Error(

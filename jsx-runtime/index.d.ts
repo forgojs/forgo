@@ -9,7 +9,7 @@ export type ForgoRef<T> = {
 };
 
 export type ForgoElementProps = {
-  ref?: ForgoRef<HTMLElement>;
+  ref?: ForgoRef<Element>;
   children?: ForgoNode[];
 };
 
