@@ -144,6 +144,13 @@ export type NodeAttachedState = {
 };
 
 /*
+  Namespaces
+*/
+const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+
+/*
   The element types we care about.
   As defined by the standards.
 */
@@ -329,12 +336,8 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    let newElement: Element = forgoElement.props.xmlns
-      ? env.document.createElementNS(
-          forgoElement.props.xmlns,
-          forgoElement.type
-        )
-      : env.document.createElement(forgoElement.type);
+    let newElement: Element = createElement(forgoElement);
+
     syncStateAndProps(
       forgoElement,
       newElement,
@@ -433,10 +436,12 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     parentElement: Element,
     oldNode: ChildNode
   ): Element {
-    const newElement = env.document.createElement(forgoElement.type);
+    const newElement = createElement(forgoElement);
+
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
     }
+
     parentElement.insertBefore(newElement, oldNode);
     syncStateAndProps(
       forgoElement,
@@ -1015,8 +1020,22 @@ function attachProps(
     if (currentState && currentState.props) {
       const currentEntries = Object.entries(currentState.props);
       for (const [key, value] of currentEntries) {
-        if (key !== "children" && forgoNode.props[key] !== value) {
-          (node as any)[key] = undefined;
+        if (key !== "children" && key !== "xmlns") {
+          if (node.nodeType !== ELEMENT_NODE_TYPE) {
+            const namespaceURI = (node as Element).namespaceURI;
+            if (
+              namespaceURI !== MATH_NAMESPACE &&
+              namespaceURI !== SVG_NAMESPACE
+            ) {
+              (node as any)[key] = undefined;
+            } else {
+              (node as Element).removeAttribute(key);
+            }
+          } 
+          // Not an element.
+          else {
+            (node as any)[key] = undefined;
+          }
         }
       }
     }
@@ -1025,8 +1044,30 @@ function attachProps(
     // Attach everything as is.
     const entries = Object.entries(forgoNode.props);
     for (const [key, value] of entries) {
-      if (key !== "children") {
-        (node as any)[key] = value;
+      if (key !== "children" && key !== "xmlns") {
+        if (node.nodeType !== ELEMENT_NODE_TYPE) {
+          const namespaceURI = (node as Element).namespaceURI;
+          if (
+            namespaceURI !== MATH_NAMESPACE &&
+            namespaceURI !== SVG_NAMESPACE
+          ) {
+            if (key.includes("-") && typeof value === "string") {
+              (node as Element).setAttribute(key, value);
+            } else {
+              (node as any)[key] = value;
+            }
+          } else {
+            if (typeof value === "string") {
+              (node as Element).setAttribute(key, value);
+            } else {
+              (node as any)[key] = value;
+            }
+          }
+        } 
+        // Not an element.
+        else {
+          (node as any)[key] = value;
+        }
       }
     }
 
@@ -1217,6 +1258,12 @@ function flatten(
     }
   }
   return ret;
+}
+
+function createElement(forgoElement: ForgoDOMElement<any>) {
+  return forgoElement.props.xmlns
+    ? env.document.createElementNS(forgoElement.props.xmlns, forgoElement.type)
+    : env.document.createElement(forgoElement.type);
 }
 
 /*
