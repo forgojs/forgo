@@ -21,13 +21,19 @@ export default function componentMount() {
       });
 
       should.equal((window as any).previousNode, undefined);
-      should.equal((window as any).componentCounter, 10);
+      should.equal((window as any).counterX10, 10);
+      should.equal((window as any).currentNode.prop, "hello");
+      should.equal((window as any).previousNode, undefined);
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 1);
-      should.equal((window as any).componentCounter, 20);
+      should.equal((window as any).counterX10, 20);
+      should.equal((window as any).currentNode.prop, "world");
+      should.equal((window as any).previousNode.prop, "hello");
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 1);
-      should.equal((window as any).componentCounter, 30);
+      should.equal((window as any).counterX10, 30);
+      should.equal((window as any).currentNode.prop, "world");
+      should.equal((window as any).previousNode.prop, "world");
     });
 
     it("when mounted on a text node", async () => {
@@ -46,13 +52,13 @@ export default function componentMount() {
       });
 
       should.equal((window as any).previousNode, undefined);
-      should.equal((window as any).componentCounter, 10);
+      should.equal((window as any).counterX10, 10);
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 3);
-      should.equal((window as any).componentCounter, 20);
+      should.equal((window as any).counterX10, 20);
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 3);
-      should.equal((window as any).componentCounter, 30);
+      should.equal((window as any).counterX10, 30);
     });
   });
 }

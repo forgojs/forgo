@@ -118,7 +118,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any>;
   In this case, the components Custom1, Custom2 and Custom3 are stored on the div.
  
   You can also see that it gets passed around as pendingStates in the render methods.
-  That's because when Custom1 renders Custom2, there isn't a real DOM node available to attach the state to. So the states are passed around until the last component renders a real DOM node.
+  That's because when Custom1 renders Custom2, there isn't a real DOM node available to attach the state to. So the states are passed around until the last component renders a real DOM node or nodes.
 
   In addition it holds a bunch of other things.
   Like for example, a key which uniquely identifies a child element when rendering a list.
@@ -133,7 +133,7 @@ export type NodeAttachedComponentState<TProps> = {
 };
 
 /*
-  This is the actual state data structure which gets stored on a node.  
+  This is the state data structure which gets stored on a node.  
   See explanation for NodeAttachedComponentState<TProps>
 */
 export type NodeAttachedState = {
@@ -335,7 +335,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       newElement,
       pendingAttachStates
     );
-    renderDOMElementChildNodes(newElement);
+    renderDOMChildNodes(newElement);
     return { nodes: [newElement] };
   }
   // We have to find a node to replace.
@@ -368,7 +368,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           pendingAttachStates
         );
 
-        renderDOMElementChildNodes(targetNode);
+        renderDOMChildNodes(targetNode);
 
         return { nodes: [targetNode] };
       } else {
@@ -387,7 +387,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
     }
   }
 
-  function renderDOMElementChildNodes(parentElement: HTMLElement) {
+  function renderDOMChildNodes(parentElement: HTMLElement) {
     const forgoChildrenObj = forgoElement.props.children;
 
     // Children will not be an array if single item
@@ -438,7 +438,7 @@ function renderDOMElement<TProps extends ForgoElementProps>(
       newElement,
       pendingAttachStates
     );
-    renderDOMElementChildNodes(newElement);
+    renderDOMChildNodes(newElement);
     return newElement;
   }
 }
@@ -1041,7 +1041,7 @@ function attachProps(
     setForgoState(node, state);
   }
 
-  // Run afterRender() is defined.
+  // Run afterRender() if defined.
   previousNodes.forEach((previousNode, i) => {
     const state = pendingAttachStates[i];
     if (state.component.afterRender) {

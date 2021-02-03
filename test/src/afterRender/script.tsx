@@ -16,11 +16,20 @@ function Component() {
     render(props: any, args: ForgoRenderArgs) {
       (window as any).renderAgain = () => rerender(args.element);
       counter++;
-      return <div id="hello">Hello world</div>;
+      return counter === 1 ? (
+        <div id="hello" prop="hello">
+          Hello world
+        </div>
+      ) : (
+        <p id="hello" prop="world">
+          Hello world
+        </p>
+      );
     },
     afterRender(props: any, args: ForgoAfterRenderArgs) {
+      (window as any).currentNode = args.element.node;
       (window as any).previousNode = args.previousNode;
-      (window as any).componentCounter = counter * 10;
+      (window as any).counterX10 = counter * 10;
     },
   };
 }
@@ -34,8 +43,9 @@ function ComponentOnTextNode() {
       return "Hello world";
     },
     afterRender(props: any, args: ForgoAfterRenderArgs) {
+      (window as any).currentNode = args.element.node;
       (window as any).previousNode = args.previousNode;
-      (window as any).componentCounter = counter * 10;
+      (window as any).counterX10 = counter * 10;
     },
   };
 }
