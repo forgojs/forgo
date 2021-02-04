@@ -15,6 +15,7 @@ export type ForgoElementProps = {
   xmlns?: string;
   ref?: ForgoRef<Element>;
   children?: ForgoNode | ForgoNode[];
+  dangerouslySetInnerHTML?: { __html: string };
 };
 
 /*
@@ -345,20 +346,13 @@ function renderDOMElement<TProps extends ForgoElementProps>(
 ): RenderResult {
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
-    let newElement: Element = createElement(forgoElement, undefined);
-
-    syncStateAndProps(
-      forgoElement,
-      newElement,
-      newElement,
-      pendingAttachStates
-    );
-    renderDOMChildNodes(newElement);
+    const newElement = addNewDOMElement(undefined);
     return { nodes: [newElement] };
   }
   // We have to find a node to replace.
   else {
     const childNodes = nodeInsertionOptions.parentElement.childNodes;
+
     if (nodeInsertionOptions.length) {
       const searchResult = findReplacementCandidateForDOMElement(
         forgoElement,
@@ -377,29 +371,29 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           pendingAttachStates
         );
 
-        const targetNode = childNodes[
+        const targetElement = childNodes[
           nodeInsertionOptions.currentNodeIndex
         ] as Element;
 
         syncStateAndProps(
           forgoElement,
-          targetNode,
-          targetNode,
+          targetElement,
+          targetElement,
           pendingAttachStates
         );
 
-        renderDOMChildNodes(targetNode);
+        renderDOMChildNodes(targetElement);
 
-        return { nodes: [targetNode] };
+        return { nodes: [targetElement] };
       } else {
-        const newElement = addNewDOMElement(
+        const newElement = addAndAttachNewDOMElement(
           nodeInsertionOptions.parentElement,
           childNodes[nodeInsertionOptions.currentNodeIndex]
         );
         return { nodes: [newElement] };
       }
     } else {
-      const newElement = addNewDOMElement(
+      const newElement = addAndAttachNewDOMElement(
         nodeInsertionOptions.parentElement,
         childNodes[nodeInsertionOptions.currentNodeIndex]
       );
@@ -408,59 +402,75 @@ function renderDOMElement<TProps extends ForgoElementProps>(
   }
 
   function renderDOMChildNodes(parentElement: Element) {
-    const forgoChildrenObj = forgoElement.props.children;
+    if (forgoElement.props.dangerouslySetInnerHTML) {
+      parentElement.innerHTML =
+        forgoElement.props.dangerouslySetInnerHTML.__html;
+    } else {
+      const forgoChildrenObj = forgoElement.props.children;
 
-    // Children will not be an array if single item
-    const forgoChildren = flatten(
-      (Array.isArray(forgoChildrenObj)
-        ? forgoChildrenObj
-        : [forgoChildrenObj]
-      ).filter((x) => typeof x !== "undefined" && x !== null)
-    );
-
-    let currentChildNodeIndex = 0;
-
-    for (const forgoChild of forgoChildren) {
-      const { nodes } = internalRender(
-        forgoChild,
-        {
-          type: "search",
-          parentElement,
-          currentNodeIndex: currentChildNodeIndex,
-          length: parentElement.childNodes.length - currentChildNodeIndex,
-        },
-        []
+      // Children will not be an array if single item
+      const forgoChildren = flatten(
+        (Array.isArray(forgoChildrenObj)
+          ? forgoChildrenObj
+          : [forgoChildrenObj]
+        ).filter((x) => typeof x !== "undefined" && x !== null)
       );
-      currentChildNodeIndex += nodes.length;
-    }
 
-    // Get rid the the remaining nodes
-    const nodesToRemove = Array.from(parentElement.childNodes).slice(
-      currentChildNodeIndex
-    );
-    if (nodesToRemove.length) {
-      unloadNodes(nodesToRemove, []);
+      let currentChildNodeIndex = 0;
+
+      for (const forgoChild of forgoChildren) {
+        const { nodes } = internalRender(
+          forgoChild,
+          {
+            type: "search",
+            parentElement,
+            currentNodeIndex: currentChildNodeIndex,
+            length: parentElement.childNodes.length - currentChildNodeIndex,
+          },
+          []
+        );
+        currentChildNodeIndex += nodes.length;
+      }
+
+      // Get rid the the remaining nodes
+      const nodesToRemove = Array.from(parentElement.childNodes).slice(
+        currentChildNodeIndex
+      );
+      if (nodesToRemove.length) {
+        unloadNodes(nodesToRemove, []);
+      }
     }
   }
 
-  function addNewDOMElement(
+  function addAndAttachNewDOMElement(
     parentElement: Element,
     oldNode: ChildNode
   ): Element {
+    const newElement = addNewDOMElement(parentElement);
+
+    if (parentElement) {
+      parentElement.insertBefore(newElement, oldNode);
+    }
+
+    return newElement;
+  }
+
+  function addNewDOMElement(parentElement: Element | undefined): Element {
     const newElement = createElement(forgoElement, parentElement);
 
     if (forgoElement.props.ref) {
       forgoElement.props.ref.value = newElement;
     }
 
-    parentElement.insertBefore(newElement, oldNode);
     syncStateAndProps(
       forgoElement,
       newElement,
       newElement,
       pendingAttachStates
     );
+
     renderDOMChildNodes(newElement);
+
     return newElement;
   }
 }

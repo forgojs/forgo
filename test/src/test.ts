@@ -22,6 +22,7 @@ import replacingFragmentWithNodeWontUnmount from "./replacingFragmentWithNodeWon
 import childWithFragmentUnmounts from "./childWithFragmentUnmounts";
 import rerenderMayUnmountParents from "./rerenderMayUnmountParents";
 import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode";
+import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML";
 
 mount();
 boundary();
@@ -47,3 +48,4 @@ replacingFragmentWithNodeWontUnmount();
 childWithFragmentUnmounts();
 rerenderMayUnmountParents();
 rerenderMayChangeRootNode();
+dangerouslySetInnerHTML();
