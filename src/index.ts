@@ -101,14 +101,14 @@ export type ForgoElement<TProps extends ForgoElementProps> =
   | ForgoCustomComponentElement<TProps>
   | ForgoFragment;
 
-export type ForgoPrimitiveNode =
+export type ForgoNonEmptyPrimitiveNode =
   | string
   | number
   | boolean
   | object
-  | null
-  | BigInt
-  | undefined;
+  | BigInt;
+
+export type ForgoPrimitiveNode = ForgoNonEmptyPrimitiveNode | null | undefined;
 
 export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any>;
 
@@ -235,7 +235,9 @@ function internalRender(
   }
   // Primitive Nodes
   else if (!isForgoElement(forgoNode)) {
-    return renderText(forgoNode, nodeInsertionOptions, pendingAttachStates);
+    return typeof forgoNode === "undefined" || forgoNode === null
+      ? { nodes: [] }
+      : renderText(forgoNode, nodeInsertionOptions, pendingAttachStates);
   }
   // HTML Element
   else if (isForgoDOMElement(forgoNode)) {
@@ -270,22 +272,27 @@ function internalRender(
   }
 */
 function renderText(
-  forgoNode: ForgoPrimitiveNode,
+  forgoNode: ForgoNonEmptyPrimitiveNode,
   nodeInsertionOptions: NodeInsertionOptions,
   pendingAttachStates: NodeAttachedComponentState<any>[]
 ): RenderResult {
-  // Text nodes will always be recreated
-  const textNode: ChildNode = env.document.createTextNode(
-    stringOfPrimitiveNode(forgoNode)
-  );
-
   // We need to create a detached node
   if (nodeInsertionOptions.type === "detached") {
+    // Text nodes will always be recreated
+    const textNode: ChildNode = env.document.createTextNode(
+      stringOfPrimitiveNode(forgoNode)
+    );
+
     syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
     return { nodes: [textNode] };
   }
   // We have to find a node to replace.
   else {
+    // Text nodes will always be recreated
+    const textNode: ChildNode = env.document.createTextNode(
+      stringOfPrimitiveNode(forgoNode)
+    );
+
     // If we're searching in a list, we replace if the current node is a text node.
     const childNodes = nodeInsertionOptions.parentElement.childNodes;
     if (nodeInsertionOptions.length) {
@@ -1172,30 +1179,33 @@ export function rerender(
     if (parentElement !== null) {
       const state = getForgoState(element.node);
       if (state) {
-        const componentState = state.components[element.componentIndex];
+        const originalComponentState = state.components[element.componentIndex];
 
         const effectiveProps =
-          typeof props !== "undefined" ? props : componentState.props;
+          typeof props !== "undefined" ? props : originalComponentState.props;
 
         if (
-          !componentState.component.shouldUpdate ||
-          componentState.component.shouldUpdate(
+          !originalComponentState.component.shouldUpdate ||
+          originalComponentState.component.shouldUpdate(
             effectiveProps,
-            componentState.props
+            originalComponentState.props
           )
         ) {
           const newComponentState = {
-            ...componentState,
+            ...originalComponentState,
             props: effectiveProps,
           };
 
-          const statesToAttach = state.components
-            .slice(0, element.componentIndex)
-            .concat(newComponentState);
+          const parentStates = state.components.slice(
+            0,
+            element.componentIndex
+          );
 
-          const forgoNode = componentState.component.render(
+          const statesToAttach = parentStates.concat(newComponentState);
+
+          const forgoNode = originalComponentState.component.render(
             effectiveProps,
-            componentState.args
+            originalComponentState.args
           );
 
           const nodeIndex = Array.from(parentElement.childNodes).findIndex(
@@ -1205,16 +1215,49 @@ export function rerender(
           const insertionOptions: SearchableNodeInsertionOptions = {
             type: "search",
             currentNodeIndex: nodeIndex,
-            length: componentState.nodes.length,
+            length: originalComponentState.nodes.length,
             parentElement,
           };
 
-          return renderComponentAndRemoveStaleNodes(
+          const renderResult = renderComponentAndRemoveStaleNodes(
             forgoNode,
             insertionOptions,
             statesToAttach,
             newComponentState
           );
+
+          // We have to propagate node changes up the tree.
+          for (let i = 0; i < parentStates.length; i++) {
+            const parentState = parentStates[i];
+
+            const indexOfOriginalRootNode = parentState.nodes.findIndex(
+              (x) => x === originalComponentState.nodes[0]
+            );
+
+            // Let's recreate the node list
+            parentState.nodes = parentState.nodes
+              .slice(0, indexOfOriginalRootNode)
+              .concat(renderResult.nodes)
+              .concat(
+                parentState.nodes.slice(
+                  indexOfOriginalRootNode + originalComponentState.nodes.length
+                )
+              );
+
+            if (parentState.nodes.length === 0) {
+              unmountComponents(parentStates, i);
+              break;
+            } else {
+              // The root node might have changed, so fix it up anyway.
+              parentState.args.element.node = parentState.nodes[0];
+            }
+          }
+
+          if (renderResult.nodes.length === 0) {
+            unmountComponents([newComponentState], 0);
+          }
+
+          return renderResult;
         }
         // shouldUpdate() returned false
         else {
@@ -1223,7 +1266,7 @@ export function rerender(
           return {
             nodes: allNodes.slice(
               indexOfNode,
-              indexOfNode + componentState.nodes.length
+              indexOfNode + originalComponentState.nodes.length
             ),
           };
         }
@@ -1253,7 +1296,9 @@ function flatten(
     : isForgoFragment(itemOrItems)
     ? Array.isArray(itemOrItems.props.children)
       ? itemOrItems.props.children
-      : [itemOrItems.props.children]
+      : typeof itemOrItems.props.children !== "undefined"
+      ? [itemOrItems.props.children]
+      : []
     : [itemOrItems];
   for (const entry of items) {
     if (Array.isArray(entry) || isForgoFragment(entry)) {
@@ -1280,8 +1325,8 @@ function createElement(
   ForgoNodes can be primitive types.
   Convert all primitive types to their string representation.
 */
-function stringOfPrimitiveNode(node: ForgoNode): string {
-  return typeof node === "undefined" || node === null ? "" : node.toString();
+function stringOfPrimitiveNode(node: ForgoNonEmptyPrimitiveNode): string {
+  return node.toString();
 }
 
 /*
