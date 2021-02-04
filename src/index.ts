@@ -377,7 +377,9 @@ function renderDOMElement<TProps extends ForgoElementProps>(
           pendingAttachStates
         );
 
-        const targetNode = childNodes[searchResult.index] as Element;
+        const targetNode = childNodes[
+          nodeInsertionOptions.currentNodeIndex
+        ] as Element;
 
         syncStateAndProps(
           forgoElement,
@@ -495,30 +497,15 @@ function renderCustomComponent<TProps extends ForgoElementProps>(
         const state = getExistingForgoState(targetNode);
         const componentState = state.components[componentIndex];
 
-        const haveCompatibleState =
-          componentState && componentState.ctor === forgoElement.type;
-
-        if (haveCompatibleState) {
-          // Get rid of unwanted nodes.
-          unloadNodes(
-            Array.from(childNodes).slice(
-              nodeInsertionOptions.currentNodeIndex,
-              searchResult.index
-            ),
-            pendingAttachStates.concat(componentState)
-          );
-          return renderExistingComponent(nodeInsertionOptions, componentState);
-        } else {
-          // Get rid of unwanted nodes.
-          unloadNodes(
-            Array.from(childNodes).slice(
-              nodeInsertionOptions.currentNodeIndex,
-              searchResult.index
-            ),
-            pendingAttachStates
-          );
-          return addNewComponent();
-        }
+        // Get rid of unwanted nodes.
+        unloadNodes(
+          Array.from(childNodes).slice(
+            nodeInsertionOptions.currentNodeIndex,
+            searchResult.index
+          ),
+          pendingAttachStates.concat(componentState)
+        );
+        return renderExistingComponent(nodeInsertionOptions, componentState);
       }
       // No matching node found
       else {

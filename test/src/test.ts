@@ -21,6 +21,7 @@ import fragmentUnmountRunsOnce from "./fragmentUnmountRunsOnce";
 import replacingFragmentWithNodeWontUnmount from "./replacingFragmentWithNodeWontUnmount";
 import childWithFragmentUnmounts from "./childWithFragmentUnmounts";
 import rerenderMayUnmountParents from "./rerenderMayUnmountParents";
+import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode";
 
 mount();
 boundary();
@@ -45,3 +46,4 @@ fragmentUnmountRunsOnce();
 replacingFragmentWithNodeWontUnmount();
 childWithFragmentUnmounts();
 rerenderMayUnmountParents();
+rerenderMayChangeRootNode();
