@@ -4,7 +4,7 @@ import { run } from "./script";
 import * as should from "should";
 
 export default function componentUnmount() {
-  it("runs unmount when fragment is replaced with a node", async () => {
+  it("rerender may unmount parents", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
