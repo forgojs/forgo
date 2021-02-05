@@ -414,7 +414,7 @@ window.addEventListener("load", () => {
 
 ## Routing
 
-Forgo Router (forgo-router) is a tiny router for Forgo, and is just around 1KB gzipped. https://github.com/forgojs/forgo-router
+Forgo Router (forgo-router) is a tiny router for Forgo, and is just around 1KB gzipped. Read more at https://github.com/forgojs/forgo-router
 
 Here's an example:
 
@@ -439,7 +439,7 @@ function App() {
 
 ## Application State Management
 
-Forgo State (forgo-state) is an easy-to-use application state management solution for Forgo (like Redux or MobX), and is less than 1KB gzipped. https://github.com/forgojs/forgo-state
+Forgo State (forgo-state) is an easy-to-use application state management solution for Forgo (like Redux or MobX), and is less than 1KB gzipped. Read more at https://github.com/forgojs/forgo-state
 
 Here's an example:
 
@@ -484,6 +484,8 @@ async function updateInbox() {
 Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
 
 To help with that, the forgo-powertoys library (less than 1KB in size) exposes a rerenderElement() function which can rerender a mounted Forgo component with just a CSS selector. Even from outside the Forgo app!
+
+Read more at https://github.com/forgojs/forgo-powertoys
 
 ```js
 import { rerenderElement } from "forgo-powertoys";
