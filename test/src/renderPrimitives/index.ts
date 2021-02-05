@@ -13,7 +13,7 @@ const ELEMENT_NODE_TYPE = 1;
 const ATTRIBUTE_NODE_TYPE = 2;
 const TEXT_NODE_TYPE = 3;
 
-export default function renderPrimitives() {
+export default function() {
   describe("renders primitives", () => {
     [true, false].forEach((wrapped) => {
       const wrappedText = wrapped ? " wrapped in DOM element" : "";

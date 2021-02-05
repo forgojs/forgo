@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import "should";
 import { run, runQuerySelector } from "./script";
 
-export default function mount() {
+export default function() {
   describe("mounts a component", () => {
     it("mounts on an DOM element", async () => {
       const dom = new JSDOM(htmlFile(), {

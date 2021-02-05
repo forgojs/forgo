@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import "should";
 import { runArrays, runNestedArrays } from "./script";
 
-export default function rendersArraysInChildren() {
+export default function() {
   describe("renders arrays as DOM node children", () => {
     const tests: [string, (dom: JSDOM) => void][] = [
       ["array", runArrays],

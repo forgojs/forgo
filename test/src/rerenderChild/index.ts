@@ -4,7 +4,7 @@ import { ForgoRef } from "../../../dist";
 import { run, runSharedNode } from "./script";
 import * as should from "should";
 
-export default function rerenderChild() {
+export default function() {
   describe("rerenders child", () => {
     it("rerenders child on child node", async () => {
       const dom = new JSDOM(htmlFile(), {

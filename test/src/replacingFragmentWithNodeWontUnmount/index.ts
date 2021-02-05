@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { run } from "./script";
 import * as should from "should";
 
-export default function replacingFragmentWithNodeWontUnmount() {
+export default function() {
   it("runs unmount when fragment is replaced with a node", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

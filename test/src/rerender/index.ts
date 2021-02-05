@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { ForgoRef } from "../../../";
 import { run } from "./script";
 
-export default function rerender() {
+export default function() {
   it("rerenders", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

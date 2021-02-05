@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import "should";
 import { run } from "./script";
 
-export default function passProps() {
+export default function() {
   it("passes props to child", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

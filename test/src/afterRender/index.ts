@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { run, runWithTextNode } from "./script";
 import * as should from "should";
 
-export default function afterRender() {
+export default function() {
   describe("runs afterRender()", () => {
     it("when mounted on a DOM element", async () => {
       const dom = new JSDOM(htmlFile(), {
