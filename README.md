@@ -479,6 +479,33 @@ async function updateInbox() {
 }
 ```
 
+## Integrating Forgo into an existing app
+
+Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
+
+To help with that, the forgo-powertoys library (less than 1KB in size) exposes a rerenderElement() function which can rerender a mounted Forgo component with just a CSS selector. Even from outside the Forgo app!
+
+```js
+import { rerenderElement } from "forgo-powertoys";
+
+// A forgo component.
+function LiveScores() {
+  return {
+    render(props) {
+      return <p id="live-scores">Top score is {props.topscore}</p>;
+    },
+  };
+}
+
+//mount it on a DOM node as usual
+window.addEventListener("load", () => {
+  mount(<SimpleTimer />, document.getElementById("root"));
+});
+
+// Now you can rerender the component from anywhere, anytime!
+rerenderElement("#live-scores", { topscore: 244 });
+```
+
 ## Try it out on CodeSandbox
 
 You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
