@@ -416,9 +416,68 @@ window.addEventListener("load", () => {
 
 Forgo Router (forgo-router) is a tiny router for Forgo, and is just around 1KB gzipped. https://github.com/forgojs/forgo-router
 
+Here's an example:
+
+```jsx
+import { Router, Link, matchExactUrl, matchUrl } from "forgo-router";
+
+function App() {
+  return {
+    render() {
+      return (
+        <Router>
+          <Link href="/">Another Forgo App</Link>
+          {matchExactUrl("/", () => <Home />) ||
+            matchUrl("/customers", () => <Customers />) ||
+            matchUrl("/about", () => <AboutPage />)}
+        </Router>
+      );
+    },
+  };
+}
+```
+
 ## Application State Management
 
 Forgo State (forgo-state) is an easy-to-use application state management solution for Forgo (like Redux or MobX), and is less than 1KB gzipped. https://github.com/forgojs/forgo-state
+
+Here's an example:
+
+```jsx
+import { bindToStates, defineState } from "forgo-state";
+
+const mailboxState = defineState({
+  messages: [],
+  drafts: [],
+  spam: [],
+  unread: 0,
+});
+
+function MailboxView() {
+  const component = {
+    render(props: any, args: ForgoRenderArgs) {
+      return (
+        <div>
+          {mailboxState.messages.length ? (
+            mailboxState.messages.map((m) => <p>{m}</p>)
+          ) : (
+            <p>There are no messages for {signinState.username}.</p>
+          )}
+        </div>
+      );
+    },
+  };
+  // MainboxView must change whenever mailboxState changes.
+  return bindToStates([mailboxState], component);
+}
+
+// You could update the state properties directly:
+async function updateInbox() {
+  const data = await fetchInboxData();
+  // The next line causes a rerender of the MailboxView component
+  mailboxState.messages = data;
+}
+```
 
 ## Try it out on CodeSandbox
 
