@@ -164,8 +164,10 @@ const TEXT_NODE_TYPE = 3;
   Such as JSDOM.
 */
 export type EnvType = {
-  window: any;
+  window: Window;
   document: HTMLDocument;
+  HTMLElement: typeof HTMLElement;
+  Text: typeof Text;
 };
 
 /*
@@ -203,6 +205,8 @@ export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
 
 export function createForgoInstance(customEnv: any) {
   const env: EnvType = customEnv;
+  env.HTMLElement = customEnv.window.HTMLElement;
+  env.Text = customEnv.window.Text;
 
   /*
     This is the main render function.
@@ -1026,11 +1030,11 @@ export function createForgoInstance(customEnv: any) {
         const currentEntries = Object.entries(currentState.props);
         for (const [key, value] of currentEntries) {
           if (key !== "children" && key !== "xmlns") {
-            if (node instanceof env.window.Text) {
+            if (node instanceof env.Text) {
               (node as any)[key] = undefined;
-            } else if (node instanceof env.window.HTMLElement) {
+            } else if (node instanceof env.HTMLElement) {
               if (key.includes("-")) {
-                (node as Element).removeAttribute(key);
+                (node as HTMLElement).removeAttribute(key);
               } else {
                 (node as any)[key] = undefined;
               }
@@ -1046,11 +1050,11 @@ export function createForgoInstance(customEnv: any) {
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
         if (key !== "children" && key !== "xmlns") {
-          if (node instanceof env.window.Text) {
+          if (node instanceof env.Text) {
             (node as any)[key] = value;
-          } else if (node instanceof env.window.HTMLElement) {
+          } else if (node instanceof env.HTMLElement) {
             if (key.includes("-") && typeof value === "string") {
-              (node as Element).setAttribute(key, value);
+              (node as HTMLElement).setAttribute(key, value);
             } else {
               (node as any)[key] = value;
             }
