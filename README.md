@@ -483,9 +483,9 @@ async function updateInbox() {
 
 Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
 
-To help with that, the forgo-powertoys library (less than 1KB in size) exposes a rerenderElement() function which can rerender a mounted Forgo component with just a CSS selector. Even from outside the Forgo app!
+To help with that, the forgo-powertoys library (less than 1KB in size) exposes a rerenderElement() function which can rerender a mounted Forgo component with just a CSS selector (from outside the Forgo app). Read more at https://github.com/forgojs/forgo-powertoys
 
-Read more at https://github.com/forgojs/forgo-powertoys
+Here's an example:
 
 ```js
 import { rerenderElement } from "forgo-powertoys";
