@@ -454,6 +454,7 @@ const mailboxState = defineState({
   unread: 0,
 });
 
+// A Forgo component
 function MailboxView() {
   const component = {
     render(props: any, args: ForgoRenderArgs) {
