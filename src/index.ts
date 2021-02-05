@@ -1,5 +1,3 @@
-import { DOMWindow } from "jsdom";
-
 declare global {
   interface ChildNode {
     __forgo?: NodeAttachedState;
@@ -166,7 +164,7 @@ const TEXT_NODE_TYPE = 3;
   Such as JSDOM.
 */
 export type EnvType = {
-  window: DOMWindow;
+  window: any;
   document: HTMLDocument;
 };
 

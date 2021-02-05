@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "0.0.48",
+  "version": "0.0.49",
   "main": "./dist",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {
@@ -9,7 +9,6 @@
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.6",
-    "@types/mocha": "^8.2.0",
     "@types/should": "^13.0.0",
     "esm": "^3.2.25",
     "jsdom": "^16.4.0",
