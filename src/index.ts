@@ -1,3 +1,5 @@
+import { DOMWindow } from "jsdom";
+
 declare global {
   interface ChildNode {
     __forgo?: NodeAttachedState;
@@ -164,7 +166,7 @@ const TEXT_NODE_TYPE = 3;
   Such as JSDOM.
 */
 export type EnvType = {
-  window: Window | typeof globalThis;
+  window: DOMWindow;
   document: HTMLDocument;
 };
 
@@ -1026,20 +1028,16 @@ export function createForgoInstance(customEnv: any) {
         const currentEntries = Object.entries(currentState.props);
         for (const [key, value] of currentEntries) {
           if (key !== "children" && key !== "xmlns") {
-            if (node.nodeType === ELEMENT_NODE_TYPE) {
-              const namespaceURI = (node as Element).namespaceURI;
-              if (
-                namespaceURI !== MATH_NAMESPACE &&
-                namespaceURI !== SVG_NAMESPACE
-              ) {
-                (node as any)[key] = undefined;
-              } else {
-                (node as Element).removeAttribute(key);
-              }
-            }
-            // Not an element.
-            else {
+            if (node instanceof env.window.Text) {
               (node as any)[key] = undefined;
+            } else if (node instanceof env.window.HTMLElement) {
+              if (key.includes("-")) {
+                (node as Element).removeAttribute(key);
+              } else {
+                (node as any)[key] = undefined;
+              }
+            } else {
+              (node as Element).removeAttribute(key);
             }
           }
         }
@@ -1050,28 +1048,20 @@ export function createForgoInstance(customEnv: any) {
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
         if (key !== "children" && key !== "xmlns") {
-          if (node.nodeType === ELEMENT_NODE_TYPE) {
-            const namespaceURI = (node as Element).namespaceURI;
-            if (
-              namespaceURI !== MATH_NAMESPACE &&
-              namespaceURI !== SVG_NAMESPACE
-            ) {
-              if (key.includes("-") && typeof value === "string") {
-                (node as Element).setAttribute(key, value);
-              } else {
-                (node as any)[key] = value;
-              }
-            } else {
-              if (typeof value === "string") {
-                (node as Element).setAttribute(key, value);
-              } else {
-                (node as any)[key] = value;
-              }
-            }
-          }
-          // Not an element.
-          else {
+          if (node instanceof env.window.Text) {
             (node as any)[key] = value;
+          } else if (node instanceof env.window.HTMLElement) {
+            if (key.includes("-") && typeof value === "string") {
+              (node as Element).setAttribute(key, value);
+            } else {
+              (node as any)[key] = value;
+            }
+          } else {
+            if (typeof value === "string") {
+              (node as Element).setAttribute(key, value);
+            } else {
+              (node as any)[key] = value;
+            }
           }
         }
       }
