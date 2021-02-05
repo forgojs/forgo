@@ -467,11 +467,11 @@ function MailboxView() {
       );
     },
   };
-  // MainboxView must change whenever mailboxState changes.
+  // MailboxView must change whenever mailboxState changes.
   return bindToStates([mailboxState], component);
 }
 
-// You could update the state properties directly:
+// You could update the state properties directly
 async function updateInbox() {
   const data = await fetchInboxData();
   // The next line causes a rerender of the MailboxView component
