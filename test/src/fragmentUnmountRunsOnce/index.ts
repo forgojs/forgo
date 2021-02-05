@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { run } from "./script";
 import * as should from "should";
 
-export default function componentUnmount() {
+export default function fragmentUnmountRunsOnce() {
   it("runs fragment unmount only once", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

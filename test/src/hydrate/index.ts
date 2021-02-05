@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile";
 import { ForgoRef } from "../../../";
 import { run } from "./script";
 
-export default function hydrates() {
+export default function hydrate() {
   it("hydrates", async () => {
     const dom = new JSDOM(htmlFile(`
       <div>

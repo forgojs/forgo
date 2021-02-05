@@ -4,7 +4,7 @@ import { run } from "./script";
 import * as should from "should";
 import { getForgoState, NodeAttachedState } from "../../../";
 
-export default function componentUnmount() {
+export default function rerenderMayChangeRootNode() {
   it("rerender may change root node", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
