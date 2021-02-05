@@ -418,7 +418,7 @@ Forgo Router (forgo-router) is a tiny router for Forgo, and is just around 1KB g
 
 Here's an example:
 
-```jsx
+```js
 import { Router, Link, matchExactUrl, matchUrl } from "forgo-router";
 
 function App() {
@@ -426,7 +426,7 @@ function App() {
     render() {
       return (
         <Router>
-          <Link href="/">Another Forgo App</Link>
+          <Link href="/">Go to Home Page</Link>
           {matchExactUrl("/", () => <Home />) ||
             matchUrl("/customers", () => <Customers />) ||
             matchUrl("/about", () => <AboutPage />)}
@@ -443,9 +443,10 @@ Forgo State (forgo-state) is an easy-to-use application state management solutio
 
 Here's an example:
 
-```jsx
+```js
 import { bindToStates, defineState } from "forgo-state";
 
+// Define one (or more) application state containers.
 const mailboxState = defineState({
   messages: [],
   drafts: [],
@@ -471,7 +472,6 @@ function MailboxView() {
   return bindToStates([mailboxState], component);
 }
 
-// You could update the state properties directly
 async function updateInbox() {
   const data = await fetchInboxData();
   // The next line causes a rerender of the MailboxView component
