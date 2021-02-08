@@ -93,7 +93,7 @@ export type ForgoDOMElement<TProps> = ForgoElementBase<TProps> & {
   type: string;
 };
 
-export type ForgoCustomComponentElement<TProps> = ForgoElementBase<TProps> & {
+export type ForgoComponentElement<TProps> = ForgoElementBase<TProps> & {
   type: ForgoComponentCtor<TProps>;
 };
 
@@ -105,7 +105,7 @@ export type ForgoFragment = {
 
 export type ForgoElement<TProps extends ForgoElementProps> =
   | ForgoDOMElement<TProps>
-  | ForgoCustomComponentElement<TProps>;
+  | ForgoComponentElement<TProps>;
 
 export type ForgoNonEmptyPrimitiveNode =
   | string
@@ -486,7 +486,7 @@ export function createForgoInstance(customEnv: any) {
     Such as <MySideBar size="large" />
   */
   function renderCustomComponent<TProps extends ForgoElementProps>(
-    forgoElement: ForgoCustomComponentElement<TProps>,
+    forgoElement: ForgoComponentElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[]
     // boundary: ForgoComponent<any> | undefined
@@ -982,7 +982,7 @@ export function createForgoInstance(customEnv: any) {
       b) match by the component constructor
   */
   function findReplacementCandidateForCustomComponent<TProps>(
-    forgoElement: ForgoCustomComponentElement<TProps>,
+    forgoElement: ForgoComponentElement<TProps>,
     nodes: NodeListOf<ChildNode> | ChildNode[],
     searchFrom: number,
     length: number
