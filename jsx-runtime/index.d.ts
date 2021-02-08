@@ -52,14 +52,14 @@ export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   4. unmount() is optional. Gets called just before unmount.
   5. shouldUpdate() is optional. Let's you bail out of a render().
 */
-export interface ForgoComponent<TProps extends ForgoComponentProps> {
+export type ForgoComponent<TProps extends ForgoComponentProps> = {
   render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
   afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
   error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
-}
+};
 
 /*
   A ForgoNode is the output of the render() function.
@@ -150,13 +150,11 @@ export type ForgoIntrinsicElement<T> = {
 } & {
   [K in keyof T]?: T[K];
 } & {
-    // key?: any;
-    //children?: ForgoNode | ForgoNode[];
+    key?: any;
+    children?: ForgoNode | ForgoNode[];
   };
 
 export namespace JSX {
-  export interface Element extends ForgoComponent<any> {}
-
   export interface IntrinsicElements {
     a: ForgoIntrinsicElement<HTMLAnchorElement>;
     abbr: ForgoIntrinsicElement<HTMLElement>;

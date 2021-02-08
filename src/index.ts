@@ -58,7 +58,7 @@ export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   4. unmount() is optional. Gets called just before unmount.
   5. shouldUpdate() is optional. Let's you bail out of a render().
 */
-export interface ForgoComponent<TProps extends ForgoComponentProps> {
+export type ForgoComponent<TProps extends ForgoComponentProps> = {
   render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
   afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
   error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
