@@ -65,7 +65,7 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
-}
+};
 
 /*
   A ForgoNode is the output of the render() function.
@@ -1034,31 +1034,41 @@ export function createForgoInstance(customEnv: any) {
       if (currentState && currentState.props) {
         const currentEntries = Object.entries(currentState.props);
         for (const [key, value] of currentEntries) {
-          if (key !== "children" && key !== "xmlns") {
-            if (node instanceof env.Text) {
-              (node as any)[key] = undefined;
-            } else if (node instanceof env.HTMLElement) {
-              if (key.includes("-")) {
-                (node as HTMLElement).removeAttribute(key);
-              } else {
+          if (typeof forgoNode.props[key] === "undefined") {
+            if (key !== "children" && key !== "xmlns") {
+              if (node instanceof env.Text) {
                 (node as any)[key] = undefined;
+              } else if (node instanceof env.HTMLElement) {
+                if (key === "style") {
+                  (node as HTMLElement).style.cssText = "";
+                } else if (key.includes("-")) {
+                  (node as HTMLElement).removeAttribute(key);
+                } else {
+                  (node as any)[key] = undefined;
+                }
+              } else {
+                (node as Element).removeAttribute(key);
               }
-            } else {
-              (node as Element).removeAttribute(key);
             }
           }
         }
       }
 
-      // We're gonna keep this simple.
-      // Attach everything as is.
+      // TODO: What preact does to figure out attr vs prop
+      //  - do a (key in element) check.
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
         if (key !== "children" && key !== "xmlns") {
           if (node instanceof env.Text) {
             (node as any)[key] = value;
           } else if (node instanceof env.HTMLElement) {
-            if (key.includes("-") && typeof value === "string") {
+            if (key === "style") {
+              const stringOfCSS =
+                typeof forgoNode.props.style === "string"
+                  ? forgoNode.props.style
+                  : styleToString(forgoNode.props.style);
+              (node as HTMLElement).style.cssText = stringOfCSS;
+            } else if (key.includes("-") && typeof value === "string") {
               (node as HTMLElement).setAttribute(key, value);
             } else {
               (node as any)[key] = value;
@@ -1427,4 +1437,20 @@ function assertIsComponent<TProps>(
 
 function isString(val: unknown): val is string {
   return typeof val === "string";
+}
+
+// Thanks Artem Bochkarev
+function styleToString(style: any) {
+  return Object.keys(style).reduce(
+    (acc, key) =>
+      acc +
+      key
+        .split(/(?=[A-Z])/)
+        .join("-")
+        .toLowerCase() +
+      ":" +
+      style[key] +
+      ";",
+    ""
+  );
 }

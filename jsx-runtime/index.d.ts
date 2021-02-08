@@ -145,6 +145,7 @@ export function jsxDEV<TProps extends ForgoElementProps>(
   __is_forgo_element__: true;
 };
 
+// lifted from preact.
 type DOMCSSProperties = {
   [key in keyof Omit<
     CSSStyleDeclaration,
@@ -164,12 +165,15 @@ interface CSSProperties extends AllCSSProperties, DOMCSSProperties {
 
 export type ForgoIntrinsicElement<T> = {
   [key: string]: any;
-} & {
-  [K in keyof T]?: T[K];
-} & {
+} & Omit<
+  {
+    [K in keyof T]?: T[K];
+  },
+  "key" | "children" | "style"
+> & {
     key?: any;
     children?: ForgoNode | ForgoNode[];
-    style?: CSSProperties;
+    style?: string | CSSProperties;
   };
 
 export namespace JSX {

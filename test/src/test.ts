@@ -23,6 +23,7 @@ import childWithFragmentUnmounts from "./childWithFragmentUnmounts";
 import rerenderMayUnmountParents from "./rerenderMayUnmountParents";
 import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode";
 import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML";
+import css from "./css";
 
 mount();
 boundary();
@@ -49,3 +50,4 @@ childWithFragmentUnmounts();
 rerenderMayUnmountParents();
 rerenderMayChangeRootNode();
 dangerouslySetInnerHTML();
+css();
