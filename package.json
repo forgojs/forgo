@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.6",
+    "@types/mocha": "^8.2.0",
     "@types/should": "^13.0.0",
     "esm": "^3.2.25",
     "jsdom": "^16.4.0",
