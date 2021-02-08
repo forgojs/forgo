@@ -145,6 +145,23 @@ export function jsxDEV<TProps extends ForgoElementProps>(
   __is_forgo_element__: true;
 };
 
+type DOMCSSProperties = {
+  [key in keyof Omit<
+    CSSStyleDeclaration,
+    | "item"
+    | "setProperty"
+    | "removeProperty"
+    | "getPropertyValue"
+    | "getPropertyPriority"
+  >]?: string | number | null | undefined;
+};
+type AllCSSProperties = {
+  [key: string]: string | number | null | undefined;
+};
+interface CSSProperties extends AllCSSProperties, DOMCSSProperties {
+  cssText?: string | null;
+}
+
 export type ForgoIntrinsicElement<T> = {
   [key: string]: any;
 } & {
@@ -152,6 +169,7 @@ export type ForgoIntrinsicElement<T> = {
 } & {
     key?: any;
     children?: ForgoNode | ForgoNode[];
+    style?: CSSProperties;
   };
 
 export namespace JSX {
