@@ -29,6 +29,10 @@ export type ForgoComponentCtor<TProps extends ForgoElementProps> = (
   props: TProps
 ) => ForgoComponent<TProps>;
 
+export type ForgoComponentProps = {
+  children?: ForgoNode | ForgoNode[];
+};
+
 export type ForgoElementArg = {
   node?: ChildNode;
   componentIndex: number;
@@ -54,7 +58,7 @@ export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   4. unmount() is optional. Gets called just before unmount.
   5. shouldUpdate() is optional. Let's you bail out of a render().
 */
-export type ForgoComponent<TProps extends ForgoElementProps> = {
+export type ForgoComponent<TProps extends ForgoComponentProps> = {
   render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
   afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
   error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
@@ -93,14 +97,15 @@ export type ForgoCustomComponentElement<TProps> = ForgoElementBase<TProps> & {
   type: ForgoComponentCtor<TProps>;
 };
 
-export type ForgoFragment = ForgoElementBase<any> & {
+export type ForgoFragment = {
   type: typeof Fragment;
+  props: { children?: ForgoNode | ForgoNode[] };
+  __is_forgo_element__: true;
 };
 
 export type ForgoElement<TProps extends ForgoElementProps> =
   | ForgoDOMElement<TProps>
-  | ForgoCustomComponentElement<TProps>
-  | ForgoFragment;
+  | ForgoCustomComponentElement<TProps>;
 
 export type ForgoNonEmptyPrimitiveNode =
   | string
@@ -111,7 +116,7 @@ export type ForgoNonEmptyPrimitiveNode =
 
 export type ForgoPrimitiveNode = ForgoNonEmptyPrimitiveNode | null | undefined;
 
-export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any>;
+export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 
 /*
   Forgo stores Component state on the element on which it is mounted.
@@ -1363,11 +1368,11 @@ function stringOfPrimitiveNode(node: ForgoNonEmptyPrimitiveNode): string {
 /*
   Get Node Types
 */
-function isForgoElement(node: ForgoNode): node is ForgoElement<any> {
+function isForgoElement(forgoNode: ForgoNode): forgoNode is ForgoElement<any> {
   return (
-    typeof node !== "undefined" &&
-    node !== null &&
-    (node as any).__is_forgo_element__ === true
+    typeof forgoNode !== "undefined" &&
+    forgoNode !== null &&
+    (forgoNode as any).__is_forgo_element__ === true
   );
 }
 
@@ -1376,7 +1381,7 @@ function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
 }
 
 function isForgoFragment(node: ForgoNode): node is ForgoFragment {
-  return isForgoElement(node) && node.type === Fragment;
+  return (node as any).type === Fragment;
 }
 
 /*
