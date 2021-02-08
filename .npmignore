@@ -1,3 +1,2 @@
-build.sh
 .vscode
-test/*
+dist/test/*

@@ -19,9 +19,10 @@
     "typescript": "^4.1.3"
   },
   "scripts": {
-    "build": "rimraf ./dist && tsc",
-    "build-test": "(cd test && rimraf ./dist && tsc)",
-    "test": "mocha -r esm test/dist/test.js"
+    "clean": "rimraf ./dist",
+    "build": "tsc",
+    "build-test": "tsc -p tsconfig.test.json",
+    "test": "mocha -r esm dist/test/test.js"
   },
   "license": "MIT"
 }
