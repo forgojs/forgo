@@ -1067,7 +1067,9 @@ export function createForgoInstance(customEnv: any) {
                 typeof forgoNode.props.style === "string"
                   ? forgoNode.props.style
                   : styleToString(forgoNode.props.style);
-              (node as HTMLElement).style.cssText = stringOfCSS;
+              if ((node as HTMLElement).style.cssText !== stringOfCSS) {
+                (node as HTMLElement).style.cssText = stringOfCSS;
+              }
             } else if (key.includes("-") && typeof value === "string") {
               (node as HTMLElement).setAttribute(key, value);
             } else {
