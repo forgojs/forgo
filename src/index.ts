@@ -1312,17 +1312,22 @@ export function createForgoInstance(customEnv: any) {
     parentElement: Element | undefined
   ) {
     const namespaceURI =
-      forgoElement.props.xmlns ?? (parentElement && parentElement.namespaceURI);
+      forgoElement.props.xmlns ?? forgoElement.type === "svg"
+        ? SVG_NAMESPACE
+        : parentElement && parentElement.namespaceURI;
     if (forgoElement.props.is) {
       return namespaceURI
-      ? env.document.createElementNS(namespaceURI, forgoElement.type, { is: forgoElement.props.is })
-      : env.document.createElement(forgoElement.type, { is: forgoElement.props.is });
+        ? env.document.createElementNS(namespaceURI, forgoElement.type, {
+            is: forgoElement.props.is,
+          })
+        : env.document.createElement(forgoElement.type, {
+            is: forgoElement.props.is,
+          });
     } else {
       return namespaceURI
-      ? env.document.createElementNS(namespaceURI, forgoElement.type)
-      : env.document.createElement(forgoElement.type);
+        ? env.document.createElementNS(namespaceURI, forgoElement.type)
+        : env.document.createElement(forgoElement.type);
     }
-    
   }
 
   return {
