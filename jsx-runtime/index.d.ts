@@ -178,6 +178,7 @@ export type ForgoIntrinsicElement<T> = {
 
 export namespace JSX {
   export interface IntrinsicElements {
+    [key: string]: ForgoIntrinsicElement<any>;
     a: ForgoIntrinsicElement<HTMLAnchorElement>;
     abbr: ForgoIntrinsicElement<HTMLElement>;
     address: ForgoIntrinsicElement<HTMLElement>;

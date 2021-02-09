@@ -4,7 +4,7 @@ import "should";
 import { run } from "./script";
 
 export default function () {
-  it("passes props to child", async () => {
+  it("applies css styles", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",

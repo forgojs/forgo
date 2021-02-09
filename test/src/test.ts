@@ -24,6 +24,7 @@ import rerenderMayUnmountParents from "./rerenderMayUnmountParents";
 import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode";
 import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML";
 import css from "./css";
+import inheritedCustomElement from "./inheritedCustomElement";
 
 mount();
 boundary();
@@ -51,3 +52,4 @@ rerenderMayUnmountParents();
 rerenderMayChangeRootNode();
 dangerouslySetInnerHTML();
 css();
+inheritedCustomElement();

@@ -1313,9 +1313,16 @@ export function createForgoInstance(customEnv: any) {
   ) {
     const namespaceURI =
       forgoElement.props.xmlns ?? (parentElement && parentElement.namespaceURI);
-    return namespaceURI
+    if (forgoElement.props.is) {
+      return namespaceURI
+      ? env.document.createElementNS(namespaceURI, forgoElement.type, { is: forgoElement.props.is })
+      : env.document.createElement(forgoElement.type, { is: forgoElement.props.is });
+    } else {
+      return namespaceURI
       ? env.document.createElementNS(namespaceURI, forgoElement.type)
       : env.document.createElement(forgoElement.type);
+    }
+    
   }
 
   return {
