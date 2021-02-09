@@ -149,6 +149,24 @@ export type NodeAttachedState = {
   components: NodeAttachedComponentState<any>[];
 };
 
+// CSS types lifted from preact.
+export type DOMCSSProperties = {
+  [key in keyof Omit<
+    CSSStyleDeclaration,
+    | "item"
+    | "setProperty"
+    | "removeProperty"
+    | "getPropertyValue"
+    | "getPropertyPriority"
+  >]?: string | number | null | undefined;
+};
+export type AllCSSProperties = {
+  [key: string]: string | number | null | undefined;
+};
+export interface CSSProperties extends AllCSSProperties, DOMCSSProperties {
+  cssText?: string | null;
+}
+
 /*
   Namespaces
 */
@@ -1033,7 +1051,7 @@ export function createForgoInstance(customEnv: any) {
       // Remove props which don't match
       if (currentState && currentState.props) {
         const currentEntries = Object.entries(currentState.props);
-        for (const [key, value] of currentEntries) {
+        for (const [key] of currentEntries) {
           if (typeof forgoNode.props[key] === "undefined") {
             if (key !== "children" && key !== "xmlns") {
               if (node instanceof env.Text) {
