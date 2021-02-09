@@ -1081,10 +1081,7 @@ export function createForgoInstance(customEnv: any) {
             (node as any)[key] = value;
           } else if (node instanceof env.HTMLElement) {
             if (key === "style") {
-              const stringOfCSS =
-                typeof forgoNode.props.style === "string"
-                  ? forgoNode.props.style
-                  : styleToString(forgoNode.props.style);
+              const stringOfCSS = styleToString(forgoNode.props.style);
               if ((node as HTMLElement).style.cssText !== stringOfCSS) {
                 (node as HTMLElement).style.cssText = stringOfCSS;
               }
@@ -1460,17 +1457,23 @@ function isString(val: unknown): val is string {
 }
 
 // Thanks Artem Bochkarev
-function styleToString(style: any) {
-  return Object.keys(style).reduce(
-    (acc, key) =>
-      acc +
-      key
-        .split(/(?=[A-Z])/)
-        .join("-")
-        .toLowerCase() +
-      ":" +
-      style[key] +
-      ";",
-    ""
-  );
+function styleToString(style: any): string {
+  if (typeof style === "string") {
+    return style;
+  } else if (typeof style === "undefined" || style === null) {
+    return "";
+  } else {
+    return Object.keys(style).reduce(
+      (acc, key) =>
+        acc +
+        key
+          .split(/(?=[A-Z])/)
+          .join("-")
+          .toLowerCase() +
+        ":" +
+        style[key] +
+        ";",
+      ""
+    );
+  }
 }
