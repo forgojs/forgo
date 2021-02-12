@@ -8,9 +8,7 @@
     "declaration": true,
     "lib": ["ES2020", "DOM"],
     "sourceMap": true,
-    "strict": true,
-    "jsx": "preserve",
-    "jsxImportSource": "..",
+    "strict": true
   },
-  "include": ["./src/**/*"]
+  "files": ["./src/index.ts"]
 }

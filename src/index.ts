@@ -11,27 +11,33 @@ export type ForgoRef<T> = {
   value?: T;
 };
 
+/*
+  We have two types of elements
+  1. DOM Elements
+  2. Custom Component Elements
+*/
 export type ForgoElementProps = {
+  children?: ForgoNode | ForgoNode[];
+};
+
+export type ForgoDOMElementProps = {
   xmlns?: string;
   ref?: ForgoRef<Element>;
-  children?: ForgoNode | ForgoNode[];
   dangerouslySetInnerHTML?: { __html: string };
-};
+} & ForgoElementProps;
+
+export type ForgoComponentProps = {} & ForgoElementProps;
 
 /*
   This is the constructor of a ForgoComponent, called a 'Component Constructor'
  
-  The terminology is a little different from React here.
+  The terminology is different from React here.
   For example, in <MyComponent />, the MyComponent is the Component Constructor.
   The Component Constructor is defined by the type ForgoComponentCtor, and it returns a Component (of type ForgoComponent).
 */
-export type ForgoComponentCtor<TProps extends ForgoElementProps> = (
+export type ForgoComponentCtor<TProps extends ForgoComponentProps> = (
   props: TProps
 ) => ForgoComponent<TProps>;
-
-export type ForgoComponentProps = {
-  children?: ForgoNode | ForgoNode[];
-};
 
 export type ForgoElementArg = {
   node?: ChildNode;
@@ -89,11 +95,15 @@ export type ForgoElementBase<TProps extends ForgoElementProps> = {
   __is_forgo_element__: true;
 };
 
-export type ForgoDOMElement<TProps> = ForgoElementBase<TProps> & {
+export type ForgoDOMElement<
+  TProps extends ForgoDOMElementProps
+> = ForgoElementBase<TProps> & {
   type: string;
 };
 
-export type ForgoComponentElement<TProps> = ForgoElementBase<TProps> & {
+export type ForgoComponentElement<
+  TProps extends ForgoComponentProps
+> = ForgoElementBase<TProps> & {
   type: ForgoComponentCtor<TProps>;
 };
 
@@ -103,7 +113,7 @@ export type ForgoFragment = {
   __is_forgo_element__: true;
 };
 
-export type ForgoElement<TProps extends ForgoElementProps> =
+export type ForgoElement<TProps> =
   | ForgoDOMElement<TProps>
   | ForgoComponentElement<TProps>;
 
@@ -186,7 +196,7 @@ const TEXT_NODE_TYPE = 3;
   The following adds support for injecting test environment objects.
   Such as JSDOM.
 */
-export type EnvType = {
+export type ForgoEnvType = {
   window: Window;
   document: HTMLDocument;
   HTMLElement: typeof HTMLElement;
@@ -227,7 +237,7 @@ export type RenderResult = {
 export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
 
 export function createForgoInstance(customEnv: any) {
-  const env: EnvType = customEnv;
+  const env: ForgoEnvType = customEnv;
   env.HTMLElement = customEnv.window.HTMLElement;
   env.Text = customEnv.window.Text;
 
@@ -363,7 +373,7 @@ export function createForgoInstance(customEnv: any) {
       }
     }
   */
-  function renderDOMElement<TProps extends ForgoElementProps>(
+  function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoDOMElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[]
@@ -503,7 +513,7 @@ export function createForgoInstance(customEnv: any) {
     Render a Custom Component
     Such as <MySideBar size="large" />
   */
-  function renderCustomComponent<TProps extends ForgoElementProps>(
+  function renderCustomComponent<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoComponentElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[]

@@ -1,10 +1,10 @@
 import { DOMWindow, JSDOM } from "jsdom";
 import {
   ForgoComponent,
-  ForgoElementProps,
+  ForgoComponentProps,
   mount,
   setCustomEnv,
-  ForgoErrorArgs
+  ForgoErrorArgs,
 } from "../../../";
 
 let window: DOMWindow;
@@ -18,7 +18,7 @@ function ErrorComponent() {
   };
 }
 
-interface ErrorBoundaryProps extends ForgoElementProps {
+interface ErrorBoundaryProps extends ForgoComponentProps {
   name: string;
 }
 

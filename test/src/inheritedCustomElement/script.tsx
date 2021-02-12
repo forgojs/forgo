@@ -9,7 +9,7 @@ function Component() {
     render() {
       return (
         <div>
-          <article contenteditable="">
+          <article contenteditable={true}>
             <h2>Sample heading</h2>
 
             <p>
