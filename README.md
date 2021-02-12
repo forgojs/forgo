@@ -205,7 +205,7 @@ function Parent() {
       return (
         <div>
           {people.map((item) => (
-            <Child key={item.key} firstName={item.firstName} />
+            <Child key={item.id} firstName={item.firstName} />
           ))}
         </div>
       );
