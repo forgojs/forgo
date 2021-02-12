@@ -312,7 +312,6 @@ export function createForgoInstance(customEnv: any) {
       const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
-
       syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
       return { nodes: [textNode] };
     }
@@ -328,25 +327,24 @@ export function createForgoInstance(customEnv: any) {
       if (nodeInsertionOptions.length) {
         let targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         if (targetNode.nodeType === TEXT_NODE_TYPE) {
+          targetNode.replaceWith(textNode);
           syncStateAndProps(
             forgoNode,
             textNode,
             targetNode,
             pendingAttachStates
           );
-          targetNode.replaceWith(textNode);
           return { nodes: [textNode] };
         } else {
-          syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
           const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
           nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
+          syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
           return { nodes: [textNode] };
         }
       }
       // There are no target nodes available
       else {
         const childNodes = nodeInsertionOptions.parentElement.childNodes;
-        syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
         if (
           childNodes.length === 0 ||
           nodeInsertionOptions.currentNodeIndex === 0
@@ -356,6 +354,7 @@ export function createForgoInstance(customEnv: any) {
           const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
           nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
         }
+        syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
         return { nodes: [textNode] };
       }
     }
@@ -380,7 +379,7 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
-      const newElement = addNewDOMElement(undefined);
+      const newElement = addNewDOMElement(undefined, null);
       return { nodes: [newElement] };
     }
     // We have to find a node to replace.
@@ -409,25 +408,24 @@ export function createForgoInstance(customEnv: any) {
             nodeInsertionOptions.currentNodeIndex
           ] as Element;
 
+          renderDOMChildNodes(targetElement);
+
           syncStateAndProps(
             forgoElement,
             targetElement,
             targetElement,
             pendingAttachStates
           );
-
-          renderDOMChildNodes(targetElement);
-
           return { nodes: [targetElement] };
         } else {
-          const newElement = addAndAttachNewDOMElement(
+          const newElement = addNewDOMElement(
             nodeInsertionOptions.parentElement,
             childNodes[nodeInsertionOptions.currentNodeIndex]
           );
           return { nodes: [newElement] };
         }
       } else {
-        const newElement = addAndAttachNewDOMElement(
+        const newElement = addNewDOMElement(
           nodeInsertionOptions.parentElement,
           childNodes[nodeInsertionOptions.currentNodeIndex]
         );
@@ -476,25 +474,21 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    function addAndAttachNewDOMElement(
-      parentElement: Element,
-      oldNode: ChildNode
+    function addNewDOMElement(
+      parentElement: Element | undefined,
+      oldNode: ChildNode | null
     ): Element {
-      const newElement = addNewDOMElement(parentElement);
+      const newElement = createElement(forgoElement, parentElement);
 
       if (parentElement) {
         parentElement.insertBefore(newElement, oldNode);
       }
 
-      return newElement;
-    }
-
-    function addNewDOMElement(parentElement: Element | undefined): Element {
-      const newElement = createElement(forgoElement, parentElement);
-
       if (forgoElement.props.ref) {
         forgoElement.props.ref.value = newElement;
       }
+
+      renderDOMChildNodes(newElement);
 
       syncStateAndProps(
         forgoElement,
@@ -502,8 +496,6 @@ export function createForgoInstance(customEnv: any) {
         newElement,
         pendingAttachStates
       );
-
-      renderDOMChildNodes(newElement);
 
       return newElement;
     }

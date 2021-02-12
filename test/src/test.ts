@@ -25,6 +25,7 @@ import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode";
 import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML";
 import css from "./css";
 import inheritedCustomElement from "./inheritedCustomElement";
+import fragmentOverwriteDoesNotUnmount from "./fragmentOverwriteDoesNotUnmount";
 
 mount();
 boundary();
@@ -53,3 +54,4 @@ rerenderMayChangeRootNode();
 dangerouslySetInnerHTML();
 css();
 inheritedCustomElement();
+fragmentOverwriteDoesNotUnmount();
