@@ -574,6 +574,8 @@ export function createForgoInstance(customEnv: any) {
 
         const statesToAttach = pendingAttachStates.concat(newComponentState);
 
+        const previousNode = componentState.args.element.node;
+
         // Get a new element by calling render on existing component.
         const newForgoNode = newComponentState.component.render(
           forgoElement.props,
@@ -584,7 +586,7 @@ export function createForgoInstance(customEnv: any) {
           ? newComponentState.component
           : undefined;
 
-        return withErrorBoundary(
+        const renderResult = withErrorBoundary(
           forgoElement.props,
           newComponentState.args,
           statesToAttach,
@@ -606,6 +608,15 @@ export function createForgoInstance(customEnv: any) {
             );
           }
         );
+
+        if (newComponentState.component.afterRender) {
+          newComponentState.component.afterRender(forgoElement.props, {
+            ...newComponentState.args,
+            previousNode,
+          });
+        }
+
+        return renderResult;
       }
       // shouldUpdate() returned false
       else {
@@ -680,6 +691,11 @@ export function createForgoInstance(customEnv: any) {
           newComponentState.nodes = renderResult.nodes;
           if (renderResult.nodes.length > 1) {
             newComponentState.args.element.node = renderResult.nodes[0];
+          }
+
+          if (component.afterRender) {
+            // No previousNode since new component. So just args and not afterRenderArgs.
+            component.afterRender(forgoElement.props, args);
           }
 
           return renderResult;
@@ -1118,17 +1134,6 @@ export function createForgoInstance(customEnv: any) {
 
       setForgoState(node, state);
     }
-
-    // Run afterRender() if defined.
-    previousNodes.forEach((previousNode, i) => {
-      const state = pendingAttachStates[i];
-      if (state.component.afterRender) {
-        state.component.afterRender(state.props, {
-          ...pendingAttachStates[i].args,
-          previousNode,
-        });
-      }
-    });
   }
 
   /*
@@ -1228,6 +1233,8 @@ export function createForgoInstance(customEnv: any) {
 
             const statesToAttach = parentStates.concat(newComponentState);
 
+            const previousNode = originalComponentState.args.element.node;
+
             const forgoNode = originalComponentState.component.render(
               effectiveProps,
               originalComponentState.args
@@ -1281,6 +1288,14 @@ export function createForgoInstance(customEnv: any) {
 
             if (renderResult.nodes.length === 0) {
               unmountComponents([newComponentState], 0);
+            }
+
+            // Run afterRender() if defined.
+            if (originalComponentState.component.afterRender) {
+              originalComponentState.component.afterRender(effectiveProps, {
+                ...originalComponentState.args,
+                previousNode,
+              });
             }
 
             return renderResult;
