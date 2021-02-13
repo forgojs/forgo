@@ -762,7 +762,7 @@ export function createForgoInstance(customEnv: any) {
     unloadNodes(nodesToRemove, statesToAttach);
 
     // In case we rendered an array, set the node to the first node.
-    // And set numNodes.
+    // We do this because args.element.node would be set to the last node otherwise.
     componentState.nodes = renderResult.nodes;
     if (renderResult.nodes.length > 1) {
       componentState.args.element.node = renderResult.nodes[0];
