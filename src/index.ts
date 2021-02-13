@@ -1,6 +1,7 @@
 declare global {
   interface ChildNode {
     __forgo?: NodeAttachedState;
+    __forgo_deleted?: boolean;
   }
 }
 
@@ -235,6 +236,20 @@ export type RenderResult = {
   We simply use it as a marker in jsx-runtime.
 */
 export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
+
+/*
+  HACK: Chrome fires onblur (if defined) immediately after a node.remove().
+  This is bad news for us, since a rerender() inside the onblur handler will run on an unattached node.
+  So, disable onblur if node is set to be removed.
+*/
+const eventsToDisableWhenNodeIsDeleted = ["onblur"];
+function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
+  return (e: any) => {
+    if (!node.__forgo_deleted) {
+      return value(e);
+    }
+  };
+}
 
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
@@ -878,6 +893,7 @@ export function createForgoInstance(customEnv: any) {
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ) {
     for (const node of nodes) {
+      node.__forgo_deleted = true;
       node.remove();
       const state = getForgoState(node);
       if (state) {
@@ -1106,7 +1122,11 @@ export function createForgoInstance(customEnv: any) {
             } else if (key.includes("-") && typeof value === "string") {
               (node as HTMLElement).setAttribute(key, value);
             } else {
-              (node as any)[key] = value;
+              if (eventsToDisableWhenNodeIsDeleted.includes(key)) {
+                (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
+              } else {
+                (node as any)[key] = value;
+              }
             }
           } else {
             if (typeof value === "string") {
