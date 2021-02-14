@@ -540,7 +540,8 @@ export function createForgoInstance(customEnv: any) {
           forgoElement,
           childNodes,
           nodeInsertionOptions.currentNodeIndex,
-          nodeInsertionOptions.length
+          nodeInsertionOptions.length,
+          pendingAttachStates.length
         );
 
         if (searchResult.found) {
@@ -1037,18 +1038,21 @@ export function createForgoInstance(customEnv: any) {
     forgoElement: ForgoComponentElement<TProps>,
     nodes: NodeListOf<ChildNode> | ChildNode[],
     searchFrom: number,
-    length: number
+    length: number,
+    componentIndex: number
   ): CandidateSearchResult {
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       const stateOnNode = getForgoState(node);
       if (stateOnNode && stateOnNode.components.length > 0) {
         if (forgoElement.key) {
-          if (stateOnNode.components[0].key === forgoElement.key) {
+          if (stateOnNode.components[componentIndex].key === forgoElement.key) {
             return { found: true, index: i };
           }
         } else {
-          if (stateOnNode.components[0].ctor === forgoElement.type) {
+          if (
+            stateOnNode.components[componentIndex].ctor === forgoElement.type
+          ) {
             return { found: true, index: i };
           }
         }
