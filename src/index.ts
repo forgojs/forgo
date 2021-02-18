@@ -909,8 +909,8 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    When states is attached to a new node,
-    or when states are reattached, some of the old component states need to go away.
+    When states are attached to a new node or when states are reattached, 
+    some of the old component states need to go away. 
     The corresponding components will need to be unmounted.
 
     While rendering, the component gets reused if the ctor is the same.
