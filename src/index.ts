@@ -29,6 +29,12 @@ export type ForgoDOMElementProps = {
 
 export type ForgoComponentProps = {} & ForgoElementProps;
 
+export type ForgoEnvironmentArgs = {
+  environment: ForgoEnvType;
+};
+
+export type ForgoCtorArgs = ForgoEnvironmentArgs;
+
 /*
   This is the constructor of a ForgoComponent, called a 'Component Constructor'
  
@@ -37,7 +43,8 @@ export type ForgoComponentProps = {} & ForgoElementProps;
   The Component Constructor is defined by the type ForgoComponentCtor, and it returns a Component (of type ForgoComponent).
 */
 export type ForgoComponentCtor<TProps extends ForgoComponentProps> = (
-  props: TProps
+  props: TProps,
+  args: ForgoCtorArgs
 ) => ForgoComponent<TProps>;
 
 export type ForgoElementArg = {
@@ -45,9 +52,8 @@ export type ForgoElementArg = {
   componentIndex: number;
 };
 
-export type ForgoRenderArgs = {
+export type ForgoRenderArgs = ForgoEnvironmentArgs & {
   element: ForgoElementArg;
-  environment: ForgoEnvType;
 };
 
 export type ForgoErrorArgs = ForgoRenderArgs & {
@@ -200,9 +206,10 @@ const TEXT_NODE_TYPE = 3;
 */
 export type ForgoEnvType = {
   window: Window;
-  document: HTMLDocument;
-  HTMLElement: typeof HTMLElement;
-  Text: typeof Text;
+  __internal: {
+    HTMLElement: typeof HTMLElement;
+    Text: typeof Text;
+  };
 };
 
 /*
@@ -254,8 +261,9 @@ function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
 
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
-  env.HTMLElement = customEnv.window.HTMLElement;
-  env.Text = customEnv.window.Text;
+  env.__internal = env.__internal || {};
+  env.__internal.HTMLElement = customEnv.window.HTMLElement;
+  env.__internal.Text = env.__internal.Text || customEnv.window.Text;
 
   /*
     This is the main render function.
@@ -325,7 +333,7 @@ export function createForgoInstance(customEnv: any) {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
       // Text nodes will always be recreated
-      const textNode: ChildNode = env.document.createTextNode(
+      const textNode: ChildNode = env.window.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
       syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
@@ -334,7 +342,7 @@ export function createForgoInstance(customEnv: any) {
     // We have to find a node to replace.
     else {
       // Text nodes will always be recreated
-      const textNode: ChildNode = env.document.createTextNode(
+      const textNode: ChildNode = env.window.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
 
@@ -659,7 +667,7 @@ export function createForgoInstance(customEnv: any) {
       };
 
       const ctor = forgoElement.type;
-      const component = ctor(forgoElement.props);
+      const component = ctor(forgoElement.props, { environment: env });
       assertIsComponent(ctor, component);
 
       const boundary = component.error ? component : undefined;
@@ -1094,9 +1102,9 @@ export function createForgoInstance(customEnv: any) {
         for (const [key] of currentEntries) {
           if (typeof forgoNode.props[key] === "undefined") {
             if (key !== "children" && key !== "xmlns") {
-              if (node instanceof env.Text) {
+              if (node instanceof env.__internal.Text) {
                 (node as any)[key] = undefined;
-              } else if (node instanceof env.HTMLElement) {
+              } else if (node instanceof env.__internal.HTMLElement) {
                 if (key === "style") {
                   (node as HTMLElement).style.cssText = "";
                 } else if (key.includes("-")) {
@@ -1117,9 +1125,9 @@ export function createForgoInstance(customEnv: any) {
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
         if (key !== "children" && key !== "xmlns") {
-          if (node instanceof env.Text) {
+          if (node instanceof env.__internal.Text) {
             (node as any)[key] = value;
-          } else if (node instanceof env.HTMLElement) {
+          } else if (node instanceof env.__internal.HTMLElement) {
             if (key === "style") {
               const stringOfCSS = styleToString(forgoNode.props.style);
               if ((node as HTMLElement).style.cssText !== stringOfCSS) {
@@ -1170,7 +1178,7 @@ export function createForgoInstance(customEnv: any) {
     container: Element | string | null
   ): RenderResult {
     let parentElement = (isString(container)
-      ? env.document.querySelector(container)
+      ? env.window.document.querySelector(container)
       : container) as Element;
 
     if (parentElement) {
@@ -1360,16 +1368,16 @@ export function createForgoInstance(customEnv: any) {
         : parentElement && parentElement.namespaceURI;
     if (forgoElement.props.is) {
       return namespaceURI
-        ? env.document.createElementNS(namespaceURI, forgoElement.type, {
+        ? env.window.document.createElementNS(namespaceURI, forgoElement.type, {
             is: forgoElement.props.is,
           })
-        : env.document.createElement(forgoElement.type, {
+        : env.window.document.createElement(forgoElement.type, {
             is: forgoElement.props.is,
           });
     } else {
       return namespaceURI
-        ? env.document.createElementNS(namespaceURI, forgoElement.type)
-        : env.document.createElement(forgoElement.type);
+        ? env.window.document.createElementNS(namespaceURI, forgoElement.type)
+        : env.window.document.createElement(forgoElement.type);
     }
   }
 
