@@ -204,6 +204,7 @@ const TEXT_NODE_TYPE = 3;
 */
 export type ForgoEnvType = {
   window: Window;
+  document: Document;
   __internal: {
     HTMLElement: typeof HTMLElement;
     Text: typeof Text;
@@ -259,9 +260,9 @@ function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
 
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
-  env.__internal = env.__internal || {
-    HTMLElement: customEnv.window.HTMLElement,
-    Text: customEnv.window.Text,
+  env.__internal = env.__internal ?? {
+    Text: (env.window as any).Text,
+    HTMLElement: (env.window as any).HTMLElement,
   };
 
   /*
@@ -332,7 +333,7 @@ export function createForgoInstance(customEnv: any) {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
       // Text nodes will always be recreated
-      const textNode: ChildNode = env.window.document.createTextNode(
+      const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
       syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
@@ -341,7 +342,7 @@ export function createForgoInstance(customEnv: any) {
     // We have to find a node to replace.
     else {
       // Text nodes will always be recreated
-      const textNode: ChildNode = env.window.document.createTextNode(
+      const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
 
@@ -1176,7 +1177,7 @@ export function createForgoInstance(customEnv: any) {
     container: Element | string | null
   ): RenderResult {
     let parentElement = (isString(container)
-      ? env.window.document.querySelector(container)
+      ? env.document.querySelector(container)
       : container) as Element;
 
     if (parentElement) {
@@ -1366,16 +1367,16 @@ export function createForgoInstance(customEnv: any) {
         : parentElement && parentElement.namespaceURI;
     if (forgoElement.props.is) {
       return namespaceURI
-        ? env.window.document.createElementNS(namespaceURI, forgoElement.type, {
+        ? env.document.createElementNS(namespaceURI, forgoElement.type, {
             is: forgoElement.props.is,
           })
-        : env.window.document.createElement(forgoElement.type, {
+        : env.document.createElement(forgoElement.type, {
             is: forgoElement.props.is,
           });
     } else {
       return namespaceURI
-        ? env.window.document.createElementNS(namespaceURI, forgoElement.type)
-        : env.window.document.createElement(forgoElement.type);
+        ? env.document.createElementNS(namespaceURI, forgoElement.type)
+        : env.document.createElement(forgoElement.type);
     }
   }
 
@@ -1390,6 +1391,7 @@ const windowObject = globalThis ? globalThis : window;
 
 let forgoInstance = createForgoInstance({
   window: windowObject,
+  document: windowObject.document,
 });
 
 export function setCustomEnv(customEnv: any) {

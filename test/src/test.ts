@@ -26,6 +26,7 @@ import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML";
 import css from "./css";
 import inheritedCustomElement from "./inheritedCustomElement";
 import fragmentOverwriteDoesNotUnmount from "./fragmentOverwriteDoesNotUnmount";
+import ctorArgs from "./ctorArgs";
 
 mount();
 boundary();
@@ -55,3 +56,4 @@ dangerouslySetInnerHTML();
 css();
 inheritedCustomElement();
 fragmentOverwriteDoesNotUnmount();
+ctorArgs();
