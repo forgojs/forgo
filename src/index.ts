@@ -1053,7 +1053,7 @@ export function createForgoInstance(customEnv: any) {
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > 0) {
+      if (stateOnNode && stateOnNode.components.length > componentIndex) {
         if (forgoElement.key) {
           if (stateOnNode.components[componentIndex].key === forgoElement.key) {
             return { found: true, index: i };
