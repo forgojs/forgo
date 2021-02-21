@@ -239,6 +239,24 @@ export type RenderResult = {
 };
 
 /*
+  jsxFactory function
+*/
+export function createElement<TProps extends ForgoElementProps & { key?: any }>(
+  type: string | ForgoComponentCtor<TProps>,
+  props: TProps
+) {
+  props = props ?? {};
+  props.children =
+    arguments.length > 3
+      ? Array.from(arguments).slice(2)
+      : arguments.length === 3
+      ? [arguments[2]]
+      : undefined;
+  const key = props.key ?? undefined;
+  return { type, props, key, __is_forgo_element__: true };
+}
+
+/*
   Fragment constructor.
   We simply use it as a marker in jsx-runtime.
 */
