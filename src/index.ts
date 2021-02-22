@@ -256,6 +256,8 @@ export function createElement<TProps extends ForgoElementProps & { key?: any }>(
   return { type, props, key, __is_forgo_element__: true };
 }
 
+export const h = createElement;
+
 /*
   Fragment constructor.
   We simply use it as a marker in jsx-runtime.
