@@ -826,7 +826,10 @@ export function createForgoInstance(customEnv: any) {
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
-    const topmostComponentState = pendingAttachStates.slice(-1)[0];
+    
+    // This is the component (last one) with rendered an array/fragment
+    const immediateComponentState = pendingAttachStates.slice(-1)[0];
+    
     if (nodeInsertionOptions.type === "detached") {
       throw new Error(
         "Arrays and fragments cannot be rendered at the top level."
@@ -854,7 +857,13 @@ export function createForgoInstance(customEnv: any) {
         );
 
         allNodes = allNodes.concat(nodes);
-        topmostComponentState.nodes = allNodes;
+
+        // While mount components attached to a DOM node, we check if
+        // it's the first node associated with the component. 
+        // That check is state.nodes.length === 0. Hence, we need to 
+        // update state.nodes for each iteration, so that mount()
+        // is not called multple times for a component which renders a DOM node array.
+        immediateComponentState.nodes = allNodes;
 
         const totalNodesAfterRender =
           nodeInsertionOptions.parentElement.childNodes.length;
@@ -968,8 +977,7 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Unmount components above an index.
-    This is going to be passed a stale state[]
+    Unmount components above an index. This is going to be passed a stale state[].
     The from param is the index at which stale state[] differs from new state[]
   */
   function unmountComponents(
@@ -979,6 +987,9 @@ export function createForgoInstance(customEnv: any) {
     for (let j = from; j < states.length; j++) {
       const state = states[j];
       if (state.component.unmount) {
+        // Render if for all nodes:
+        //  - node is disconnected
+        //  - OR connected to a different component.
         if (
           state.nodes.every((x) => {
             if (!x.isConnected) {
@@ -999,8 +1010,7 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Mount components above an index.
-    This is going to be passed the new state[].
+    Mount components above an index. This is going to be passed the new state[].
     The from param is the index at which stale state[] differs from new state[]
   */
   function mountComponents(
@@ -1009,6 +1019,8 @@ export function createForgoInstance(customEnv: any) {
   ) {
     for (let j = from; j < states.length; j++) {
       const state = states[j];
+      // Mount before rendering the first node (length === 0), skip for subsequent nodes.
+      // This happens when component renders an array of nodes.
       if (state.component.mount && state.nodes.length === 0) {
         state.component.mount(state.props, state.args);
       }
