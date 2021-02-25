@@ -153,6 +153,7 @@ export type NodeAttachedComponentState<TProps> = {
   props: TProps;
   args: ForgoRenderArgs;
   nodes: ChildNode[];
+  isMounted: boolean;
 };
 
 /*
@@ -700,6 +701,7 @@ export function createForgoInstance(customEnv: any) {
         props: forgoElement.props,
         args,
         nodes: [],
+        isMounted: false,
       };
 
       const statesToAttach = pendingAttachStates.concat(newComponentState);
@@ -826,7 +828,7 @@ export function createForgoInstance(customEnv: any) {
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
-    
+
     if (nodeInsertionOptions.type === "detached") {
       throw new Error(
         "Arrays and fragments cannot be rendered at the top level."
@@ -854,15 +856,6 @@ export function createForgoInstance(customEnv: any) {
         );
 
         allNodes = allNodes.concat(nodes);
-
-        // While mounting components attached to a DOM node, we check if
-        // it's the first node created for the component. 
-        // That check is state.nodes.length === 0. Hence, we need to 
-        // update state.nodes for each iteration, so that mount()
-        // is not called multple times for a component which renders to a DOM node array.
-        for (const pendingState of pendingAttachStates) {
-          pendingState.nodes = allNodes;
-        }
 
         const totalNodesAfterRender =
           nodeInsertionOptions.parentElement.childNodes.length;
@@ -1018,9 +1011,8 @@ export function createForgoInstance(customEnv: any) {
   ) {
     for (let j = from; j < states.length; j++) {
       const state = states[j];
-      // Mount before rendering the first node (length === 0), skip for subsequent nodes.
-      // This happens when component renders an array of nodes.
-      if (state.component.mount && state.nodes.length === 0) {
+      if (state.component.mount && !state.isMounted) {
+        state.isMounted = true;
         state.component.mount(state.props, state.args);
       }
     }

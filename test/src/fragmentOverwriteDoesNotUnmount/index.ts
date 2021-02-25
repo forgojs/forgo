@@ -24,7 +24,7 @@ export default function () {
 
     should.equal(window.unmountCounter, 0);
     window.document.body.innerHTML.should.containEql(
-      '<div id="root"><p>5</p><p>6</p><p>7</p></div>'
+      "<p>5</p><p>6</p><p>7</p>"
     );
   });
 }
