@@ -827,9 +827,6 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
     
-    // This is the component (last one) with rendered an array/fragment
-    const immediateComponentState = pendingAttachStates.slice(-1)[0];
-    
     if (nodeInsertionOptions.type === "detached") {
       throw new Error(
         "Arrays and fragments cannot be rendered at the top level."
@@ -858,12 +855,14 @@ export function createForgoInstance(customEnv: any) {
 
         allNodes = allNodes.concat(nodes);
 
-        // While mount components attached to a DOM node, we check if
-        // it's the first node associated with the component. 
+        // While mounting components attached to a DOM node, we check if
+        // it's the first node created for the component. 
         // That check is state.nodes.length === 0. Hence, we need to 
         // update state.nodes for each iteration, so that mount()
-        // is not called multple times for a component which renders a DOM node array.
-        immediateComponentState.nodes = allNodes;
+        // is not called multple times for a component which renders to a DOM node array.
+        for (const pendingState of pendingAttachStates) {
+          pendingState.nodes = allNodes;
+        }
 
         const totalNodesAfterRender =
           nodeInsertionOptions.parentElement.childNodes.length;

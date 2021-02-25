@@ -4,7 +4,7 @@ import { run } from "./script";
 import * as should from "should";
 
 export default function() {
-  it("runs fragment mount only once", async () => {
+  it("runs mount only once when rendering fragment", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
