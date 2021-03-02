@@ -164,6 +164,7 @@ export type NodeAttachedState = {
   key?: string | number;
   props?: { [key: string]: any };
   components: NodeAttachedComponentState<any>[];
+  style?: { [key: string]: any };
 };
 
 // CSS types lifted from preact.
@@ -305,7 +306,7 @@ export function createForgoInstance(customEnv: any) {
     }
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
-      return typeof forgoNode === "undefined" || forgoNode === null
+      return forgoNode === undefined || forgoNode === null
         ? { nodes: [] }
         : renderText(forgoNode, nodeInsertionOptions, pendingAttachStates);
     }
@@ -441,7 +442,8 @@ export function createForgoInstance(customEnv: any) {
         if (searchResult.found) {
           // Get rid of unwanted nodes.
           unloadNodes(
-            Array.from(childNodes).slice(
+            sliceDOMNodes(
+              childNodes,
               nodeInsertionOptions.currentNodeIndex,
               searchResult.index
             ),
@@ -489,7 +491,7 @@ export function createForgoInstance(customEnv: any) {
           (Array.isArray(forgoChildrenObj)
             ? forgoChildrenObj
             : [forgoChildrenObj]
-          ).filter((x) => typeof x !== "undefined" && x !== null)
+          ).filter((x) => x !== undefined && x !== null)
         );
 
         let currentChildNodeIndex = 0;
@@ -509,8 +511,10 @@ export function createForgoInstance(customEnv: any) {
         }
 
         // Get rid the the remaining nodes
-        const nodesToRemove = Array.from(parentElement.childNodes).slice(
-          currentChildNodeIndex
+        const nodesToRemove = sliceDOMNodes(
+          parentElement.childNodes,
+          currentChildNodeIndex,
+          parentElement.childNodes.length
         );
         if (nodesToRemove.length) {
           unloadNodes(nodesToRemove, []);
@@ -580,7 +584,8 @@ export function createForgoInstance(customEnv: any) {
 
           // Get rid of unwanted nodes.
           unloadNodes(
-            Array.from(childNodes).slice(
+            sliceDOMNodes(
+              childNodes,
               nodeInsertionOptions.currentNodeIndex,
               searchResult.index
             ),
@@ -665,14 +670,14 @@ export function createForgoInstance(customEnv: any) {
       }
       // shouldUpdate() returned false
       else {
-        const allNodes = Array.from(
-          nodeInsertionOptions.parentElement.childNodes
+        let indexOfNode = findDOMNodeIndex(
+          nodeInsertionOptions.parentElement.childNodes,
+          componentState.args.element.node
         );
-        const indexOfNode = allNodes.findIndex(
-          (x) => x === componentState.args.element.node
-        );
+
         return {
-          nodes: allNodes.slice(
+          nodes: sliceDOMNodes(
+            nodeInsertionOptions.parentElement.childNodes,
             indexOfNode,
             indexOfNode + componentState.nodes.length
           ),
@@ -801,9 +806,11 @@ export function createForgoInstance(customEnv: any) {
     const newIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    const nodesToRemove = Array.from(
-      insertionOptions.parentElement.childNodes
-    ).slice(newIndex, newIndex + componentState.nodes.length - numNodesRemoved);
+    const nodesToRemove = sliceDOMNodes(
+      insertionOptions.parentElement.childNodes,
+      newIndex,
+      newIndex + componentState.nodes.length - numNodesRemoved
+    );
 
     unloadNodes(nodesToRemove, statesToAttach);
 
@@ -1119,16 +1126,20 @@ export function createForgoInstance(customEnv: any) {
 
       // Remove props which don't match
       if (currentState && currentState.props) {
-        const currentEntries = Object.entries(currentState.props);
-        for (const [key] of currentEntries) {
-          if (typeof forgoNode.props[key] === "undefined") {
+        for (const key in currentState.props) {
+          if (forgoNode.props[key] === undefined) {
             if (key !== "children" && key !== "xmlns") {
               if (node.nodeType === TEXT_NODE_TYPE) {
                 (node as any)[key] = undefined;
               } else if (node instanceof env.__internal.HTMLElement) {
                 if (key === "style") {
                   (node as HTMLElement).style.cssText = "";
-                } else if (key.includes("-")) {
+                } else if (
+                  key[0] === "a" &&
+                  key[1] === "r" &&
+                  key[2] === "i" &&
+                  key[3] === "a"
+                ) {
                   (node as HTMLElement).removeAttribute(key);
                 } else {
                   (node as any)[key] = undefined;
@@ -1150,18 +1161,32 @@ export function createForgoInstance(customEnv: any) {
             (node as any)[key] = value;
           } else if (node instanceof env.__internal.HTMLElement) {
             if (key === "style") {
-              const stringOfCSS = styleToString(forgoNode.props.style);
-              if ((node as HTMLElement).style.cssText !== stringOfCSS) {
-                (node as HTMLElement).style.cssText = stringOfCSS;
+              // Optimization: many times in CSS to JS, style objects are re-used.
+              // If they're the same, skip the expensive styleToString() call.
+              if (
+                currentState === undefined ||
+                currentState.style === undefined ||
+                currentState.style !== forgoNode.props.style
+              ) {
+                const stringOfCSS = styleToString(forgoNode.props.style);
+                if ((node as HTMLElement).style.cssText !== stringOfCSS) {
+                  (node as HTMLElement).style.cssText = stringOfCSS;
+                }
               }
-            } else if (key.includes("-") && typeof value === "string") {
+            }
+            // This optimization is copied from preact.
+            else if (
+              typeof value === "string" &&
+              key[0] === "a" &&
+              key[1] === "r" &&
+              key[2] === "i" &&
+              key[3] === "a"
+            ) {
               (node as HTMLElement).setAttribute(key, value);
+            } else if (key === "onblur") {
+              (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
             } else {
-              if (key === "onblur") {
-                (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
-              } else {
-                (node as any)[key] = value;
-              }
+              (node as any)[key] = value;
             }
           } else {
             if (typeof value === "string") {
@@ -1267,7 +1292,7 @@ export function createForgoInstance(customEnv: any) {
             state.components[element.componentIndex];
 
           const effectiveProps =
-            typeof props !== "undefined" ? props : originalComponentState.props;
+            props !== undefined ? props : originalComponentState.props;
 
           if (
             !originalComponentState.component.shouldUpdate ||
@@ -1295,8 +1320,9 @@ export function createForgoInstance(customEnv: any) {
               originalComponentState.args
             );
 
-            const nodeIndex = Array.from(parentElement.childNodes).findIndex(
-              (x) => x === element.node
+            let nodeIndex = findDOMNodeIndex(
+              parentElement.childNodes,
+              element.node
             );
 
             const insertionOptions: SearchableNodeInsertionOptions = {
@@ -1357,10 +1383,14 @@ export function createForgoInstance(customEnv: any) {
           }
           // shouldUpdate() returned false
           else {
-            const allNodes = Array.from(parentElement.childNodes);
-            const indexOfNode = allNodes.findIndex((x) => x === element.node);
+            let indexOfNode = findDOMNodeIndex(
+              parentElement.childNodes,
+              element.node
+            );
+
             return {
-              nodes: allNodes.slice(
+              nodes: sliceDOMNodes(
+                parentElement.childNodes,
                 indexOfNode,
                 indexOfNode + originalComponentState.nodes.length
               ),
@@ -1453,7 +1483,7 @@ function flatten(
     : isForgoFragment(itemOrItems)
     ? Array.isArray(itemOrItems.props.children)
       ? itemOrItems.props.children
-      : typeof itemOrItems.props.children !== "undefined"
+      : itemOrItems.props.children !== undefined
       ? [itemOrItems.props.children]
       : []
     : [itemOrItems];
@@ -1480,7 +1510,7 @@ function stringOfPrimitiveNode(node: ForgoNonEmptyPrimitiveNode): string {
 */
 function isForgoElement(forgoNode: ForgoNode): forgoNode is ForgoElement<any> {
   return (
-    typeof forgoNode !== "undefined" &&
+    forgoNode !== undefined &&
     forgoNode !== null &&
     (forgoNode as any).__is_forgo_element__ === true
   );
@@ -1543,7 +1573,7 @@ function isString(val: unknown): val is string {
 function styleToString(style: any): string {
   if (typeof style === "string") {
     return style;
-  } else if (typeof style === "undefined" || style === null) {
+  } else if (style === undefined || style === null) {
     return "";
   } else {
     return Object.keys(style).reduce(
@@ -1559,4 +1589,30 @@ function styleToString(style: any): string {
       ""
     );
   }
+}
+
+/* parentElements.childNodes is not an array. A slice() for it. */
+function sliceDOMNodes(
+  domNodes: ArrayLike<ChildNode>,
+  from: number,
+  to: number
+): ChildNode[] {
+  const result: ChildNode[] = [];
+  for (let i = from; i < to; i++) {
+    result.push(domNodes[i]);
+  }
+  return result;
+}
+
+/* parentElements.childNodes is not an array. A findIndex() for it. */
+function findDOMNodeIndex(
+  domNodes: ArrayLike<ChildNode>,
+  element: ChildNode | undefined
+): number {
+  for (let i = 0; i < domNodes.length; i++) {
+    if (domNodes[i] === element) {
+      return i;
+    }
+  }
+  return -1;
 }
