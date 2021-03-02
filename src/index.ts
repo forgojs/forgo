@@ -270,7 +270,6 @@ export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
   This is bad news for us, since a rerender() inside the onblur handler will run on an unattached node.
   So, disable onblur if node is set to be removed.
 */
-const eventsToDisableWhenNodeIsDeleted = ["onblur"];
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
     if (!node.__forgo_deleted) {
@@ -1158,7 +1157,7 @@ export function createForgoInstance(customEnv: any) {
             } else if (key.includes("-") && typeof value === "string") {
               (node as HTMLElement).setAttribute(key, value);
             } else {
-              if (eventsToDisableWhenNodeIsDeleted.includes(key)) {
+              if (key === "onblur") {
                 (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
               } else {
                 (node as any)[key] = value;
