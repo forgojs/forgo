@@ -1134,12 +1134,7 @@ export function createForgoInstance(customEnv: any) {
               } else if (node instanceof env.__internal.HTMLElement) {
                 if (key === "style") {
                   (node as HTMLElement).style.cssText = "";
-                } else if (
-                  key[0] === "a" &&
-                  key[1] === "r" &&
-                  key[2] === "i" &&
-                  key[3] === "a"
-                ) {
+                } else if (key.startsWith("aria-") || key.startsWith("data-")) {
                   (node as HTMLElement).removeAttribute(key);
                 } else {
                   (node as any)[key] = undefined;
@@ -1177,10 +1172,7 @@ export function createForgoInstance(customEnv: any) {
             // This optimization is copied from preact.
             else if (
               typeof value === "string" &&
-              key[0] === "a" &&
-              key[1] === "r" &&
-              key[2] === "i" &&
-              key[3] === "a"
+              (key.startsWith("aria-") || key.startsWith("data-"))
             ) {
               (node as HTMLElement).setAttribute(key, value);
             } else if (key === "onblur") {
