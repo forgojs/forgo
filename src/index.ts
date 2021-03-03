@@ -982,26 +982,33 @@ export function createForgoInstance(customEnv: any) {
     states: NodeAttachedComponentState<any>[],
     from: number
   ) {
-    for (let j = from; j < states.length; j++) {
-      const state = states[j];
+    // If the parent has already unmounted, we can skip checks on children.
+    let parentHasUnmounted = false;
+
+    for (let i = from; i < states.length; i++) {
+      const state = states[i];
       if (state.component.unmount) {
-        // Render if for all nodes:
-        //  - node is disconnected
-        //  - OR connected to a different component.
+        // Render if:
+        //  - parent has already unmounted
+        //  - OR for all nodes:
+        //  -   node is disconnected
+        //  -   OR node connected to a different component
         if (
+          parentHasUnmounted ||
           state.nodes.every((x) => {
             if (!x.isConnected) {
               return true;
             } else {
               const componentState = getExistingForgoState(x);
               return (
-                !componentState.components[j] ||
-                componentState.components[j].component !== state.component
+                !componentState.components[i] ||
+                componentState.components[i].component !== state.component
               );
             }
           })
         ) {
           state.component.unmount(state.props, state.args);
+          parentHasUnmounted = true;
         }
       }
     }
@@ -1015,8 +1022,8 @@ export function createForgoInstance(customEnv: any) {
     states: NodeAttachedComponentState<any>[],
     from: number
   ) {
-    for (let j = from; j < states.length; j++) {
-      const state = states[j];
+    for (let i = from; i < states.length; i++) {
+      const state = states[i];
       if (state.component.mount && !state.isMounted) {
         state.isMounted = true;
         state.component.mount(state.props, state.args);
@@ -1339,10 +1346,13 @@ export function createForgoInstance(customEnv: any) {
                 (x) => x === originalComponentState.nodes[0]
               );
 
-              // Let's recreate the node list
+              // Let's recreate the node list.
               parentState.nodes = parentState.nodes
+                // 1. all the nodes before first node associated with rendered component.
                 .slice(0, indexOfOriginalRootNode)
+                // 2. newly created nodes.
                 .concat(renderResult.nodes)
+                // 3. nodes after last node associated with rendered component.
                 .concat(
                   parentState.nodes.slice(
                     indexOfOriginalRootNode +
@@ -1350,6 +1360,7 @@ export function createForgoInstance(customEnv: any) {
                   )
                 );
 
+              // If there are no nodes, call unmount on it (and child states)
               if (parentState.nodes.length === 0) {
                 unmountComponents(parentStates, i);
                 break;
@@ -1359,6 +1370,7 @@ export function createForgoInstance(customEnv: any) {
               }
             }
 
+            // Unmount rendered component itself if all nodes are gone.
             if (renderResult.nodes.length === 0) {
               unmountComponents([newComponentState], 0);
             }
