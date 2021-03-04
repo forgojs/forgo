@@ -482,7 +482,7 @@ async function updateInbox() {
 
 ## Lazy Loading
 
-You can achieve lazy loading with the forgo-lazy package. Read more at https://github.com/jacob-ebey/forgo-lazy/
+You can achieve lazy loading with the forgo-lazy package. Read more at https://github.com/jacob-ebey/forgo-lazy
 
 It's as simple as this:
 
