@@ -500,7 +500,6 @@ const App = () => ({
 });
 ```
 
-
 ## Integrating Forgo into an existing app
 
 Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
