@@ -480,6 +480,27 @@ async function updateInbox() {
 }
 ```
 
+## Lazy Loading
+
+You can achieve lazy loading with the forgo-lazy package.
+
+It's as simple as this:
+
+```jsx
+import lazy, { Suspense } from "forgo-lazy";
+
+const LazyComponent = lazy(() => import("./lazy-component"));
+
+const App = () => ({
+  render: () => (
+    <Suspense fallback={() => "Loading..."}>
+      <LazyComponent title="It's that easy :D" />
+    </Suspense>
+  ),
+});
+```
+
+
 ## Integrating Forgo into an existing app
 
 Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
