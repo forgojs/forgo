@@ -90,16 +90,24 @@ Use the mount() function once your document has loaded.
 ```js
 import { mount } from "forgo";
 
-window.addEventListener("load", () => {
-  mount(<SimpleTimer />, document.getElementById("root"));
+function ready(fn) {
+  if (document.readyState !== "loading") {
+    fn();
+  } else {
+    document.addEventListener("DOMContentLoaded", fn);
+  }
+}
+
+ready(() => {
+  mount(<App />, document.getElementById("root"));
 });
 ```
 
-You could also pass a selector instead of an element.
+You could also pass a selector instead of an element to the mount() function.
 
 ```js
-window.addEventListener("load", () => {
-  mount(<SimpleTimer />, "#root");
+ready(() => {
+  mount(<App />, "#root");
 });
 ```
 
