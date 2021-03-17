@@ -22,23 +22,16 @@ npm i forgo
 
 ### Starting a Forgo project
 
-There are a couple ready-made templates on GitHub to help you with the initial project scaffolding. These templates use webpack as the bundler/build tool.
-
-- [Starter-kit using JavaScript](https://github.com/forgojs/forgo-template-javascript)
-- [Starter-kit using TypeScript](https://github.com/forgojs/forgo-template-typescript)
-
-This process is easier with degit:
-
-For JavaScript:
+The easiest way to get started is with the 'create-forgo-app' utility.
 
 ```sh
-npx degit forgojs/forgo-template-javascript#main my-project
+npx create-forgo-app my-project
 ```
 
-For TypeScript:
+It supports TypeScript too:
 
 ```sh
-npx degit forgojs/forgo-template-typescript#main my-project
+npx create-forgo-app my-project --template typescript
 ```
 
 And then to run it:
@@ -46,10 +39,12 @@ And then to run it:
 ```sh
 # switch to the project directory
 cd my-project
-# Install dependencies
-npm i
+
 # run!
 npm start
+
+# To make a production build
+npm run build
 ```
 
 ## A Forgo Component
