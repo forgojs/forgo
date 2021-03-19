@@ -1,3 +1,4 @@
 .vscode
 dist/test/*
 test/*
+docs/*
