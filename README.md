@@ -53,7 +53,7 @@ A Forgo Component must have a function (called Component Constructor) that retur
 
 Here's an Example.
 
-```tsx
+```jsx
 import { rerender } from "forgo";
 
 function SimpleTimer(initialProps) {
@@ -377,7 +377,7 @@ function Parent(initialProps) {
 
 The most straight forward way to do rerender is by invoking it with `args.element` as the only argument - as follows.
 
-```tsx
+```jsx
 function TodoList(initialProps) {
   let todos = [];
 
@@ -387,7 +387,6 @@ function TodoList(initialProps) {
         todos.push(text);
         rerender(args.element);
       }
-
       return <div>markup goes here...</div>;
     },
   };
@@ -401,11 +400,34 @@ const newProps = { name: "Kai" };
 rerender(args.element, newProps);
 ```
 
+There's also a convenient shortcut for rerendering - the update() function available on the args parameter of `render(props, args)`. Calling args.update() is the same as calling `rerender(args.element)`.
+
+Here's an example:
+
+```jsx
+function TodoList(initialProps) {
+  let todos = [];
+
+  return {
+    render(
+      props,
+      { update } //destructure args
+    ) {
+      function addTodos(text) {
+        todos.push(text);
+        update(); // => rerender(args.element)
+      }
+      return <div>markup goes here...</div>;
+    },
+  };
+}
+```
+
 ## Rendering without mounting
 
 Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted.
 
-```tsx
+```jsx
 import { render } from "forgo";
 
 const { node } = render(<Component />);

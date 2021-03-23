@@ -2,8 +2,6 @@ import { DOMWindow, JSDOM } from "jsdom";
 import {
   ForgoRenderArgs,
   mount,
-  render,
-  rerender,
   setCustomEnv,
 } from "../../../dist";
 
@@ -13,8 +11,8 @@ let counter = 0;
 
 function Component() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
-      window.renderAgain = () => rerender(args.element);
+    render(props: any, { update }: ForgoRenderArgs) {
+      window.renderAgain = update;
       counter++;
       return <SuperCompo />;
     },

@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../";
+import { ForgoRenderArgs, mount, setCustomEnv } from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -15,10 +15,8 @@ function Parent(initialProps: ParentProps) {
   window.unmountedElements = [];
   let firstRender = true;
   return {
-    render(props: ParentProps, args: ForgoRenderArgs) {
-      (window as any).renderAgain = () => {
-        rerender(args.element);
-      };
+    render(props: ParentProps, { update }: ForgoRenderArgs) {
+      (window as any).renderAgain = update;
 
       if (firstRender) {
         firstRender = false;

@@ -52,6 +52,7 @@ export type ForgoElementArg = {
 
 export type ForgoRenderArgs = {
   element: ForgoElementArg;
+  update: (props?: any) => RenderResult;
 };
 
 export type ForgoErrorArgs = ForgoRenderArgs & {
@@ -688,6 +689,7 @@ export function createForgoInstance(customEnv: any) {
     function addNewComponent(): RenderResult {
       const args: ForgoRenderArgs = {
         element: { componentIndex },
+        update: (props) => rerender(args.element, props),
       };
 
       const ctor = forgoElement.type;

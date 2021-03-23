@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { rerender, render, ForgoRenderArgs, setCustomEnv } from "../../../";
+import { render, ForgoRenderArgs, setCustomEnv } from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -8,10 +8,10 @@ function Component() {
   let counter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, { update }: ForgoRenderArgs) {
       function updateCounter() {
         counter++;
-        rerender(args.element);
+        update();
       }
 
       (window as any).myButton = {};

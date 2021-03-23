@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "main": "./dist",
   "types": "./dist/index.d.ts",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",

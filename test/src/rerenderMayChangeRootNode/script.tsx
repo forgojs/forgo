@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../dist";
+import { ForgoRenderArgs, mount, setCustomEnv } from "../../../dist";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -8,7 +8,7 @@ function Parent1() {
   return {
     render(props: any, args: ForgoRenderArgs) {
       return <Parent2 />;
-    }
+    },
   };
 }
 
@@ -16,7 +16,7 @@ function Parent2() {
   return {
     render(props: any, args: ForgoRenderArgs) {
       return <Child />;
-    }
+    },
   };
 }
 
@@ -24,8 +24,8 @@ let counter = 0;
 
 function Child() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
-      window.renderAgain = () => rerender(args.element);
+    render(props: any, { update }: ForgoRenderArgs) {
+      window.renderAgain = update;
       counter++;
       return counter === 1 ? (
         <>
@@ -41,7 +41,7 @@ function Child() {
           </div>
         </>
       );
-    }
+    },
   };
 }
 

@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { rerender, mount, ForgoRenderArgs, setCustomEnv } from "../../../dist";
+import { mount, ForgoRenderArgs, setCustomEnv } from "../../../dist";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -35,10 +35,8 @@ function Child() {
   window.childCounter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
-      window.renderAgain = () => {
-        rerender(args.element);
-      };
+    render(props: any, { update }: ForgoRenderArgs) {
+      window.renderAgain = update;
       window.childCounter++;
       return (
         <div>

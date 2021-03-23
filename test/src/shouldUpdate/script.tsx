@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { rerender, mount, ForgoRenderArgs, setCustomEnv } from "../../../";
+import { mount, ForgoRenderArgs, setCustomEnv } from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -8,9 +8,9 @@ export function Parent() {
   let counter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, { update }: ForgoRenderArgs) {
       window.renderAgain = () => {
-        rerender(args.element);
+        update();
       };
       counter++;
       return <div>Counter is {counter}</div>;

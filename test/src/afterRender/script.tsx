@@ -3,7 +3,6 @@ import {
   ForgoRenderArgs,
   ForgoAfterRenderArgs,
   mount,
-  rerender,
   setCustomEnv,
 } from "../../../";
 
@@ -13,8 +12,8 @@ let document: HTMLDocument;
 function Component() {
   let counter: number = 0;
   return {
-    render(props: any, args: ForgoRenderArgs) {
-      (window as any).renderAgain = () => rerender(args.element);
+    render(props: any, { update }: ForgoRenderArgs) {
+      (window as any).renderAgain = update;
       counter++;
       return counter === 1 ? (
         <div id="hello" prop="hello">
@@ -37,8 +36,8 @@ function Component() {
 function ComponentOnTextNode() {
   let counter: number = 0;
   return {
-    render(props: any, args: ForgoRenderArgs) {
-      (window as any).renderAgain = () => rerender(args.element);
+    render(props: any, { update }: ForgoRenderArgs) {
+      (window as any).renderAgain = update;
       counter++;
       return "Hello world";
     },

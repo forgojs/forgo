@@ -1,5 +1,5 @@
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, rerender, setCustomEnv } from "../../../dist";
+import { ForgoRenderArgs, mount, setCustomEnv } from "../../../dist";
 
 let window: DOMWindow;
 let document: HTMLDocument;
@@ -7,10 +7,8 @@ let document: HTMLDocument;
 function BasicComponent() {
   let firstRender = true;
   return {
-    render(props: {}, args: ForgoRenderArgs) {
-      window.renderAgain = () => {
-        rerender(args.element);
-      };
+    render(props: {}, { update }: ForgoRenderArgs) {
+      window.renderAgain = update;
       if (firstRender) {
         firstRender = false;
         return (
