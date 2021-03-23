@@ -409,10 +409,7 @@ function TodoList(initialProps) {
   let todos = [];
 
   return {
-    render(
-      props,
-      { update } //destructure args
-    ) {
+    render(props, { update }) {
       function addTodos(text) {
         todos.push(text);
         update(); // => rerender(args.element)
