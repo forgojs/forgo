@@ -400,26 +400,6 @@ const newProps = { name: "Kai" };
 rerender(args.element, newProps);
 ```
 
-There's also a convenient shortcut for rerendering - the update() function available on the args parameter of `render(props, args)`. Calling args.update() is the same as calling `rerender(args.element)`.
-
-Here's an example:
-
-```jsx
-function TodoList(initialProps) {
-  let todos = [];
-
-  return {
-    render(props, { update }) {
-      function addTodos(text) {
-        todos.push(text);
-        update(); // => rerender(args.element)
-      }
-      return <div>markup goes here...</div>;
-    },
-  };
-}
-```
-
 ## Rendering without mounting
 
 Forgo also exports a render method that returns the rendered DOM node that could then be manually mounted.
