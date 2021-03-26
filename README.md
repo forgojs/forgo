@@ -561,37 +561,6 @@ Or if you prefer Typescript, try [Forgo TodoList in TypeScript](https://codesand
 
 There is also an example for using [Forgo with forgo-router](https://codesandbox.io/s/forgo-router-typescript-px4sg).
 
-## Building
-
-Forgo uses the latest JSX createElement factory changes, so you might need to enable this with Babel. More details here: https://babeljs.io/docs/en/babel-plugin-transform-react-jsx
-
-For your babel config:
-
-```json
-{
-  "plugins": [
-    [
-      "@babel/plugin-transform-react-jsx",
-      {
-        "throwIfNamespace": false,
-        "runtime": "automatic",
-        "importSource": "forgo"
-      }
-    ]
-  ]
-}
-```
-
-If you're using TypeScript, add the following lines to your tsconfig.json file.
-
-```json
-{
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "forgo"
-  }
-}
-```
 
 ## Getting Help
 
