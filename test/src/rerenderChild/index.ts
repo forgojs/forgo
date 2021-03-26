@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile";
-import { ForgoRef } from "../../../dist";
+import { ForgoRef } from "../../../";
 import { run, runSharedNode } from "./script";
 import * as should from "should";
 

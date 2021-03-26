@@ -1,6 +1,6 @@
 // Copied from preact and edited. Thanks.
 
-import { ForgoDOMElementProps } from "..";
+import { ForgoDOMElementProps } from "./";
 
 type Defaultize<Props, Defaults> =
   // Distribute over unions

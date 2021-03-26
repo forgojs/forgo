@@ -3,7 +3,7 @@ import {
   ForgoRenderArgs,
   mount,
   setCustomEnv,
-} from "../../../dist";
+} from "../../../";
 
 let window: DOMWindow;
 let document: HTMLDocument;

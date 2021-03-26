@@ -20,7 +20,7 @@
   },
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "tsc",
+    "build": "mkdir dist -p && cp src/jsx.d.ts dist/jsx.d.ts && tsc",
     "build-test": "tsc -p tsconfig.test.json",
     "test": "mocha -r esm dist/test/test.js"
   },

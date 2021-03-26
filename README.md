@@ -12,7 +12,7 @@ Unlike React, there are very few framework specific patterns and lingo to learn.
 
 ## We'll be tiny. Always.
 
-All of Forgo is in one small JS file (actually it's TypeScript). It is a goal of the project to remain within that single file.
+All of Forgo's code is in one single TypeScript file (along with a ). It is a goal of the project to remain within that single file.
 
 ## Installation
 
