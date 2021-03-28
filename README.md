@@ -618,8 +618,9 @@ While using TypeScript, also use the following two lines in your tsconfig file. 
 ```json
 {
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "forgo"
+    "jsx": "react",
+    "jsxFactory": "forgo.createElement",
+    "jsxFragmentFactory": "forgo.Fragment"
   }
 }
 ```
@@ -656,6 +657,18 @@ module.exports = {
     ],
   },
 };
+```
+
+Along with these two lines in your tsconfig.json file:
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "forgo"
+  }
+}
+
 ```
 
 ## Getting Help
