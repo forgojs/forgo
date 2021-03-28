@@ -561,6 +561,102 @@ Or if you prefer Typescript, try [Forgo TodoList in TypeScript](https://codesand
 
 There is also an example for using [Forgo with forgo-router](https://codesandbox.io/s/forgo-router-typescript-px4sg).
 
+## Building
+
+Most users are better off just using create-forgo-app to create the project skeleton - in which case all of this is already setup for you. We strongly recommend doing that.
+
+But for people who are doing it manually, we'll cover webpack-specific configuration here. Other bundlers would need similar configuration.
+
+For using esbuild-loader with JavaScript/JSX use the following webpack config:
+
+```js
+module.exports = {
+  // remaining config omitted for brevity.
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        loader: "esbuild-loader",
+        options: {
+          loader: "jsx",
+          target: "es2015",
+          jsxFactory: "forgo.createElement",
+          jsxFragment: "forgo.Fragment",
+        },
+      },
+    ],
+  },
+};
+```
+
+For using esbuild-loader with TypeScript/TSX use the following webpack config:
+
+```js
+module.exports = {
+  // remaining config omitted for brevity.
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        loader: "esbuild-loader",
+        options: {
+          loader: "tsx",
+          target: "es2015",
+          jsxFactory: "forgo.createElement",
+          jsxFragment: "forgo.Fragment",
+        },
+      },
+    ],
+  },
+};
+```
+
+While using TypeScript, also use the following two lines in your tsconfig file. This lets you do `tsc --noEmit` for type checking, which esbuild-loader doesn't do.
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "forgo"
+  }
+}
+```
+
+If you're using babel-loader (slower) you'd need this webpack config:
+
+```js
+module.exports = {
+  // remaining config omitted for brevity.
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: ["babel-loader"],
+      },
+    ],
+  },
+};
+```
+
+And if you're using TypeScript and ts-loader, you'd need this webpack config:
+
+```js
+module.exports = {
+  // remaining config omitted for brevity.
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: "ts-loader",
+        exclude: /node_modules/,
+      },
+    ],
+  },
+};
+```
 
 ## Getting Help
 
