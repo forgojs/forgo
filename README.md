@@ -563,7 +563,7 @@ There is also an example for using [Forgo with forgo-router](https://codesandbox
 
 ## Building
 
-Most users are better off just using create-forgo-app to create the project skeleton - in which case all of this is already setup for you. We strongly recommend doing that.
+Most users are better off just using create-forgo-app to create the project skeleton - in which case all of this is already set up for you. We strongly recommend doing it this way.
 
 But for people who are doing it manually, we'll cover webpack-specific configuration here. Other bundlers would need similar configuration.
 
