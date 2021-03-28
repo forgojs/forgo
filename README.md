@@ -20,7 +20,7 @@ All of Forgo's code is in one single TypeScript file. It is a goal of the projec
 npm i forgo
 ```
 
-### Starting a Forgo project
+## Starting a Forgo project
 
 The easiest way to get started is with the 'create-forgo-app' utility. This relies on git, so you should have git installed on your machine.
 
@@ -567,7 +567,9 @@ Most users are better off just using create-forgo-app to create the project skel
 
 But for people who are doing it manually, we'll cover webpack-specific configuration here. Other bundlers would need similar configuration.
 
-For using esbuild-loader with JavaScript/JSX, use the following webpack config:
+### esbuild-loader with JavaScript/JSX
+
+Add these lines to webpack.config.js:
 
 ```js
 module.exports = {
@@ -590,7 +592,9 @@ module.exports = {
 };
 ```
 
-For using esbuild-loader with TypeScript/TSX, use the following webpack config:
+### esbuild-loader with TypeScript/TSX
+
+Add these lines to webpack.config.js:
 
 ```js
 module.exports = {
@@ -613,7 +617,9 @@ module.exports = {
 };
 ```
 
-While using TypeScript, also add the following two lines to your tsconfig.json. This lets you do `tsc --noEmit` for type checking, which esbuild-loader doesn't do.
+While using TypeScript, also add the following lines to your tsconfig.json. This lets you do `tsc --noEmit` for type checking, which esbuild-loader doesn't do.
+
+Add these lines to tsconfig.json:
 
 ```json
 {
@@ -625,7 +631,11 @@ While using TypeScript, also add the following two lines to your tsconfig.json. 
 }
 ```
 
-If you're using babel-loader (slower), you'd need this webpack config:
+### babel-loader with JSX
+
+This is slower than esbuild-loader, so use only as needed.
+
+Add these lines to webpack.config.js:
 
 ```js
 module.exports = {
@@ -642,7 +652,27 @@ module.exports = {
 };
 ```
 
-And if you're using TypeScript and ts-loader, you'd need this webpack config:
+Add these lines to babel.config.json:
+
+```json
+{
+  "presets": ["@babel/preset-env", "@babel/preset-react"],
+  "plugins": [
+    [
+      "@babel/plugin-transform-react-jsx",
+      {
+        "throwIfNamespace": false,
+        "runtime": "automatic",
+        "importSource": "forgo"
+      }
+    ]
+  ]
+}
+```
+
+### TSX with ts-loader
+
+Add these lines to webpack.config.js:
 
 ```js
 module.exports = {
@@ -659,7 +689,7 @@ module.exports = {
 };
 ```
 
-For TypeScript with ts-loader, add these two lines to tsconfig.json:
+Add these lines to tsconfig.json:
 
 ```json
 {
@@ -668,7 +698,6 @@ For TypeScript with ts-loader, add these two lines to tsconfig.json:
     "jsxImportSource": "forgo"
   }
 }
-
 ```
 
 ## Getting Help
