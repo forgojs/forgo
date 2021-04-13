@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile";
 import * as should from "should";
 import {
+  Wrapping,
   runWithBooleanProps,
   runWithNullProps,
   runWithNumericProps,
@@ -9,14 +10,18 @@ import {
   runWithUndefinedProps,
 } from "./script";
 
-const ELEMENT_NODE_TYPE = 1;
-const ATTRIBUTE_NODE_TYPE = 2;
 const TEXT_NODE_TYPE = 3;
 
-export default function() {
+export default function () {
   describe("renders primitives", () => {
-    [true, false].forEach((wrapped) => {
-      const wrappedText = wrapped ? " wrapped in DOM element" : "";
+    const wrapping: Wrapping[] = ["DIV", "FRAGMENT", "NONE"];
+    wrapping.forEach((wrapping) => {
+      const wrappedText =
+        wrapping === "DIV"
+          ? " wrapped in DIV"
+          : wrapping === "FRAGMENT"
+          ? " wrapped in FRAGMENT"
+          : "";
       it("renders undefined" + wrappedText, async () => {
         const dom = new JSDOM(htmlFile(), {
           runScripts: "outside-only",
@@ -24,7 +29,7 @@ export default function() {
         });
         const window = dom.window;
 
-        runWithUndefinedProps(dom, wrapped);
+        runWithUndefinedProps(dom, wrapping);
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {
@@ -32,7 +37,7 @@ export default function() {
           });
         });
 
-        if (wrapped) {
+        if (wrapping === "DIV") {
           should.equal(
             window.document.getElementById("mydiv")?.childNodes.length,
             0
@@ -52,7 +57,7 @@ export default function() {
         });
         const window = dom.window;
 
-        runWithNullProps(dom, wrapped);
+        runWithNullProps(dom, wrapping);
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {
@@ -60,7 +65,7 @@ export default function() {
           });
         });
 
-        if (wrapped) {
+        if (wrapping === "DIV") {
           should.equal(
             window.document.getElementById("mydiv")?.childNodes.length,
             0
@@ -80,7 +85,7 @@ export default function() {
         });
         const window = dom.window;
 
-        runWithStringProps(dom, wrapped);
+        runWithStringProps(dom, wrapping);
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {
@@ -100,7 +105,7 @@ export default function() {
         });
         const window = dom.window;
 
-        runWithBooleanProps(dom, wrapped);
+        runWithBooleanProps(dom, wrapping);
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {
@@ -118,7 +123,7 @@ export default function() {
         });
         const window = dom.window;
 
-        runWithNumericProps(dom, wrapped);
+        runWithNumericProps(dom, wrapping);
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {

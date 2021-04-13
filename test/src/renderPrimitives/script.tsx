@@ -8,6 +8,8 @@ type ComponentProps = {
   value: string | number | boolean | object | null | BigInt | undefined;
 };
 
+export type Wrapping = "DIV" | "NONE" | "FRAGMENT";
+
 function ComponentReturningWrappedPrimitive(props: ComponentProps) {
   return {
     render(props: ComponentProps) {
@@ -24,15 +26,25 @@ function ComponentReturningPrimitive(props: ComponentProps) {
   };
 }
 
-export function runWithUndefinedProps(dom: JSDOM, wrapped: boolean) {
+function ComponentReturningPrimitiveInFragment(props: ComponentProps) {
+  return {
+    render(props: ComponentProps) {
+      return <>{props.value}</>;
+    },
+  };
+}
+
+export function runWithUndefinedProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(
-      wrapped ? (
+      wrapping === "DIV" ? (
         <ComponentReturningWrappedPrimitive value={undefined} />
+      ) : wrapping === "FRAGMENT" ? (
+        <ComponentReturningPrimitiveInFragment value={undefined} />
       ) : (
         <ComponentReturningPrimitive value={undefined} />
       ),
@@ -41,15 +53,17 @@ export function runWithUndefinedProps(dom: JSDOM, wrapped: boolean) {
   });
 }
 
-export function runWithNullProps(dom: JSDOM, wrapped: boolean) {
+export function runWithNullProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(
-      wrapped ? (
+      wrapping === "DIV" ? (
         <ComponentReturningWrappedPrimitive value={null} />
+      ) : wrapping === "FRAGMENT" ? (
+        <ComponentReturningPrimitiveInFragment value={null} />
       ) : (
         <ComponentReturningPrimitive value={null} />
       ),
@@ -58,15 +72,17 @@ export function runWithNullProps(dom: JSDOM, wrapped: boolean) {
   });
 }
 
-export function runWithStringProps(dom: JSDOM, wrapped: boolean) {
+export function runWithStringProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(
-      wrapped ? (
+      wrapping === "DIV" ? (
         <ComponentReturningWrappedPrimitive value={"hello"} />
+      ) : wrapping === "FRAGMENT" ? (
+        <ComponentReturningPrimitiveInFragment value={"hello"} />
       ) : (
         <ComponentReturningPrimitive value={"hello"} />
       ),
@@ -75,15 +91,17 @@ export function runWithStringProps(dom: JSDOM, wrapped: boolean) {
   });
 }
 
-export function runWithBooleanProps(dom: JSDOM, wrapped: boolean) {
+export function runWithBooleanProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(
-      wrapped ? (
+      wrapping === "DIV" ? (
         <ComponentReturningWrappedPrimitive value={true} />
+      ) : wrapping === "FRAGMENT" ? (
+        <ComponentReturningPrimitiveInFragment value={true} />
       ) : (
         <ComponentReturningPrimitive value={true} />
       ),
@@ -92,15 +110,17 @@ export function runWithBooleanProps(dom: JSDOM, wrapped: boolean) {
   });
 }
 
-export function runWithNumericProps(dom: JSDOM, wrapped: boolean) {
+export function runWithNumericProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
     mount(
-      wrapped ? (
+      wrapping === "DIV" ? (
         <ComponentReturningWrappedPrimitive value={100} />
+      ) : wrapping === "FRAGMENT" ? (
+        <ComponentReturningPrimitiveInFragment value={100} />
       ) : (
         <ComponentReturningPrimitive value={100} />
       ),

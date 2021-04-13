@@ -1492,7 +1492,8 @@ function flatten(
     : isForgoFragment(itemOrItems)
     ? Array.isArray(itemOrItems.props.children)
       ? itemOrItems.props.children
-      : itemOrItems.props.children !== undefined
+      : itemOrItems.props.children !== undefined &&
+        itemOrItems.props.children !== null
       ? [itemOrItems.props.children]
       : []
     : [itemOrItems];
@@ -1530,7 +1531,7 @@ function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
 }
 
 function isForgoFragment(node: ForgoNode): node is ForgoFragment {
-  return (node as any).type === Fragment;
+  return node !== undefined && node !== null && (node as any).type === Fragment;
 }
 
 /*
