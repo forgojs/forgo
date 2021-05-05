@@ -1144,7 +1144,7 @@ export function createForgoInstance(customEnv: any) {
               if (node.nodeType === TEXT_NODE_TYPE) {
                 delete (node as any)[key];
               } else if (node instanceof env.__internal.HTMLElement) {
-                if (key.startsWith("aria-") || key.startsWith("data-")) {
+                if ((node as HTMLElement).hasAttribute(key)) {
                   (node as HTMLElement).removeAttribute(key);
                 } else {
                   delete (node as any)[key];
