@@ -1136,20 +1136,20 @@ export function createForgoInstance(customEnv: any) {
     if (isForgoElement(forgoNode)) {
       const currentState = getForgoState(node);
 
-      // Remove props which don't match
+      // Remove props which don't exist
       if (currentState && currentState.props) {
         for (const key in currentState.props) {
-          if (forgoNode.props[key] === undefined) {
+          if (!(key in forgoNode.props)) {
             if (key !== "children" && key !== "xmlns") {
               if (node.nodeType === TEXT_NODE_TYPE) {
-                (node as any)[key] = undefined;
+                delete (node as any)[key];
               } else if (node instanceof env.__internal.HTMLElement) {
                 if (key === "style") {
                   (node as HTMLElement).style.cssText = "";
                 } else if (key.startsWith("aria-") || key.startsWith("data-")) {
                   (node as HTMLElement).removeAttribute(key);
                 } else {
-                  (node as any)[key] = undefined;
+                  delete (node as any)[key];
                 }
               } else {
                 (node as Element).removeAttribute(key);
