@@ -95,17 +95,15 @@ export type ForgoElementBase<TProps extends ForgoElementProps> = {
   __is_forgo_element__: true;
 };
 
-export type ForgoDOMElement<
-  TProps extends ForgoDOMElementProps
-> = ForgoElementBase<TProps> & {
-  type: string;
-};
+export type ForgoDOMElement<TProps extends ForgoDOMElementProps> =
+  ForgoElementBase<TProps> & {
+    type: string;
+  };
 
-export type ForgoComponentElement<
-  TProps extends ForgoComponentProps
-> = ForgoElementBase<TProps> & {
-  type: ForgoComponentCtor<TProps>;
-};
+export type ForgoComponentElement<TProps extends ForgoComponentProps> =
+  ForgoElementBase<TProps> & {
+    type: ForgoComponentCtor<TProps>;
+  };
 
 export type ForgoFragment = {
   type: typeof Fragment;
@@ -260,9 +258,9 @@ export function createElement<TProps extends ForgoElementProps & { key?: any }>(
   props = props ?? {};
   props.children =
     arguments.length > 3
-      ? Array.from(arguments).slice(2)
+      ? flatten(Array.from(arguments).slice(2))
       : arguments.length === 3
-      ? [arguments[2]]
+      ? flatten(arguments[2])
       : undefined;
   const key = props.key ?? undefined;
   return { type, props, key, __is_forgo_element__: true };
@@ -1225,9 +1223,9 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNode,
     container: Element | string | null
   ): RenderResult {
-    let parentElement = (isString(container)
-      ? env.document.querySelector(container)
-      : container) as Element;
+    let parentElement = (
+      isString(container) ? env.document.querySelector(container) : container
+    ) as Element;
 
     if (parentElement) {
       if (parentElement.nodeType === ELEMENT_NODE_TYPE) {
@@ -1259,9 +1257,10 @@ export function createForgoInstance(customEnv: any) {
     This render function returns the rendered dom node.
     forgoNode is the node to render.
   */
-  function render(
-    forgoNode: ForgoNode
-  ): { node: ChildNode; nodes: ChildNode[] } {
+  function render(forgoNode: ForgoNode): {
+    node: ChildNode;
+    nodes: ChildNode[];
+  } {
     const renderResult = internalRender(
       forgoNode,
       {
@@ -1464,9 +1463,10 @@ export function mount(
   return forgoInstance.mount(forgoNode, container);
 }
 
-export function render(
-  forgoNode: ForgoNode
-): { node: ChildNode; nodes: ChildNode[] } {
+export function render(forgoNode: ForgoNode): {
+  node: ChildNode;
+  nodes: ChildNode[];
+} {
   return forgoInstance.render(forgoNode);
 }
 
