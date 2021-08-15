@@ -1234,7 +1234,7 @@ export function createForgoInstance(customEnv: any) {
           {
             type: "search",
             currentNodeIndex: 0,
-            length: 0,
+            length: parentElement.childNodes.length,
             parentElement,
           },
           []
