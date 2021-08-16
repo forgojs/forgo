@@ -597,6 +597,15 @@ export function createForgoInstance(customEnv: any) {
         }
         // No matching node found
         else {
+          // Wasn't found. Get rid of remaining nodes.
+          unloadNodes(
+            sliceDOMNodes(
+              childNodes,
+              nodeInsertionOptions.currentNodeIndex,
+              childNodes.length - 1
+            ),
+            pendingAttachStates
+          );
           return addNewComponent();
         }
       }
