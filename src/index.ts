@@ -230,8 +230,7 @@ declare global {
   }
 }
 
-import { JSX as JSXDefs } from "./jsx";
-export import JSX = JSXDefs;
+export type { JSX } from "./jsx";
 
 /*
   Namespaces
