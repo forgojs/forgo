@@ -602,7 +602,7 @@ export function createForgoInstance(customEnv: any) {
             sliceDOMNodes(
               childNodes,
               nodeInsertionOptions.currentNodeIndex,
-              childNodes.length - 1
+              childNodes.length
             ),
             pendingAttachStates
           );

@@ -44,8 +44,8 @@ export default function () {
           );
         } else {
           should.equal(
-            window.document.getElementById("root")?.childNodes[0].nodeType,
-            TEXT_NODE_TYPE
+            window.document.getElementById("root")?.childNodes.length,
+            0
           );
         }
       });
@@ -72,8 +72,8 @@ export default function () {
           );
         } else {
           should.equal(
-            window.document.getElementById("root")?.childNodes[0].nodeType,
-            TEXT_NODE_TYPE
+            window.document.getElementById("root")?.childNodes.length,
+            0
           );
         }
       });
