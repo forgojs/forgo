@@ -316,7 +316,12 @@ export function createForgoInstance(customEnv: any) {
     else if (!isForgoElement(forgoNode)) {
       return forgoNode === undefined || forgoNode === null
         ? { nodes: [] }
-        : renderText(forgoNode, nodeInsertionOptions, pendingAttachStates);
+        : renderText(
+            forgoNode,
+            nodeInsertionOptions,
+            pendingAttachStates,
+            mountOnPreExistingDOM
+          );
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -360,7 +365,8 @@ export function createForgoInstance(customEnv: any) {
   function renderText(
     forgoNode: ForgoNonEmptyPrimitiveNode,
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node.
     if (nodeInsertionOptions.type === "detached") {
@@ -759,7 +765,9 @@ export function createForgoInstance(customEnv: any) {
               : {
                   type: "search",
                   currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
-                  length: mountOnPreExistingDOM ? nodeInsertionOptions.length : 0,
+                  length: mountOnPreExistingDOM
+                    ? nodeInsertionOptions.length
+                    : 0,
                   parentElement: nodeInsertionOptions.parentElement,
                 };
 
