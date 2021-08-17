@@ -6,7 +6,7 @@ export type ForgoRef<T> = {
 };
 
 /*
-  We have two types of elements
+  We have two types of elements:
   1. DOM Elements
   2. Custom Component Elements
 */
@@ -23,11 +23,13 @@ export type ForgoDOMElementProps = {
 export type ForgoComponentProps = {} & ForgoElementProps;
 
 /*
-  This is the constructor of a ForgoComponent, called a 'Component Constructor'
+  This is the constructor of a ForgoComponent, called a 'Component Constructor'.
  
-  The terminology is different from React here.
+  The terminology is different from React here. 
   For example, in <MyComponent />, the MyComponent is the Component Constructor.
-  The Component Constructor is defined by the type ForgoComponentCtor, and it returns a Component (of type ForgoComponent).
+  
+  The Component Constructor is defined by the type ForgoComponentCtor, 
+  and it returns a Component (of type ForgoComponent).
 */
 export type ForgoCtorArgs = {
   environment: ForgoEnvType;
@@ -86,7 +88,7 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   If ForgoNode has a type property which is a string, it represents a native DOM element.
   eg: The type will be "div" for <div>Hello</div>
 
-  If the ForgoElement represents a Custom Component, then the type points to a ForgoComponentCtor
+  If the ForgoElement represents a Custom Component, then the type points to a ForgoComponentCtor.
   eg: The type will be MyComponent for <MyComponent />
 */
 export type ForgoElementBase<TProps extends ForgoElementProps> = {
@@ -129,13 +131,14 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 /*
   Forgo stores Component state on the element on which it is mounted.
 
-  Say Custom1 renders Custom2 which renders Custom3 which renders <div>Hello</div>
+  Say Custom1 renders Custom2 which renders Custom3 which renders <div>Hello</div>. 
   In this case, the components Custom1, Custom2 and Custom3 are stored on the div.
  
-  You can also see that it gets passed around as pendingStates in the render methods.
-  That's because when Custom1 renders Custom2, there isn't a real DOM node available to attach the state to. So the states are passed around until the last component renders a real DOM node or nodes.
+  You can also see that it gets passed around as pendingStates in the render methods. 
+  That's because when Custom1 renders Custom2, there isn't a real DOM node available to attach the state to. 
+  So the states are passed around until the last component renders a real DOM node or nodes.
 
-  In addition it holds a bunch of other things.
+  In addition it holds a bunch of other things. 
   Like for example, a key which uniquely identifies a child element when rendering a list.
 */
 export type NodeAttachedComponentState<TProps> = {
@@ -211,7 +214,7 @@ export type NodeInsertionOptions =
   | SearchableNodeInsertionOptions;
 
 /*
-  Result of the render functions
+  Result of the render functions.
 */
 export type RenderResult = {
   nodes: ChildNode[];
@@ -269,8 +272,8 @@ export const h = createElement;
 
 /*
   HACK: Chrome fires onblur (if defined) immediately after a node.remove().
-  This is bad news for us, since a rerender() inside the onblur handler will run on an unattached node.
-  So, disable onblur if node is set to be removed.
+  This is bad news for us, since a rerender() inside the onblur handler 
+  will run on an unattached node. So, disable onblur if node is set to be removed.
 */
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
@@ -288,13 +291,9 @@ export function createForgoInstance(customEnv: any) {
   };
 
   /*
-    This is the main render function.
-    forgoNode is the node to render.
+    This is the main render function. forgoNode is the node to render.
   
-    nodeInsertionOptions specify which nodes need to be replaced by the new node(s),
-    or whether the new node should be created detached from the DOM (without replacement).
-
-    pendingAttachStates is the list of Component State objects which will be attached to the element.
+    nodeInsertionOptions specify which nodes need to be replaced by the new node(s), or whether the new node should be created detached from the DOM (without replacement). pendingAttachStates is the list of Component State objects which will be attached to the element.
   */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
@@ -352,9 +351,9 @@ export function createForgoInstance(customEnv: any) {
     nodeInsertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ): RenderResult {
-    // We need to create a detached node
+    // We need to create a detached node.
     if (nodeInsertionOptions.type === "detached") {
-      // Text nodes will always be recreated
+      // Text nodes will always be recreated.
       const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
@@ -363,7 +362,7 @@ export function createForgoInstance(customEnv: any) {
     }
     // We have to find a node to replace.
     else {
-      // Text nodes will always be recreated
+      // Text nodes will always be recreated.
       const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
@@ -388,7 +387,7 @@ export function createForgoInstance(customEnv: any) {
           return { nodes: [textNode] };
         }
       }
-      // There are no target nodes available
+      // There are no target nodes available.
       else {
         const childNodes = nodeInsertionOptions.parentElement.childNodes;
         if (
@@ -487,7 +486,7 @@ export function createForgoInstance(customEnv: any) {
       } else {
         const forgoChildrenObj = forgoElement.props.children;
 
-        // Children will not be an array if single item
+        // Children will not be an array if single item.
         const forgoChildren = flatten(
           (Array.isArray(forgoChildrenObj)
             ? forgoChildrenObj
@@ -511,7 +510,7 @@ export function createForgoInstance(customEnv: any) {
           currentChildNodeIndex += nodes.length;
         }
 
-        // Get rid the the remaining nodes
+        // Get rid the the remaining nodes.
         const nodesToRemove = sliceDOMNodes(
           parentElement.childNodes,
           currentChildNodeIndex,
@@ -551,7 +550,7 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Render a Custom Component
+    Render a Custom Component.
     Such as <MySideBar size="large" />
   */
   function renderCustomComponent<TProps extends ForgoDOMElementProps>(
@@ -562,7 +561,7 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     const componentIndex = pendingAttachStates.length;
 
-    // We need to create a detached node
+    // We need to create a detached node.
     if (nodeInsertionOptions.type === "detached") {
       return addNewComponent();
     }
@@ -594,7 +593,7 @@ export function createForgoInstance(customEnv: any) {
           );
           return renderExistingComponent(nodeInsertionOptions, componentState);
         }
-        // No matching node found
+        // No matching node found.
         else {
           // Wasn't found. Get rid of remaining nodes.
           unloadNodes(
@@ -608,7 +607,8 @@ export function createForgoInstance(customEnv: any) {
           return addNewComponent();
         }
       }
-      // No nodes in target node list
+      // No nodes in target node list.
+      // Nothing to unload.
       else {
         return addNewComponent();
       }
@@ -836,7 +836,7 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Render an array of components
+    Render an array of components. 
     Called when a CustomComponent returns an array (or fragment) in its render method.  
   */
   function renderArray(
@@ -957,11 +957,11 @@ export function createForgoInstance(customEnv: any) {
 
   /*
     When states are attached to a new node or when states are reattached, 
-    some of the old component states need to go away. 
-    The corresponding components will need to be unmounted.
+    some of the old component states need to go away. The corresponding components 
+    will need to be unmounted.
 
-    While rendering, the component gets reused if the ctor is the same.
-    If the ctor is different, the component is discarded. And hence needs to be unmounted.
+    While rendering, the component gets reused if the ctor is the same. If the 
+    ctor is different, the component is discarded. And hence needs to be unmounted.
     So we check the ctor type in old and new.
   */
   function findIndexOfFirstIncompatibleState(
