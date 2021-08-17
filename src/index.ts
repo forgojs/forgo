@@ -300,11 +300,17 @@ export function createForgoInstance(customEnv: any) {
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     // Array of Nodes
     if (Array.isArray(forgoNode)) {
-      return renderArray(forgoNode, nodeInsertionOptions, pendingAttachStates);
+      return renderArray(
+        forgoNode,
+        nodeInsertionOptions,
+        pendingAttachStates,
+        mountOnPreExistingDOM
+      );
     }
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
@@ -317,13 +323,15 @@ export function createForgoInstance(customEnv: any) {
       return renderDOMElement(
         forgoNode,
         nodeInsertionOptions,
-        pendingAttachStates
+        pendingAttachStates,
+        mountOnPreExistingDOM
       );
     } else if (isForgoFragment(forgoNode)) {
       return renderFragment(
         forgoNode,
         nodeInsertionOptions,
-        pendingAttachStates
+        pendingAttachStates,
+        mountOnPreExistingDOM
       );
     }
     // Custom Component.
@@ -331,7 +339,8 @@ export function createForgoInstance(customEnv: any) {
       return renderCustomComponent(
         forgoNode,
         nodeInsertionOptions,
-        pendingAttachStates
+        pendingAttachStates,
+        mountOnPreExistingDOM
       );
     }
   }
@@ -422,7 +431,8 @@ export function createForgoInstance(customEnv: any) {
   function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoDOMElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
@@ -507,7 +517,8 @@ export function createForgoInstance(customEnv: any) {
               currentNodeIndex: currentChildNodeIndex,
               length: parentElement.childNodes.length - currentChildNodeIndex,
             },
-            []
+            [],
+            mountOnPreExistingDOM
           );
           currentChildNodeIndex += nodes.length;
         }
@@ -558,7 +569,8 @@ export function createForgoInstance(customEnv: any) {
   function renderCustomComponent<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoComponentElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
     // boundary: ForgoComponent<any> | undefined
   ): RenderResult {
     const componentIndex = pendingAttachStates.length;
@@ -570,43 +582,50 @@ export function createForgoInstance(customEnv: any) {
     // We have to find a node to replace.
     else {
       if (nodeInsertionOptions.length) {
-        const childNodes = nodeInsertionOptions.parentElement.childNodes;
-        const searchResult = findReplacementCandidateForCustomComponent(
-          forgoElement,
-          childNodes,
-          nodeInsertionOptions.currentNodeIndex,
-          nodeInsertionOptions.length,
-          pendingAttachStates.length
-        );
-
-        if (searchResult.found) {
-          const targetNode = childNodes[searchResult.index];
-          const state = getExistingForgoState(targetNode);
-          const componentState = state.components[componentIndex];
-
-          // Get rid of unwanted nodes.
-          unloadNodes(
-            sliceDOMNodes(
-              childNodes,
-              nodeInsertionOptions.currentNodeIndex,
-              searchResult.index
-            ),
-            pendingAttachStates.concat(componentState)
-          );
-          return renderExistingComponent(nodeInsertionOptions, componentState);
-        }
-        // No matching node found.
-        else {
-          // Wasn't found. Get rid of remaining nodes.
-          unloadNodes(
-            sliceDOMNodes(
-              childNodes,
-              nodeInsertionOptions.currentNodeIndex,
-              childNodes.length
-            ),
-            pendingAttachStates
-          );
+        if (mountOnPreExistingDOM) {
           return addNewComponent();
+        } else {
+          const childNodes = nodeInsertionOptions.parentElement.childNodes;
+          const searchResult = findReplacementCandidateForCustomComponent(
+            forgoElement,
+            childNodes,
+            nodeInsertionOptions.currentNodeIndex,
+            nodeInsertionOptions.length,
+            pendingAttachStates.length
+          );
+
+          if (searchResult.found) {
+            const targetNode = childNodes[searchResult.index];
+            const state = getExistingForgoState(targetNode);
+            const componentState = state.components[componentIndex];
+
+            // Get rid of unwanted nodes.
+            unloadNodes(
+              sliceDOMNodes(
+                childNodes,
+                nodeInsertionOptions.currentNodeIndex,
+                searchResult.index
+              ),
+              pendingAttachStates.concat(componentState)
+            );
+            return renderExistingComponent(
+              nodeInsertionOptions,
+              componentState
+            );
+          }
+          // No matching node found.
+          else {
+            // Wasn't found. Get rid of remaining nodes.
+            unloadNodes(
+              sliceDOMNodes(
+                childNodes,
+                nodeInsertionOptions.currentNodeIndex,
+                childNodes.length
+              ),
+              pendingAttachStates
+            );
+            return addNewComponent();
+          }
         }
       }
       // No nodes in target node list.
@@ -666,7 +685,8 @@ export function createForgoInstance(customEnv: any) {
               newForgoNode,
               insertionOptions,
               statesToAttach,
-              newComponentState
+              newComponentState,
+              mountOnPreExistingDOM
             );
           }
         );
@@ -739,7 +759,7 @@ export function createForgoInstance(customEnv: any) {
               : {
                   type: "search",
                   currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
-                  length: 0,
+                  length: mountOnPreExistingDOM ? nodeInsertionOptions.length : 0,
                   parentElement: nodeInsertionOptions.parentElement,
                 };
 
@@ -747,7 +767,8 @@ export function createForgoInstance(customEnv: any) {
           const renderResult = internalRender(
             newForgoElement,
             insertionOptions,
-            statesToAttach
+            statesToAttach,
+            mountOnPreExistingDOM
           );
 
           // In case we rendered an array, set the node to the first node.
@@ -783,7 +804,8 @@ export function createForgoInstance(customEnv: any) {
           return internalRender(
             newForgoElement,
             nodeInsertionOptions,
-            statesToAttach
+            statesToAttach,
+            mountOnPreExistingDOM
           );
         } else {
           throw error;
@@ -796,7 +818,8 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNode,
     insertionOptions: SearchableNodeInsertionOptions,
     statesToAttach: NodeAttachedComponentState<any>[],
-    componentState: NodeAttachedComponentState<TProps>
+    componentState: NodeAttachedComponentState<TProps>,
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     const totalNodesBeforeRender =
       insertionOptions.parentElement.childNodes.length;
@@ -805,7 +828,8 @@ export function createForgoInstance(customEnv: any) {
     const renderResult = internalRender(
       forgoNode,
       insertionOptions,
-      statesToAttach
+      statesToAttach,
+      mountOnPreExistingDOM
     );
 
     const totalNodesAfterRender =
@@ -844,7 +868,8 @@ export function createForgoInstance(customEnv: any) {
   function renderArray(
     forgoNodes: ForgoNode[],
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
 
@@ -871,7 +896,8 @@ export function createForgoInstance(customEnv: any) {
         const { nodes } = internalRender(
           forgoNode,
           insertionOptions,
-          pendingAttachStates
+          pendingAttachStates,
+          mountOnPreExistingDOM
         );
 
         allNodes = allNodes.concat(nodes);
@@ -896,12 +922,14 @@ export function createForgoInstance(customEnv: any) {
   function renderFragment(
     fragment: ForgoFragment,
     nodeInsertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
   ): RenderResult {
     return renderArray(
       flatten(fragment),
       nodeInsertionOptions,
-      pendingAttachStates
+      pendingAttachStates,
+      mountOnPreExistingDOM
     );
   }
 
@@ -1239,6 +1267,7 @@ export function createForgoInstance(customEnv: any) {
 
     if (parentElement) {
       if (parentElement.nodeType === ELEMENT_NODE_TYPE) {
+        const mountOnPreExistingDOM = parentElement.childNodes.length > 0;
         return internalRender(
           forgoNode,
           {
@@ -1247,7 +1276,8 @@ export function createForgoInstance(customEnv: any) {
             length: parentElement.childNodes.length,
             parentElement,
           },
-          []
+          [],
+          mountOnPreExistingDOM
         );
       } else {
         throw new Error(
@@ -1276,7 +1306,8 @@ export function createForgoInstance(customEnv: any) {
       {
         type: "detached",
       },
-      []
+      [],
+      false
     );
     return { node: renderResult.nodes[0], nodes: renderResult.nodes };
   }
@@ -1347,7 +1378,8 @@ export function createForgoInstance(customEnv: any) {
               forgoNode,
               insertionOptions,
               statesToAttach,
-              newComponentState
+              newComponentState,
+              false
             );
 
             // We have to propagate node changes up the tree.
