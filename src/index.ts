@@ -293,7 +293,9 @@ export function createForgoInstance(customEnv: any) {
   /*
     This is the main render function. forgoNode is the node to render.
   
-    nodeInsertionOptions specify which nodes need to be replaced by the new node(s), or whether the new node should be created detached from the DOM (without replacement). pendingAttachStates is the list of Component State objects which will be attached to the element.
+    nodeInsertionOptions specify which nodes need to be replaced by the new node(s), 
+    or whether the new node should be created detached from the DOM (without replacement). 
+    pendingAttachStates is the list of Component State objects which will be attached to the element.
   */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
