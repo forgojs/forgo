@@ -391,7 +391,13 @@ export function createForgoInstance(customEnv: any) {
       const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
       );
-      syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
+      syncStateAndProps(
+        forgoNode,
+        textNode,
+        true,
+        pendingAttachStates,
+        undefined
+      );
       return { nodes: [textNode] };
     }
     // We have to find a node to replace.
@@ -407,17 +413,26 @@ export function createForgoInstance(customEnv: any) {
         let targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
         if (targetNode.nodeType === TEXT_NODE_TYPE) {
           targetNode.replaceWith(textNode);
+
+          const oldComponentState = getForgoState(targetNode)?.components;
           syncStateAndProps(
             forgoNode,
             textNode,
-            targetNode,
-            pendingAttachStates
+            true,
+            pendingAttachStates,
+            oldComponentState
           );
           return { nodes: [textNode] };
         } else {
           const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
           nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
-          syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
+          syncStateAndProps(
+            forgoNode,
+            textNode,
+            true,
+            pendingAttachStates,
+            undefined
+          );
           return { nodes: [textNode] };
         }
       }
@@ -433,7 +448,13 @@ export function createForgoInstance(customEnv: any) {
           const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
           nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
         }
-        syncStateAndProps(forgoNode, textNode, textNode, pendingAttachStates);
+        syncStateAndProps(
+          forgoNode,
+          textNode,
+          true,
+          pendingAttachStates,
+          undefined
+        );
         return { nodes: [textNode] };
       }
     }
@@ -459,14 +480,14 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
-      return addDOMElement(undefined, null);
+      return addElement(undefined, null);
     }
     // We have to find a node to replace.
     else {
       const childNodes = nodeInsertionOptions.parentElement.childNodes;
 
       if (nodeInsertionOptions.length) {
-        const searchResult = findReplacementCandidateForDOMElement(
+        const searchResult = findReplacementCandidateForElement(
           forgoElement,
           childNodes,
           nodeInsertionOptions.currentNodeIndex,
@@ -474,26 +495,26 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
-          return renderExistingDOMElement(
+          return renderExistingElement(
             searchResult.index,
             childNodes,
             nodeInsertionOptions
           );
         } else {
-          return addDOMElement(
+          return addElement(
             nodeInsertionOptions.parentElement,
             childNodes[nodeInsertionOptions.currentNodeIndex]
           );
         }
       } else {
-        return addDOMElement(
+        return addElement(
           nodeInsertionOptions.parentElement,
           childNodes[nodeInsertionOptions.currentNodeIndex]
         );
       }
     }
 
-    function renderDOMChildNodes(parentElement: Element) {
+    function renderChildNodes(parentElement: Element) {
       if (forgoElement.props.dangerouslySetInnerHTML) {
         parentElement.innerHTML =
           forgoElement.props.dangerouslySetInnerHTML.__html;
@@ -526,7 +547,7 @@ export function createForgoInstance(customEnv: any) {
         }
 
         // Get rid the the remaining nodes.
-        const nodesToRemove = sliceDOMNodes(
+        const nodesToRemove = sliceNodes(
           parentElement.childNodes,
           currentChildNodeIndex,
           parentElement.childNodes.length
@@ -538,14 +559,14 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    function renderExistingDOMElement(
+    function renderExistingElement(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
       nodeInsertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
       unloadNodes(
-        sliceDOMNodes(
+        sliceNodes(
           childNodes,
           nodeInsertionOptions.currentNodeIndex,
           insertAt
@@ -557,19 +578,22 @@ export function createForgoInstance(customEnv: any) {
         nodeInsertionOptions.currentNodeIndex
       ] as Element;
 
-      renderDOMChildNodes(targetElement);
+      renderChildNodes(targetElement);
+
+      const oldComponentState = getForgoState(targetElement)?.components;
 
       syncStateAndProps(
         forgoElement,
         targetElement,
-        targetElement,
-        pendingAttachStates
+        false,
+        pendingAttachStates,
+        oldComponentState
       );
 
       return { nodes: [targetElement] };
     }
 
-    function addDOMElement(
+    function addElement(
       parentElement: Element | undefined,
       oldNode: ChildNode | null
     ): RenderResult {
@@ -583,13 +607,14 @@ export function createForgoInstance(customEnv: any) {
         forgoElement.props.ref.value = newElement;
       }
 
-      renderDOMChildNodes(newElement);
+      renderChildNodes(newElement);
 
       syncStateAndProps(
         forgoElement,
         newElement,
-        newElement,
-        pendingAttachStates
+        true,
+        pendingAttachStates,
+        undefined
       );
 
       return { nodes: [newElement] };
@@ -659,7 +684,7 @@ export function createForgoInstance(customEnv: any) {
 
       // Get rid of unwanted nodes.
       unloadNodes(
-        sliceDOMNodes(
+        sliceNodes(
           childNodes,
           nodeInsertionOptions.currentNodeIndex,
           insertAt
@@ -730,13 +755,13 @@ export function createForgoInstance(customEnv: any) {
       }
       // shouldUpdate() returned false
       else {
-        let indexOfNode = findDOMNodeIndex(
+        let indexOfNode = findNodeIndex(
           nodeInsertionOptions.parentElement.childNodes,
           componentState.args.element.node
         );
 
         return {
-          nodes: sliceDOMNodes(
+          nodes: sliceNodes(
             nodeInsertionOptions.parentElement.childNodes,
             indexOfNode,
             indexOfNode + componentState.nodes.length
@@ -873,7 +898,7 @@ export function createForgoInstance(customEnv: any) {
     const newIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    const nodesToRemove = sliceDOMNodes(
+    const nodesToRemove = sliceNodes(
       insertionOptions.parentElement.childNodes,
       newIndex,
       newIndex + componentState.nodes.length - numNodesRemoved
@@ -968,15 +993,12 @@ export function createForgoInstance(customEnv: any) {
   */
   function syncStateAndProps(
     forgoNode: ForgoNode,
-    newNode: ChildNode,
-    targetNode: ChildNode,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    node: ChildNode,
+    isNewNode: boolean,
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
-    // We have to get oldStates before attachProps;
-    // coz attachProps will overwrite with new states.
-    const oldComponentStates = getForgoState(targetNode)?.components;
-
-    attachProps(forgoNode, newNode, pendingAttachStates);
+    attachProps(forgoNode, node, isNewNode, pendingAttachStates);
 
     if (oldComponentStates) {
       const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
@@ -1114,7 +1136,7 @@ export function createForgoInstance(customEnv: any) {
       a) match by the key
       b) match by the tagname
   */
-  function findReplacementCandidateForDOMElement<TProps>(
+  function findReplacementCandidateForElement<TProps>(
     forgoElement: ForgoDOMElement<TProps>,
     nodes: NodeListOf<ChildNode> | ChildNode[],
     searchFrom: number,
@@ -1122,7 +1144,7 @@ export function createForgoInstance(customEnv: any) {
   ): CandidateSearchResult {
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
-      if (domNodeisElement(node)) {
+      if (nodeIsElement(node)) {
         const stateOnNode = getForgoState(node);
         if (forgoElement.key) {
           if (stateOnNode?.key === forgoElement.key) {
@@ -1133,8 +1155,7 @@ export function createForgoInstance(customEnv: any) {
           //  we don't match it with an unkeyed forgo element
           if (
             node.tagName.toLowerCase() === forgoElement.type &&
-            (!stateOnNode || !stateOnNode.key) &&
-            (!node.id || node.id === (forgoElement.props as any).id)
+            (!stateOnNode || !stateOnNode.key)
           ) {
             return { found: true, index: i };
           }
@@ -1184,6 +1205,7 @@ export function createForgoInstance(customEnv: any) {
   function attachProps(
     forgoNode: ForgoNode,
     node: ChildNode,
+    isNewNode: boolean,
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ) {
     // Capture previous nodes if afterRender is defined;
@@ -1217,6 +1239,20 @@ export function createForgoInstance(customEnv: any) {
                 }
               } else {
                 (node as Element).removeAttribute(key);
+              }
+            }
+          }
+        }
+      } else {
+        // A new node which doesn't have forgoState is SSR.
+        // We have to manually extinguish props
+        if (!isNewNode && nodeIsElement(node)) {
+          if (node.hasAttributes()) {
+            const attrs = node.attributes;
+            for (let i = 0; i < attrs.length; i++) {
+              const key = attrs[i].name;
+              if (!(key in forgoNode.props)) {
+                node.removeAttribute(key);
               }
             }
           }
@@ -1313,7 +1349,7 @@ export function createForgoInstance(customEnv: any) {
         // Remove excess nodes.
         // This happens when there are pre-existing nodes.
         if (result.nodes.length < parentElement.childNodes.length) {
-          const nodesToRemove = sliceDOMNodes(
+          const nodesToRemove = sliceNodes(
             parentElement.childNodes,
             result.nodes.length,
             parentElement.childNodes.length
@@ -1407,7 +1443,7 @@ export function createForgoInstance(customEnv: any) {
               originalComponentState.args
             );
 
-            let nodeIndex = findDOMNodeIndex(
+            let nodeIndex = findNodeIndex(
               parentElement.childNodes,
               element.node
             );
@@ -1476,13 +1512,13 @@ export function createForgoInstance(customEnv: any) {
           }
           // shouldUpdate() returned false
           else {
-            let indexOfNode = findDOMNodeIndex(
+            let indexOfNode = findNodeIndex(
               parentElement.childNodes,
               element.node
             );
 
             return {
-              nodes: sliceDOMNodes(
+              nodes: sliceNodes(
                 parentElement.childNodes,
                 indexOfNode,
                 indexOfNode + originalComponentState.nodes.length
@@ -1664,7 +1700,7 @@ function isString(val: unknown): val is string {
   return typeof val === "string";
 }
 
-function domNodeisElement(node: ChildNode): node is Element {
+function nodeIsElement(node: ChildNode): node is Element {
   return node.nodeType === ELEMENT_NODE_TYPE;
 }
 
@@ -1691,25 +1727,25 @@ function styleToString(style: any): string {
 }
 
 /* parentElements.childNodes is not an array. A slice() for it. */
-function sliceDOMNodes(
-  domNodes: ArrayLike<ChildNode>,
+function sliceNodes(
+  nodes: ArrayLike<ChildNode>,
   from: number,
   to: number
 ): ChildNode[] {
   const result: ChildNode[] = [];
   for (let i = from; i < to; i++) {
-    result.push(domNodes[i]);
+    result.push(nodes[i]);
   }
   return result;
 }
 
 /* parentElements.childNodes is not an array. A findIndex() for it. */
-function findDOMNodeIndex(
-  domNodes: ArrayLike<ChildNode>,
+function findNodeIndex(
+  nodes: ArrayLike<ChildNode>,
   element: ChildNode | undefined
 ): number {
-  for (let i = 0; i < domNodes.length; i++) {
-    if (domNodes[i] === element) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i] === element) {
       return i;
     }
   }
