@@ -315,7 +315,12 @@ export function createForgoInstance(customEnv: any) {
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
       return forgoNode === undefined || forgoNode === null
-        ? { nodes: [] }
+        ? renderNothing(
+            forgoNode,
+            nodeInsertionOptions,
+            pendingAttachStates,
+            mountOnPreExistingDOM
+          )
         : renderText(
             forgoNode,
             nodeInsertionOptions,
@@ -348,6 +353,18 @@ export function createForgoInstance(customEnv: any) {
         mountOnPreExistingDOM
       );
     }
+  }
+
+  /* 
+    Renders undefined and null
+  */
+  function renderNothing(
+    forgoNode: undefined | null,
+    nodeInsertionOptions: NodeInsertionOptions,
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    mountOnPreExistingDOM: boolean
+  ) {
+    return { nodes: [] };
   }
 
   /*
@@ -468,18 +485,11 @@ export function createForgoInstance(customEnv: any) {
             pendingAttachStates
           );
 
-          const targetElement = childNodes[
-            nodeInsertionOptions.currentNodeIndex
-          ] as Element;
-
-          renderDOMChildNodes(targetElement);
-
-          syncStateAndProps(
-            forgoElement,
-            targetElement,
-            targetElement,
-            pendingAttachStates
+          const targetElement = renderExistingDOMElement(
+            childNodes,
+            nodeInsertionOptions
           );
+
           return { nodes: [targetElement] };
         } else {
           const newElement = addNewDOMElement(
@@ -535,10 +545,31 @@ export function createForgoInstance(customEnv: any) {
           currentChildNodeIndex,
           parentElement.childNodes.length
         );
+
         if (nodesToRemove.length) {
           unloadNodes(nodesToRemove, []);
         }
       }
+    }
+
+    function renderExistingDOMElement(
+      childNodes: NodeListOf<ChildNode>,
+      nodeInsertionOptions: SearchableNodeInsertionOptions
+    ) {
+      const targetElement = childNodes[
+        nodeInsertionOptions.currentNodeIndex
+      ] as Element;
+
+      renderDOMChildNodes(targetElement);
+
+      syncStateAndProps(
+        forgoElement,
+        targetElement,
+        targetElement,
+        pendingAttachStates
+      );
+
+      return targetElement;
     }
 
     function addNewDOMElement(
@@ -621,15 +652,6 @@ export function createForgoInstance(customEnv: any) {
           }
           // No matching node found.
           else {
-            // Wasn't found. Get rid of remaining nodes.
-            unloadNodes(
-              sliceDOMNodes(
-                childNodes,
-                nodeInsertionOptions.currentNodeIndex,
-                childNodes.length
-              ),
-              pendingAttachStates
-            );
             return addNewComponent();
           }
         }
@@ -1276,7 +1298,7 @@ export function createForgoInstance(customEnv: any) {
     if (parentElement) {
       if (parentElement.nodeType === ELEMENT_NODE_TYPE) {
         const mountOnPreExistingDOM = parentElement.childNodes.length > 0;
-        return internalRender(
+        const result = internalRender(
           forgoNode,
           {
             type: "search",
@@ -1287,6 +1309,16 @@ export function createForgoInstance(customEnv: any) {
           [],
           mountOnPreExistingDOM
         );
+        if (result.nodes.length !== parentElement.childNodes.length) {
+          for (
+            let i = result.nodes.length;
+            i < parentElement.childNodes.length;
+            i++
+          ) {
+            parentElement.childNodes[i].remove();
+          }
+        }
+        return result;
       } else {
         throw new Error(
           "The container argument to the mount() function should be an HTML element."
