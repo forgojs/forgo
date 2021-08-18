@@ -1122,19 +1122,19 @@ export function createForgoInstance(customEnv: any) {
   ): CandidateSearchResult {
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
-      const stateOnNode = getForgoState(node);
-      if (forgoElement.key) {
-        if (stateOnNode?.key === forgoElement.key) {
-          return { found: true, index: i };
-        }
-      } else {
-        if (node.nodeType === ELEMENT_NODE_TYPE) {
-          const element = node as Element;
+      if (domNodeisElement(node)) {
+        const stateOnNode = getForgoState(node);
+        if (forgoElement.key) {
+          if (stateOnNode?.key === forgoElement.key) {
+            return { found: true, index: i };
+          }
+        } else {
           // If the candidate has a key defined,
           //  we don't match it with an unkeyed forgo element
           if (
-            element.tagName.toLowerCase() === forgoElement.type &&
-            (!stateOnNode || !stateOnNode.key)
+            node.tagName.toLowerCase() === forgoElement.type &&
+            (!stateOnNode || !stateOnNode.key) &&
+            (!node.id || node.id === (forgoElement.props as any).id)
           ) {
             return { found: true, index: i };
           }
@@ -1313,12 +1313,13 @@ export function createForgoInstance(customEnv: any) {
         // Remove excess nodes.
         // This happens when there are pre-existing nodes.
         if (result.nodes.length < parentElement.childNodes.length) {
-          for (
-            let i = result.nodes.length;
-            i < parentElement.childNodes.length;
-            i++
-          ) {
-            parentElement.childNodes[i].remove();
+          const nodesToRemove = sliceDOMNodes(
+            parentElement.childNodes,
+            result.nodes.length,
+            parentElement.childNodes.length
+          );
+          for (const node of nodesToRemove) {
+            node.remove();
           }
         }
 
@@ -1661,6 +1662,10 @@ function assertIsComponent<TProps>(
 
 function isString(val: unknown): val is string {
   return typeof val === "string";
+}
+
+function domNodeisElement(node: ChildNode): node is Element {
+  return node.nodeType === ELEMENT_NODE_TYPE;
 }
 
 // Thanks Artem Bochkarev
