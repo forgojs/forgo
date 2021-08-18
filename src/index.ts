@@ -566,11 +566,7 @@ export function createForgoInstance(customEnv: any) {
     ): RenderResult {
       // Get rid of unwanted nodes.
       unloadNodes(
-        sliceNodes(
-          childNodes,
-          nodeInsertionOptions.currentNodeIndex,
-          insertAt
-        ),
+        sliceNodes(childNodes, nodeInsertionOptions.currentNodeIndex, insertAt),
         pendingAttachStates
       );
 
@@ -684,11 +680,7 @@ export function createForgoInstance(customEnv: any) {
 
       // Get rid of unwanted nodes.
       unloadNodes(
-        sliceNodes(
-          childNodes,
-          nodeInsertionOptions.currentNodeIndex,
-          insertAt
-        ),
+        sliceNodes(childNodes, nodeInsertionOptions.currentNodeIndex, insertAt),
         pendingAttachStates.concat(componentState)
       );
 
@@ -1248,9 +1240,9 @@ export function createForgoInstance(customEnv: any) {
         // We have to manually extinguish props
         if (!isNewNode && nodeIsElement(node)) {
           if (node.hasAttributes()) {
-            const attrs = node.attributes;
-            for (let i = 0; i < attrs.length; i++) {
-              const key = attrs[i].name;
+            const attributes = Array.from(node.attributes);
+            for (const attr of attributes) {
+              const key = attr.name;
               if (!(key in forgoNode.props)) {
                 node.removeAttribute(key);
               }
