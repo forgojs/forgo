@@ -1,7 +1,8 @@
 {
   "name": "forgo",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "main": "./dist",
+  "type": "module",
   "types": "./dist/index.d.ts",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {
