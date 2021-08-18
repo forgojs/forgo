@@ -632,22 +632,10 @@ export function createForgoInstance(customEnv: any) {
           );
 
           if (searchResult.found) {
-            const targetNode = childNodes[searchResult.index];
-            const state = getExistingForgoState(targetNode);
-            const componentState = state.components[componentIndex];
-
-            // Get rid of unwanted nodes.
-            unloadNodes(
-              sliceDOMNodes(
-                childNodes,
-                nodeInsertionOptions.currentNodeIndex,
-                searchResult.index
-              ),
-              pendingAttachStates.concat(componentState)
-            );
             return renderExistingComponent(
-              nodeInsertionOptions,
-              componentState
+              searchResult.index,
+              childNodes,
+              nodeInsertionOptions
             );
           }
           // No matching node found.
@@ -664,9 +652,24 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function renderExistingComponent(
-      nodeInsertionOptions: SearchableNodeInsertionOptions,
-      componentState: NodeAttachedComponentState<TProps>
+      insertAt: number,
+      childNodes: NodeListOf<ChildNode>,
+      nodeInsertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
+      const targetNode = childNodes[insertAt];
+      const state = getExistingForgoState(targetNode);
+      const componentState = state.components[componentIndex];
+
+      // Get rid of unwanted nodes.
+      unloadNodes(
+        sliceDOMNodes(
+          childNodes,
+          nodeInsertionOptions.currentNodeIndex,
+          insertAt
+        ),
+        pendingAttachStates.concat(componentState)
+      );
+
       if (
         !componentState.component.shouldUpdate ||
         componentState.component.shouldUpdate(
