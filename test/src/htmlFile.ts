@@ -1,4 +1,4 @@
-export default function html(prerenderd?: string) {
+export default function html(prerendered?: string) {
   return `
   <!DOCTYPE HTML>
   <html lang="en">
@@ -6,8 +6,7 @@ export default function html(prerenderd?: string) {
       <title>Zerok Test</title>
     </head>
     <body>
-      <div id="root">${prerenderd || ""}
-      </div>
+      <div id="root">${prerendered || ""}</div>
     </body>
   </html>
   `;

@@ -28,6 +28,7 @@ import css from "./css";
 import inheritedCustomElement from "./inheritedCustomElement";
 import fragmentOverwriteDoesNotUnmount from "./fragmentOverwriteDoesNotUnmount";
 import ctorArgs from "./ctorArgs";
+import ssrSimple from "./ssr-simple";
 
 mount();
 boundary();
@@ -59,3 +60,4 @@ css();
 inheritedCustomElement();
 fragmentOverwriteDoesNotUnmount();
 ctorArgs();
+ssrSimple();

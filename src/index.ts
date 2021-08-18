@@ -8,7 +8,7 @@ export type ForgoRef<T> = {
 /*
   We have two types of elements:
   1. DOM Elements
-  2. Custom Component Elements
+  2. Component Elements
 */
 export type ForgoElementProps = {
   children?: ForgoNode | ForgoNode[];
@@ -80,7 +80,7 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   It can represent:
   - a primitive type which becomes a DOM Text Node
   - a DOM Element
-  - or a Custom Component.
+  - or a Component.
  
   If the ForgoNode is a string, number etc, it's a primitive type.
   eg: "hello"
@@ -88,7 +88,7 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   If ForgoNode has a type property which is a string, it represents a native DOM element.
   eg: The type will be "div" for <div>Hello</div>
 
-  If the ForgoElement represents a Custom Component, then the type points to a ForgoComponentCtor.
+  If the ForgoElement represents a Component, then the type points to a ForgoComponentCtor.
   eg: The type will be MyComponent for <MyComponent />
 */
 export type ForgoElementBase<TProps extends ForgoElementProps> = {
@@ -344,9 +344,9 @@ export function createForgoInstance(customEnv: any) {
         mountOnPreExistingDOM
       );
     }
-    // Custom Component.
+    // Component.
     else {
-      return renderCustomComponent(
+      return renderComponent(
         forgoNode,
         nodeInsertionOptions,
         pendingAttachStates,
@@ -459,8 +459,7 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     // We need to create a detached node
     if (nodeInsertionOptions.type === "detached") {
-      const newElement = addNewDOMElement(undefined, null);
-      return { nodes: [newElement] };
+      return addDOMElement(undefined, null);
     }
     // We have to find a node to replace.
     else {
@@ -475,35 +474,22 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
-          // Get rid of unwanted nodes.
-          unloadNodes(
-            sliceDOMNodes(
-              childNodes,
-              nodeInsertionOptions.currentNodeIndex,
-              searchResult.index
-            ),
-            pendingAttachStates
-          );
-
-          const targetElement = renderExistingDOMElement(
+          return renderExistingDOMElement(
+            searchResult.index,
             childNodes,
             nodeInsertionOptions
           );
-
-          return { nodes: [targetElement] };
         } else {
-          const newElement = addNewDOMElement(
+          return addDOMElement(
             nodeInsertionOptions.parentElement,
             childNodes[nodeInsertionOptions.currentNodeIndex]
           );
-          return { nodes: [newElement] };
         }
       } else {
-        const newElement = addNewDOMElement(
+        return addDOMElement(
           nodeInsertionOptions.parentElement,
           childNodes[nodeInsertionOptions.currentNodeIndex]
         );
-        return { nodes: [newElement] };
       }
     }
 
@@ -553,9 +539,20 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function renderExistingDOMElement(
+      insertAt: number,
       childNodes: NodeListOf<ChildNode>,
       nodeInsertionOptions: SearchableNodeInsertionOptions
-    ) {
+    ): RenderResult {
+      // Get rid of unwanted nodes.
+      unloadNodes(
+        sliceDOMNodes(
+          childNodes,
+          nodeInsertionOptions.currentNodeIndex,
+          insertAt
+        ),
+        pendingAttachStates
+      );
+
       const targetElement = childNodes[
         nodeInsertionOptions.currentNodeIndex
       ] as Element;
@@ -569,13 +566,13 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates
       );
 
-      return targetElement;
+      return { nodes: [targetElement] };
     }
 
-    function addNewDOMElement(
+    function addDOMElement(
       parentElement: Element | undefined,
       oldNode: ChildNode | null
-    ): Element {
+    ): RenderResult {
       const newElement = createElement(forgoElement, parentElement);
 
       if (parentElement) {
@@ -595,15 +592,15 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates
       );
 
-      return newElement;
+      return { nodes: [newElement] };
     }
   }
 
   /*
-    Render a Custom Component.
+    Render a Component.
     Such as <MySideBar size="large" />
   */
-  function renderCustomComponent<TProps extends ForgoDOMElementProps>(
+  function renderComponent<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoComponentElement<TProps>,
     nodeInsertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
@@ -614,16 +611,16 @@ export function createForgoInstance(customEnv: any) {
 
     // We need to create a detached node.
     if (nodeInsertionOptions.type === "detached") {
-      return addNewComponent();
+      return addComponent();
     }
     // We have to find a node to replace.
     else {
       if (nodeInsertionOptions.length) {
         if (mountOnPreExistingDOM) {
-          return addNewComponent();
+          return addComponent();
         } else {
           const childNodes = nodeInsertionOptions.parentElement.childNodes;
-          const searchResult = findReplacementCandidateForCustomComponent(
+          const searchResult = findReplacementCandidateForComponent(
             forgoElement,
             childNodes,
             nodeInsertionOptions.currentNodeIndex,
@@ -640,14 +637,14 @@ export function createForgoInstance(customEnv: any) {
           }
           // No matching node found.
           else {
-            return addNewComponent();
+            return addComponent();
           }
         }
       }
       // No nodes in target node list.
       // Nothing to unload.
       else {
-        return addNewComponent();
+        return addComponent();
       }
     }
 
@@ -748,7 +745,7 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    function addNewComponent(): RenderResult {
+    function addComponent(): RenderResult {
       const args: ForgoRenderArgs = {
         element: { componentIndex },
         update: (props) => rerender(args.element, props),
@@ -896,7 +893,7 @@ export function createForgoInstance(customEnv: any) {
 
   /*
     Render an array of components. 
-    Called when a CustomComponent returns an array (or fragment) in its render method.  
+    Called when a Component returns an array (or fragment) in its render method.  
   */
   function renderArray(
     forgoNodes: ForgoNode[],
@@ -1148,12 +1145,12 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    When we try to find replacement candidates for Custom Components,
+    When we try to find replacement candidates for Components,
     we try to:
       a) match by the key
       b) match by the component constructor
   */
-  function findReplacementCandidateForCustomComponent<TProps>(
+  function findReplacementCandidateForComponent<TProps>(
     forgoElement: ForgoComponentElement<TProps>,
     nodes: NodeListOf<ChildNode> | ChildNode[],
     searchFrom: number,
@@ -1312,7 +1309,10 @@ export function createForgoInstance(customEnv: any) {
           [],
           mountOnPreExistingDOM
         );
-        if (result.nodes.length !== parentElement.childNodes.length) {
+
+        // Remove excess nodes.
+        // This happens when there are pre-existing nodes.
+        if (result.nodes.length < parentElement.childNodes.length) {
           for (
             let i = result.nodes.length;
             i < parentElement.childNodes.length;
@@ -1321,6 +1321,7 @@ export function createForgoInstance(customEnv: any) {
             parentElement.childNodes[i].remove();
           }
         }
+
         return result;
       } else {
         throw new Error(
