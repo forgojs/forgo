@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "1.4.13",
+  "version": "1.4.14",
   "main": "./dist/index.js",
   "type": "module",
   "types": "./src/index.ts",
@@ -8,6 +8,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/forgojs/forgo"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./jsx-runtime": "./jsx-runtime/index.js"
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.13",
