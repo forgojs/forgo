@@ -1,4 +1,4 @@
-export { Fragment } from "../";
+export { Fragment } from "../dist";
 
 export function jsxs(type, props, key) {
   return { type, props, key, __is_forgo_element__: true };

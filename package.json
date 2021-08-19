@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "1.4.8",
+  "version": "1.4.10",
   "main": "./dist",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -15,7 +15,7 @@
     "@types/should": "^13.0.0",
     "esm": "^3.2.25",
     "jsdom": "^16.7.0",
-    "mocha": "^8.4.0",
+    "mocha": "^9.0.3",
     "rimraf": "^3.0.2",
     "should": "^13.2.3",
     "typescript": "^4.3.5"
@@ -24,10 +24,15 @@
     "clean": "rimraf ./dist",
     "build": "npm run clean && mkdir -p dist && cp src/jsx.d.ts dist/jsx.d.ts && npx tsc && npx esbuild src/index.ts --minify --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
     "build-test": "npx tsc -p tsconfig.test.json",
-    "test": "mocha -r esm dist/test/test.js"
+    "test": "node --experimental-specifier-resolution=node node_modules/mocha/lib/cli/cli.js dist/test/test.js"
   },
   "license": "MIT",
   "dependencies": {
     "esbuild": "^0.12.20"
+  },
+  "exports": {
+    "./": "./dist/",
+    "./jsx-runtime": "./jsx-runtime.js",
+    "./jsx-dev-runtime": "./jsx-dev-runtime.js"
   }
 }

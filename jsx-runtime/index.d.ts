@@ -1,4 +1,8 @@
-import { ForgoComponentCtor, ForgoElementProps, ForgoNode } from "../dist";
+import {
+  ForgoComponentCtor,
+  ForgoElementProps,
+  ForgoNode,
+} from "../src/index.js";
 
 export function jsxs<TProps extends ForgoElementProps>(
   type: string | ForgoComponentCtor<TProps>,
@@ -64,4 +68,4 @@ export type ForgoIntrinsicElement<T> = {
     style?: string | CSSProperties;
   };
 
-export { JSX } from "../dist/jsx";
+export { JSX } from "../src/jsx";

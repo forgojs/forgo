@@ -1,17 +1,17 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/test",
+    "outDir": "./dist",
     "allowJs": false,
     "target": "ES2015",
     "module": "ESNext",
+    "allowSyntheticDefaultImports": true,
     "moduleResolution": "Node",
     "declaration": true,
     "lib": ["es2020", "DOM"],
-    "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "strict": true,
     "jsx": "react-jsx",
     "jsxImportSource": "../../.."
   },
-  "include": ["./test/**/*"]
+  "include": ["./src/**/*"]
 }
