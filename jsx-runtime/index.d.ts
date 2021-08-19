@@ -68,4 +68,4 @@ export type ForgoIntrinsicElement<T> = {
     style?: string | CSSProperties;
   };
 
-export { JSX } from "../src/jsx";
+export type { JSX } from "../src/jsx";

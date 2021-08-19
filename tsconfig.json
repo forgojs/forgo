@@ -5,6 +5,7 @@
     "target": "ES2015",
     "module": "ESNext",
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "lib": ["ES2020", "DOM"],
     "sourceMap": true,
@@ -12,5 +13,5 @@
     "jsx": "react-jsx",
     "jsxImportSource": "../../../"
   },
-  "files": ["./src/index.ts"]
+  "include": ["./src/**/*"]
 }
