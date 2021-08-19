@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "1.4.14",
+  "version": "1.4.15",
   "main": "./dist/index.js",
   "type": "module",
   "types": "./src/index.ts",
