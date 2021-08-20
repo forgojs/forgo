@@ -691,8 +691,8 @@ Add these lines to tsconfig.json:
 {
   "compilerOptions": {
     "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment"
+    "jsxFactory": "forgo.createElement",
+    "jsxFragmentFactory": "forgo.Fragment"
   }
 }
 ```
