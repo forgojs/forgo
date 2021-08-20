@@ -660,11 +660,7 @@ Add these lines to babel.config.json:
   "plugins": [
     [
       "@babel/plugin-transform-react-jsx",
-      {
-        "throwIfNamespace": false,
-        "runtime": "automatic",
-        "importSource": "forgo"
-      }
+      { "pragma": "h" }
     ]
   ]
 }
@@ -694,11 +690,18 @@ Add these lines to tsconfig.json:
 ```json
 {
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "forgo"
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   }
 }
 ```
+
+### Breaking changes in 2.0
+
+Forgo 2.0 drops support for the new JSX transform introduced via "jsx-runtime".
+This never worked with esbuild loader, and more importantly doesn't play well with ES modules.
+If you were using this previously, switch to the configurations discussed above.
 
 ## Getting Help
 

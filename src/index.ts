@@ -226,14 +226,17 @@ export type RenderResult = {
 */
 export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
 
+import type { IntrinsicElements as IntrinsicElementsImpl } from "./jsxTypes";
+
 declare global {
   interface ChildNode {
     __forgo?: NodeAttachedState;
     __forgo_deleted?: boolean;
   }
+  namespace JSX {
+    interface IntrinsicElements extends IntrinsicElementsImpl {}
+  }
 }
-
-export type { JSX } from "./jsx";
 
 /*
   Namespaces

@@ -9,8 +9,9 @@
     "lib": ["ES2020", "DOM"],
     "sourceMap": true,
     "strict": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "../../../"
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   },
   "include": ["./src/**/*"]
 }

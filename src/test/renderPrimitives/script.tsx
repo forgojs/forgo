@@ -1,3 +1,4 @@
+import { h, Fragment } from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
 import { mount, setCustomEnv } from "../../index.js";
 

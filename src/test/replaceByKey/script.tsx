@@ -1,3 +1,4 @@
+import { h } from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 

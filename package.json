@@ -1,6 +1,6 @@
 {
   "name": "forgo",
-  "version": "1.4.15",
+  "version": "2.0.0",
   "main": "./dist/index.js",
   "type": "module",
   "types": "./src/index.ts",
@@ -11,7 +11,9 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./jsx-runtime": "./jsx-runtime/index.js"
+    "./jsx-dev-runtime": "./jsx-dev-runtime.js",
+    "./jsx-runtime": "./jsx-runtime.js",
+    "./": "./"
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.13",
