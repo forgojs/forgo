@@ -226,23 +226,8 @@ export type RenderResult = {
 */
 export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
 
-import { JSXTypes } from "./jsxTypes";
-
-declare global {
-  interface ChildNode {
-    __forgo?: NodeAttachedState;
-    __forgo_deleted?: boolean;
-  }
-}
-
-export import JSX = JSXTypes;
-
-// export namespace JSX {
-//   interface IntrinsicElements extends IntrinsicElementsImpl {}
-// }
-
 /*
-  Namespaces
+  HTML Namespaces
 */
 const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
@@ -1748,4 +1733,20 @@ function findNodeIndex(
     }
   }
   return -1;
+}
+
+/* JSX Types */
+import { JSXTypes } from "./jsxTypes";
+
+declare global {
+  interface ChildNode {
+    __forgo?: NodeAttachedState;
+    __forgo_deleted?: boolean;
+  }
+}
+
+export import JSX = JSXTypes;
+
+export namespace createElement {
+  export import JSX = JSXTypes;
 }
