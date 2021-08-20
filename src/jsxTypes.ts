@@ -9,7 +9,7 @@ export type Defaultize<Props, Defaults> =
         Pick<Props, Exclude<keyof Props, keyof Defaults>>
     : never;
 
-export namespace JSXInternal {
+export namespace JSXTypes {
   export type LibraryManagedAttributes<Component, Props> = Component extends {
     defaultProps: infer Defaults;
   }
