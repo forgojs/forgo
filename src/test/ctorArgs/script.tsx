@@ -1,4 +1,4 @@
-import { h } from "../../index.js";
+import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoCtorArgs, mount, setCustomEnv } from "../../index.js";
 
