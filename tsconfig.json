@@ -11,7 +11,8 @@
     "strict": true,
     "jsx": "react",
     "jsxFactory": "forgo.h",
-    "jsxFragmentFactory": "forgo.Fragment"
+    "jsxFragmentFactory": "forgo.Fragment",
+    "declaration": true
   },
   "include": ["./src/**/*"]
 }

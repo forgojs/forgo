@@ -1,9 +1,9 @@
 {
   "name": "forgo",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "main": "./dist/index.js",
   "type": "module",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {
     "type": "git",
