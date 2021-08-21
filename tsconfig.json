@@ -10,7 +10,7 @@
     "sourceMap": true,
     "strict": true,
     "jsx": "react",
-    "jsxFactory": "forgo.h",
+    "jsxFactory": "forgo.createElement",
     "jsxFragmentFactory": "forgo.Fragment",
     "declaration": true
   },
