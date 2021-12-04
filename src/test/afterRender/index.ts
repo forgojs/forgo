@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile.js";
 import { run, runWithTextNode } from "./script.js";
 import should from "should";
 
-export default function() {
+export default function () {
   describe("runs afterRender()", () => {
     it("when mounted on a DOM element", async () => {
       const dom = new JSDOM(htmlFile(), {
@@ -22,18 +22,18 @@ export default function() {
 
       should.equal((window as any).previousNode, undefined);
       should.equal((window as any).counterX10, 10);
-      should.equal((window as any).currentNode.prop, "hello");
+      should.equal((window as any).currentNode.getAttribute("prop"), "hello");
       should.equal((window as any).previousNode, undefined);
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 1);
       should.equal((window as any).counterX10, 20);
-      should.equal((window as any).currentNode.prop, "world");
-      should.equal((window as any).previousNode.prop, "hello");
+      should.equal((window as any).currentNode.getAttribute("prop"), "world");
+      should.equal((window as any).previousNode.getAttribute("prop"), "hello");
       (window as any).renderAgain();
       should.equal((window as any).previousNode.nodeType, 1);
       should.equal((window as any).counterX10, 30);
-      should.equal((window as any).currentNode.prop, "world");
-      should.equal((window as any).previousNode.prop, "world");
+      should.equal((window as any).currentNode.getAttribute("prop"), "world");
+      should.equal((window as any).previousNode.getAttribute("prop"), "world");
     });
 
     it("when mounted on a text node", async () => {
