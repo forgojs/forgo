@@ -253,8 +253,8 @@ export function createElement<TProps extends ForgoElementProps & { key?: any }>(
     arguments.length > 3
       ? flatten(Array.from(arguments).slice(2))
       : arguments.length === 3
-        ? flatten(arguments[2])
-        : undefined;
+      ? flatten(arguments[2])
+      : undefined;
   const key = props.key ?? undefined;
   return { type, props, key, __is_forgo_element__: true };
 }
@@ -307,17 +307,17 @@ export function createForgoInstance(customEnv: any) {
     else if (!isForgoElement(forgoNode)) {
       return forgoNode === undefined || forgoNode === null
         ? renderNothing(
-          forgoNode,
-          nodeInsertionOptions,
-          pendingAttachStates,
-          mountOnPreExistingDOM
-        )
+            forgoNode,
+            nodeInsertionOptions,
+            pendingAttachStates,
+            mountOnPreExistingDOM
+          )
         : renderText(
-          forgoNode,
-          nodeInsertionOptions,
-          pendingAttachStates,
-          mountOnPreExistingDOM
-        );
+            forgoNode,
+            nodeInsertionOptions,
+            pendingAttachStates,
+            mountOnPreExistingDOM
+          );
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -793,13 +793,13 @@ export function createForgoInstance(customEnv: any) {
             nodeInsertionOptions.type === "detached"
               ? nodeInsertionOptions
               : {
-                type: "search",
-                currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
-                length: mountOnPreExistingDOM
-                  ? nodeInsertionOptions.length
-                  : 0,
-                parentElement: nodeInsertionOptions.parentElement,
-              };
+                  type: "search",
+                  currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
+                  length: mountOnPreExistingDOM
+                    ? nodeInsertionOptions.length
+                    : 0,
+                  parentElement: nodeInsertionOptions.parentElement,
+                };
 
           // Pass it on for rendering...
           const renderResult = internalRender(
@@ -1109,8 +1109,8 @@ export function createForgoInstance(customEnv: any) {
 
   type CandidateSearchResult =
     | {
-      found: false;
-    }
+        found: false;
+      }
     | { found: true; index: number };
 
   /*
@@ -1347,7 +1347,8 @@ export function createForgoInstance(customEnv: any) {
       }
     } else {
       throw new Error(
-        `The mount() function was called on a non-element (${typeof container === "string" ? container : container?.tagName
+        `The mount() function was called on a non-element (${
+          typeof container === "string" ? container : container?.tagName
         }).`
       );
     }
@@ -1460,7 +1461,7 @@ export function createForgoInstance(customEnv: any) {
                 .concat(
                   parentState.nodes.slice(
                     indexOfOriginalRootNode +
-                    originalComponentState.nodes.length
+                      originalComponentState.nodes.length
                   )
                 );
 
@@ -1528,11 +1529,11 @@ export function createForgoInstance(customEnv: any) {
     if (forgoElement.props.is) {
       return namespaceURI
         ? env.document.createElementNS(namespaceURI, forgoElement.type, {
-          is: forgoElement.props.is,
-        })
+            is: forgoElement.props.is,
+          })
         : env.document.createElement(forgoElement.type, {
-          is: forgoElement.props.is,
-        });
+            is: forgoElement.props.is,
+          });
     } else {
       return namespaceURI
         ? env.document.createElementNS(namespaceURI, forgoElement.type)
@@ -1590,13 +1591,13 @@ function flatten(
   const items = Array.isArray(itemOrItems)
     ? itemOrItems
     : isForgoFragment(itemOrItems)
-      ? Array.isArray(itemOrItems.props.children)
-        ? itemOrItems.props.children
-        : itemOrItems.props.children !== undefined &&
-          itemOrItems.props.children !== null
-          ? [itemOrItems.props.children]
-          : []
-      : [itemOrItems];
+    ? Array.isArray(itemOrItems.props.children)
+      ? itemOrItems.props.children
+      : itemOrItems.props.children !== undefined &&
+        itemOrItems.props.children !== null
+      ? [itemOrItems.props.children]
+      : []
+    : [itemOrItems];
   for (const entry of items) {
     if (Array.isArray(entry) || isForgoFragment(entry)) {
       flatten(entry, ret);
@@ -1668,7 +1669,8 @@ function assertIsComponent<TProps>(
 ) {
   if (!component.render) {
     throw new Error(
-      `${ctor.name || "Unnamed"
+      `${
+        ctor.name || "Unnamed"
       } component constructor must return an object having a render() function.`
     );
   }

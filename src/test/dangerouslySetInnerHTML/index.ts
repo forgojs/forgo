@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile.js";
 import should from "should";
 import { run } from "./script.js";
 
-export default function() {
+export default function () {
   it("sets innerHTML if dangerouslySetInnerHTML is defined", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

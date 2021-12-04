@@ -4,7 +4,7 @@ import should from "should";
 import { ForgoRef } from "../../index.js";
 import { run } from "./script.js";
 
-export default function() {
+export default function () {
   it("attaches state correctly", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
@@ -24,7 +24,13 @@ export default function() {
     should.exist(greetingDiv.__forgo);
     should.equal(greetingDiv.__forgo.components.length, 2);
     should.equal(greetingDiv.__forgo.key, "mydiv");
-    should.equal(greetingDiv.__forgo.components[0].args.element.componentIndex, 0);
-    should.equal(greetingDiv.__forgo.components[1].args.element.componentIndex, 1);
+    should.equal(
+      greetingDiv.__forgo.components[0].args.element.componentIndex,
+      0
+    );
+    should.equal(
+      greetingDiv.__forgo.components[1].args.element.componentIndex,
+      1
+    );
   });
 }

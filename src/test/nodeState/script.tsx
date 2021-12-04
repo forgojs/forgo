@@ -18,7 +18,11 @@ function Greet(props: { name: string }) {
 
   return {
     render() {
-      return <div key="mydiv" ref={window.greetingDiv}>Hello {props.name}</div>;
+      return (
+        <div key="mydiv" ref={window.greetingDiv}>
+          Hello {props.name}
+        </div>
+      );
     },
   };
 }

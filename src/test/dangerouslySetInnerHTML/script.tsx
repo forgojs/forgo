@@ -8,7 +8,9 @@ let document: HTMLDocument;
 function BasicComponent() {
   return {
     render() {
-      return <div dangerouslySetInnerHTML={{ __html: `<p>Hello world</p>` }}></div>;
+      return (
+        <div dangerouslySetInnerHTML={{ __html: `<p>Hello world</p>` }}></div>
+      );
     },
   };
 }

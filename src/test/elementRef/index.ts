@@ -4,7 +4,7 @@ import should from "should";
 import { ForgoRef } from "../../index.js";
 import { run } from "./script.js";
 
-export default function() {
+export default function () {
   it("attaches element refs", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

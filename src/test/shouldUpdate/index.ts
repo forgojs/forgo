@@ -4,7 +4,7 @@ import { ForgoRef } from "../../index.js";
 import { run } from "./script.js";
 import should from "should";
 
-export default function() {
+export default function () {
   it("skips render if shouldUpdate() returns false", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",

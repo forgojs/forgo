@@ -1,10 +1,6 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import {
-  ForgoRenderArgs,
-  mount,
-  setCustomEnv,
-} from "../../index.js";
+import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: HTMLDocument;

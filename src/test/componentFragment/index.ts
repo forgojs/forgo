@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile.js";
 import { run, runNested } from "./script.js";
 import should from "should";
 
-export default function() {
+export default function () {
   describe("renders component returning fragments", () => {
     it("top level fragment", async () => {
       const dom = new JSDOM(htmlFile(), {

@@ -3,19 +3,22 @@ import htmlFile from "../htmlFile.js";
 import { ForgoRef } from "../../index.js";
 import { run } from "./script.js";
 
-export default function() {
+export default function () {
   it("hydrates", async () => {
-    const dom = new JSDOM(htmlFile(`
+    const dom = new JSDOM(
+      htmlFile(`
       <div>
         <button>
           Click me!
         </button>
         <p>Clicked 0 times</p>
       </div>
-    `), {
-      runScripts: "outside-only",
-      resources: "usable",
-    });
+    `),
+      {
+        runScripts: "outside-only",
+        resources: "usable",
+      }
+    );
     const window = dom.window;
 
     run(dom);

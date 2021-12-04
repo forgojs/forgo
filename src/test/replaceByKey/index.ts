@@ -3,7 +3,7 @@ import htmlFile from "../htmlFile.js";
 import should from "should";
 import { runObjectKey, runStringKey } from "./script.js";
 
-export default function() {
+export default function () {
   describe("replacement by key", () => {
     const tests: [string, (dom: JSDOM) => void][] = [
       ["string key", runStringKey],
