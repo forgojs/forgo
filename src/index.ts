@@ -1246,37 +1246,42 @@ export function createForgoInstance(customEnv: any) {
       //  - do a (key in element) check.
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
-        if (key !== "children" && key !== "xmlns") {
-          if (node.nodeType === TEXT_NODE_TYPE) {
-            (node as any)[key] = value;
-          } else if (node instanceof env.__internal.HTMLElement) {
-            if (key === "style") {
-              // Optimization: many times in CSS to JS, style objects are re-used.
-              // If they're the same, skip the expensive styleToString() call.
-              if (
-                currentState === undefined ||
-                currentState.style === undefined ||
-                currentState.style !== forgoNode.props.style
-              ) {
-                const stringOfCSS = styleToString(forgoNode.props.style);
-                if ((node as HTMLElement).style.cssText !== stringOfCSS) {
-                  (node as HTMLElement).style.cssText = stringOfCSS;
+        // The browser will sometimes perform side effects if an attribute is
+        // set, even if its value hasn't changed, so only update attrs if
+        // necessary. See issue #32.
+        if (currentState?.props?.[key] !== value) {
+          if (key !== "children" && key !== "xmlns") {
+            if (node.nodeType === TEXT_NODE_TYPE) {
+              (node as any)[key] = value;
+            } else if (node instanceof env.__internal.HTMLElement) {
+              if (key === "style") {
+                // Optimization: many times in CSS to JS, style objects are re-used.
+                // If they're the same, skip the expensive styleToString() call.
+                if (
+                  currentState === undefined ||
+                  currentState.style === undefined ||
+                  currentState.style !== forgoNode.props.style
+                ) {
+                  const stringOfCSS = styleToString(forgoNode.props.style);
+                  if ((node as HTMLElement).style.cssText !== stringOfCSS) {
+                    (node as HTMLElement).style.cssText = stringOfCSS;
+                  }
                 }
               }
-            }
-            // This optimization is copied from preact.
-            else if (key === "onblur") {
-              (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
-            } else if (key in node) {
-              (node as any)[key] = value;
+              // This optimization is copied from preact.
+              else if (key === "onblur") {
+                (node as any)[key] = handlerDisabledOnNodeDelete(node, value);
+              } else if (key in node) {
+                (node as any)[key] = value;
+              } else {
+                (node as any).setAttribute(key, value);
+              }
             } else {
-              (node as any).setAttribute(key, value);
-            }
-          } else {
-            if (typeof value === "string") {
-              (node as Element).setAttribute(key, value);
-            } else {
-              (node as any)[key] = value;
+              if (typeof value === "string") {
+                (node as Element).setAttribute(key, value);
+              } else {
+                (node as any)[key] = value;
+              }
             }
           }
         }
