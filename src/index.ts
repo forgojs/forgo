@@ -194,7 +194,7 @@ export type ForgoEnvType = {
 };
 
 /*
-  NodeReplacementOptions decide how nodes get attached by the callee function.
+  NodeInsertionOptions decide how nodes get attached by the callee function.
   type = "detached" does not attach the node to the parent.
   type = "search" requires the callee function to search for a compatible replacement.
 */
