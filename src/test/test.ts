@@ -30,6 +30,7 @@ import inheritedCustomElement from "./inheritedCustomElement/index.js";
 import fragmentOverwriteDoesNotUnmount from "./fragmentOverwriteDoesNotUnmount/index.js";
 import ctorArgs from "./ctorArgs/index.js";
 import ssrSimple from "./ssr-simple/index.js";
+import keepsStateWhenReordered from "./keepsStateWhenReordered/index.js";
 
 mount();
 boundary();
@@ -63,3 +64,4 @@ inheritedCustomElement();
 fragmentOverwriteDoesNotUnmount();
 ctorArgs();
 ssrSimple();
+keepsStateWhenReordered();
