@@ -1589,28 +1589,32 @@ export function rerender(
   This recursively flattens an array or a Fragment.
   Fragments are treated as arrays, with the children prop being array items.
 */
-function flatten(
-  itemOrItems: ForgoNode | ForgoNode[],
-  ret: ForgoNode[] = []
-): ForgoNode[] {
-  const items = Array.isArray(itemOrItems)
-    ? itemOrItems
-    : isForgoFragment(itemOrItems)
-    ? Array.isArray(itemOrItems.props.children)
-      ? itemOrItems.props.children
-      : itemOrItems.props.children !== undefined &&
-        itemOrItems.props.children !== null
-      ? [itemOrItems.props.children]
-      : []
-    : [itemOrItems];
-  for (const entry of items) {
-    if (Array.isArray(entry) || isForgoFragment(entry)) {
-      flatten(entry, ret);
-    } else {
-      ret.push(entry);
+function flatten(itemOrItems: ForgoNode | ForgoNode[]): ForgoNode[] {
+  function recurse(
+    itemOrItems: ForgoNode | ForgoNode[],
+    ret: ForgoNode[] = []
+  ) {
+    const items = Array.isArray(itemOrItems)
+      ? itemOrItems
+      : isForgoFragment(itemOrItems)
+      ? Array.isArray(itemOrItems.props.children)
+        ? itemOrItems.props.children
+        : itemOrItems.props.children !== undefined &&
+          itemOrItems.props.children !== null
+        ? [itemOrItems.props.children]
+        : []
+      : [itemOrItems];
+    for (const entry of items) {
+      if (Array.isArray(entry) || isForgoFragment(entry)) {
+        recurse(entry, ret);
+      } else {
+        ret.push(entry);
+      }
     }
+    return ret;
   }
-  return ret;
+
+  return recurse(itemOrItems, []);
 }
 
 /*
