@@ -214,6 +214,20 @@ export type NodeInsertionOptions =
   | SearchableNodeInsertionOptions;
 
 /*
+  These are child nodes which have been removed from the tree (within the 
+  render-child loop for an element).
+  When a compatible node is found for rendering, the previous incompatible nodes
+  are removed from the parent. But when a keyed child node has been removed earlier
+  in the loop and a later forgoElement has the same key, it needs to be 
+  reattached and it should no longer be unmounted. Otherwise, at the end of the cycle 
+  all unloadable nodes are fully unmounted. 
+*/
+export type UnloadableChildNode = {
+  node: ChildNode;
+  pendingAttachStates: NodeAttachedComponentState<any>[];
+};
+
+/*
   Result of the render functions.
 */
 export type RenderResult = {
