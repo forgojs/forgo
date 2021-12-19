@@ -1,7 +1,7 @@
 import { JSDOM, ResourceLoader } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import should from "should";
-import { run } from "./script.js";
+import { argsPassed, run } from "./script.js";
 
 export default function () {
   it("passes env in ctor args", async () => {
@@ -19,6 +19,6 @@ export default function () {
       });
     });
 
-    should.equal(window.passedArgs, true);
+    should.equal(argsPassed, true);
   });
 }

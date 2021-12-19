@@ -3,16 +3,22 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
+
+export let hasUnmounted = false;
 
 function Parent() {
   let firstRender = true;
 
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      (window as any).renderAgain = () => {
-        update();
-      };
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       if (firstRender) {
         firstRender = false;
         return <Child />;
@@ -29,7 +35,7 @@ function Child() {
       return <div>This is the child component</div>;
     },
     unmount() {
-      (window as any).hasUnmounted = true;
+      hasUnmounted = true;
     },
   };
 }

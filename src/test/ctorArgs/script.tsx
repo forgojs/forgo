@@ -5,9 +5,11 @@ import { ForgoCtorArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
+export let argsPassed: boolean = false;
+
 function BasicComponent(props: any, ctorArgs: ForgoCtorArgs) {
   if (ctorArgs && ctorArgs.environment.document) {
-    window.passedArgs = true;
+    argsPassed = true;
   }
   return {
     render() {

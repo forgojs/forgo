@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { renderAgain, run, unmountCounter } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -19,10 +19,10 @@ export default function () {
       });
     });
 
-    window.renderAgain();
-    window.renderAgain();
+    renderAgain();
+    renderAgain();
 
-    should.equal(window.unmountCounter, 0);
+    should.equal(unmountCounter, 0);
     window.document.body.innerHTML.should.containEql(
       "<p>5</p><p>6</p><p>7</p>"
     );

@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { numUnmounts, renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -19,8 +19,8 @@ export default function () {
       });
     });
 
-    window.renderAgain();
+    renderAgain();
 
-    should.equal(window.unmountCounter, 1);
+    should.equal(numUnmounts, 1);
   });
 }

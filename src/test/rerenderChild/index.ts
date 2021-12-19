@@ -1,7 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { ForgoRef } from "../../index.js";
-import { run, runSharedNode } from "./script.js";
+import { parentCounter, renderAgain, run, runSharedNode } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -15,15 +14,15 @@ export default function () {
 
       run(dom);
 
-      await new Promise<ForgoRef<HTMLButtonElement>>((resolve) => {
+      await new Promise<void>((resolve) => {
         window.addEventListener("load", () => {
-          resolve(window.myButton);
+          resolve();
         });
       });
 
       window.document.body.innerHTML.should.containEql("Parent counter is 1");
       window.document.body.innerHTML.should.containEql("Child counter is 1");
-      window.renderAgain();
+      renderAgain();
       window.document.body.innerHTML.should.containEql("Parent counter is 1");
       window.document.body.innerHTML.should.containEql("Child counter is 2");
     });
@@ -37,16 +36,16 @@ export default function () {
 
       runSharedNode(dom);
 
-      await new Promise<ForgoRef<HTMLButtonElement>>((resolve) => {
+      await new Promise<void>((resolve) => {
         window.addEventListener("load", () => {
-          resolve(window.myButton);
+          resolve();
         });
       });
 
-      should.equal(window.parentCounter, 1);
+      should.equal(parentCounter, 1);
       window.document.body.innerHTML.should.containEql("Child counter is 1");
-      window.renderAgain();
-      should.equal(window.parentCounter, 1);
+      renderAgain();
+      should.equal(parentCounter, 1);
       window.document.body.innerHTML.should.containEql("Child counter is 2");
     });
   });

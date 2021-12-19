@@ -1,7 +1,12 @@
 import { DOMWindow, JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import should from "should";
-import { runObjectKey, runStringKey } from "./script.js";
+import {
+  renderAgain,
+  runObjectKey,
+  runStringKey,
+  unmountedElements,
+} from "./script.js";
 
 export default function () {
   describe("replacement by key", () => {
@@ -21,13 +26,14 @@ export default function () {
 
         await new Promise<void>((resolve) => {
           window.addEventListener("load", () => {
-            (window as any).renderAgain();
             resolve();
           });
         });
+        
+        renderAgain();
 
         window.document.body.innerHTML.should.containEql("Hello 2X");
-        should.deepEqual(window.unmountedElements, ["1", "3"]);
+        should.deepEqual(unmountedElements, ["1", "3"]);
       });
     });
   });

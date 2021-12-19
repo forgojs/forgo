@@ -1,8 +1,7 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import should from "should";
-import { ForgoRef } from "../../index.js";
-import { run } from "./script.js";
+import { inputRef, run } from "./script.js";
 
 export default function () {
   it("attaches element refs", async () => {
@@ -14,12 +13,12 @@ export default function () {
 
     run(dom);
 
-    const element = await new Promise<ForgoRef<HTMLElement>>((resolve) => {
+    await new Promise<void>((resolve) => {
       window.addEventListener("load", () => {
-        resolve(window.myInput);
+        resolve();
       });
     });
 
-    should.equal((element as any).value.tagName, "INPUT");
+    should.equal((inputRef.value as HTMLInputElement).tagName, "INPUT");
   });
 }

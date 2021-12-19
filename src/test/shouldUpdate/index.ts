@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import { ForgoRef } from "../../index.js";
-import { run } from "./script.js";
+import { renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -14,15 +14,16 @@ export default function () {
 
     run(dom);
 
-    const button = await new Promise<ForgoRef<HTMLButtonElement>>((resolve) => {
+    await new Promise<void>((resolve) => {
       window.addEventListener("load", () => {
-        (window as any).renderAgain();
-        (window as any).renderAgain();
-        (window as any).renderAgain();
-        resolve(window.myButton);
+        resolve();
       });
     });
 
+    renderAgain();
+    renderAgain();
+    renderAgain();
+    
     window.document.body.innerHTML.should.containEql("Counter is 1");
   });
 }

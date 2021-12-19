@@ -3,7 +3,7 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 
 function Parent1() {
   return {
@@ -23,10 +23,16 @@ function Parent2() {
 
 let counter = 0;
 
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
+
 function Child() {
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return counter === 1 ? (
         <>

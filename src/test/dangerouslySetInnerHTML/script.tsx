@@ -3,7 +3,7 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 
 function BasicComponent() {
   return {

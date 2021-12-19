@@ -3,17 +3,25 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { mount, ForgoRenderArgs, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+export let parentCounter = 0;
+export let childCounter = 0;
+
+let renderArgs: ForgoRenderArgs;
+export function renderAgain() {
+  renderArgs.update();
+}
 
 function Parent() {
-  window.parentCounter = 0;
+  parentCounter = 0;
 
   return {
     render(props: any, args: ForgoRenderArgs) {
-      window.parentCounter++;
+      parentCounter++;
       return (
         <div>
-          <p>Parent counter is {window.parentCounter}</p>
+          <p>Parent counter is {parentCounter}</p>
           <Child />
         </div>
       );
@@ -22,26 +30,26 @@ function Parent() {
 }
 
 function ParentWithSharedNode() {
-  window.parentCounter = 0;
+  parentCounter = 0;
 
   return {
     render(props: any, args: ForgoRenderArgs) {
-      window.parentCounter++;
+      parentCounter++;
       return <Child />;
     },
   };
 }
 
 function Child() {
-  window.childCounter = 0;
+  childCounter = 0;
 
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
-      window.childCounter++;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
+      childCounter++;
       return (
         <div>
-          <p>Child counter is {window.childCounter}</p>
+          <p>Child counter is {childCounter}</p>
         </div>
       );
     },

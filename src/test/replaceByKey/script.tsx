@@ -3,7 +3,7 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 
 type ParentProps = {
   keys: {
@@ -12,12 +12,19 @@ type ParentProps = {
   }[];
 };
 
+export let unmountedElements: string[] = [];
+
+let renderArgs: ForgoRenderArgs;
+export function renderAgain() {
+  renderArgs.update();
+}
+
 function Parent(initialProps: ParentProps) {
-  window.unmountedElements = [];
+  unmountedElements = [];
   let firstRender = true;
   return {
-    render(props: ParentProps, { update }: ForgoRenderArgs) {
-      (window as any).renderAgain = update;
+    render(props: ParentProps, args: ForgoRenderArgs) {
+      renderArgs = args;
 
       if (firstRender) {
         firstRender = false;
@@ -48,7 +55,7 @@ function Child(props: { key: any; id: string }) {
       return <div>Hello {props.id}</div>;
     },
     unmount() {
-      window.unmountedElements.push(myId);
+      unmountedElements.push(myId);
     },
   };
 }

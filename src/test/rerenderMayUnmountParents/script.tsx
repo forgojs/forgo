@@ -3,7 +3,17 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+export let parent1Unmounted = false;
+export let parent2Unmounted = false;
+export let childUnmounted = false;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
 
 function Parent1() {
   return {
@@ -11,7 +21,7 @@ function Parent1() {
       return <Parent2 />;
     },
     unmount() {
-      window.parent1Unmounted = true;
+      parent1Unmounted = true;
     },
   };
 }
@@ -22,7 +32,7 @@ function Parent2() {
       return <Child />;
     },
     unmount() {
-      window.parent2Unmounted = true;
+      parent2Unmounted = true;
     },
   };
 }
@@ -31,13 +41,13 @@ let counter = 0;
 
 function Child() {
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return counter === 1 ? <div>This is a child node.</div> : <></>;
     },
     unmount() {
-      window.childUnmounted = true;
+      childUnmounted = true;
     },
   };
 }

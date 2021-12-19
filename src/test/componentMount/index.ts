@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { mountedOn, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -19,6 +19,6 @@ export default function () {
       });
     });
 
-    should.equal((window as any).mountedOn.id, "hello");
+    should.equal(mountedOn.id, "hello");
   });
 }

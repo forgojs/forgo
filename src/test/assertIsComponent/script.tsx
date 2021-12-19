@@ -3,11 +3,13 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 
 function BasicComponent() {
   return <div>Hello world</div>;
 }
+
+export let componentError: any = undefined;
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -18,7 +20,7 @@ export function run(dom: JSDOM) {
     try {
       mount(<BasicComponent />, document.getElementById("root"));
     } catch (ex) {
-      window.componentError = ex;
+      componentError = ex;
     }
   });
 }

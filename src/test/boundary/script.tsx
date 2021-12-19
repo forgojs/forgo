@@ -9,7 +9,7 @@ import {
 } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 
 function ErrorComponent() {
   return {

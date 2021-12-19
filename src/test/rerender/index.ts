@@ -1,7 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { ForgoRef } from "../../index.js";
-import { run } from "./script.js";
+import { buttonRef, run } from "./script.js";
 
 export default function () {
   it("rerenders", async () => {
@@ -13,15 +12,15 @@ export default function () {
 
     run(dom);
 
-    const button = await new Promise<ForgoRef<HTMLButtonElement>>((resolve) => {
+    await new Promise<void>((resolve) => {
       window.addEventListener("load", () => {
-        resolve(window.myButton);
+        resolve();
       });
     });
 
-    (button as any).value.click();
-    (button as any).value.click();
-    (button as any).value.click();
+    (buttonRef.value as HTMLButtonElement).click();
+    (buttonRef.value as HTMLButtonElement).click();
+    (buttonRef.value as HTMLButtonElement).click();
 
     window.document.body.innerHTML.should.containEql("Clicked 3 times");
   });

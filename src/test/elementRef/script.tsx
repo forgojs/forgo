@@ -1,18 +1,19 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv, ForgoRef } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+export let inputRef: ForgoRef<HTMLInputElement> = {};
 
 function Parent() {
   return {
     render() {
-      window.myInput = {};
 
       return (
         <div>
-          <input type="text" ref={window.myInput} />
+          <input type="text" ref={inputRef} />
         </div>
       );
     },
