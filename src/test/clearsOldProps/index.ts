@@ -21,7 +21,7 @@ export default function () {
     });
 
     const elem = window.document.getElementById("mydiv");
-    should.not.exist((elem as any).getAttribute("prop1"));
-    should.equal((elem as any).getAttribute("prop2"), "world");
+    should.not.exist((elem as Element).getAttribute("prop1"));
+    should.equal((elem as Element).getAttribute("prop2"), "world");
   });
 }
