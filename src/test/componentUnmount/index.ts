@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { hasUnmounted, renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -15,11 +15,12 @@ export default function () {
 
     await new Promise<void>((resolve) => {
       window.addEventListener("load", () => {
-        (window as any).renderAgain();
         resolve();
       });
     });
 
-    should.equal((window as any).hasUnmounted, true);
+    renderAgain();
+
+    should.equal(hasUnmounted, true);
   });
 }

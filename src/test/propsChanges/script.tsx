@@ -8,13 +8,26 @@ import {
 } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
+
+export let currentNode: Element | undefined;
+export let previousNode: Element | undefined;
+export let counterX10 = 0;
+export let mutatedProps: {
+  [key: string]: boolean;
+} = {};
 
 function Component() {
   let counter: number = 0;
 
   const el: forgo.ForgoRef<HTMLDivElement> = {};
-  (window as any).mutatedProps = {};
+  mutatedProps = {};
 
   return {
     mount() {
@@ -24,13 +37,13 @@ function Component() {
           (mutation) => mutation.target === el.value
         );
         if (elMutation?.attributeName) {
-          (window as any).mutatedProps[elMutation.attributeName] = true;
+          mutatedProps[elMutation.attributeName] = true;
         }
       });
       observer.observe(el.value!, { attributes: true });
     },
-    render(props: any, { update }: ForgoRenderArgs) {
-      (window as any).renderAgain = update;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return (
         <div id="hello" prop={counter === 1 ? "hello" : "world"} ref={el}>
@@ -39,9 +52,9 @@ function Component() {
       );
     },
     afterRender(props: any, args: ForgoAfterRenderArgs) {
-      (window as any).currentNode = args.element.node;
-      (window as any).previousNode = args.previousNode;
-      (window as any).counterX10 = counter * 10;
+      currentNode = args.element.node as Element;
+      previousNode = args.previousNode as Element;
+      counterX10 = counter * 10;
     },
   };
 }

@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { renderAgain, run } from "./script.js";
 import should from "should";
 import { getForgoState, NodeAttachedState } from "../../index.js";
 
@@ -38,7 +38,7 @@ export default function () {
       node1FirstPass
     );
 
-    window.renderAgain();
+    renderAgain();
 
     const node2SecondPass = window.document.getElementById("node2");
     const stateSecondPass = getForgoState(

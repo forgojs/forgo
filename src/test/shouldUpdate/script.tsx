@@ -3,16 +3,20 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { mount, ForgoRenderArgs, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
 
 export function Parent() {
   let counter = 0;
 
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = () => {
-        update();
-      };
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return <div>Counter is {counter}</div>;
     },

@@ -3,13 +3,21 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 let counter = 0;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
+
+export let mountCounter = 0;
 
 function Component() {
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return counter === 1 ? (
         <>
@@ -26,7 +34,7 @@ function Component() {
       );
     },
     mount() {
-      window.mountCounter++;
+      mountCounter++;
     },
   };
 }
@@ -34,7 +42,6 @@ function Component() {
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
-  window.mountCounter = 0;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {

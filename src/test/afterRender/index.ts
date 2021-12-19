@@ -1,6 +1,13 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run, runWithTextNode } from "./script.js";
+import {
+  counterX10,
+  currentNode,
+  previousNode,
+  renderAgain,
+  run,
+  runWithTextNode,
+} from "./script.js";
 import should from "should";
 
 export default function () {
@@ -20,20 +27,19 @@ export default function () {
         });
       });
 
-      should.equal((window as any).previousNode, undefined);
-      should.equal((window as any).counterX10, 10);
-      should.equal((window as any).currentNode.getAttribute("prop"), "hello");
-      should.equal((window as any).previousNode, undefined);
-      (window as any).renderAgain();
-      should.equal((window as any).previousNode.nodeType, 1);
-      should.equal((window as any).counterX10, 20);
-      should.equal((window as any).currentNode.getAttribute("prop"), "world");
-      should.equal((window as any).previousNode.getAttribute("prop"), "hello");
-      (window as any).renderAgain();
-      should.equal((window as any).previousNode.nodeType, 1);
-      should.equal((window as any).counterX10, 30);
-      should.equal((window as any).currentNode.getAttribute("prop"), "world");
-      should.equal((window as any).previousNode.getAttribute("prop"), "world");
+      should.equal(previousNode as Element, undefined);
+      should.equal(counterX10, 10);
+      should.equal((currentNode as Element).getAttribute("prop"), "hello");
+      renderAgain();
+      should.equal((previousNode as Element).nodeType, 1);
+      should.equal(counterX10, 20);
+      should.equal((currentNode as Element).getAttribute("prop"), "world");
+      should.equal((previousNode as Element).getAttribute("prop"), "hello");
+      renderAgain();
+      should.equal((previousNode as Element).nodeType, 1);
+      should.equal(counterX10, 30);
+      should.equal((currentNode as Element).getAttribute("prop"), "world");
+      should.equal((previousNode as Element).getAttribute("prop"), "world");
     });
 
     it("when mounted on a text node", async () => {
@@ -51,14 +57,14 @@ export default function () {
         });
       });
 
-      should.equal((window as any).previousNode, undefined);
-      should.equal((window as any).counterX10, 10);
-      (window as any).renderAgain();
-      should.equal((window as any).previousNode.nodeType, 3);
-      should.equal((window as any).counterX10, 20);
-      (window as any).renderAgain();
-      should.equal((window as any).previousNode.nodeType, 3);
-      should.equal((window as any).counterX10, 30);
+      should.equal(previousNode as Element, undefined);
+      should.equal(counterX10, 10);
+      renderAgain();
+      should.equal((previousNode as Element).nodeType, 3);
+      should.equal(counterX10, 20);
+      renderAgain();
+      should.equal((previousNode as Element).nodeType, 3);
+      should.equal(counterX10, 30);
     });
   });
 }

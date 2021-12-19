@@ -3,13 +3,21 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 let counter = 0;
+
+export let numUnmounts = 0;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
 
 function Component() {
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: any, componentRenderArgs: ForgoRenderArgs) {
+      renderArgs = componentRenderArgs;
       counter++;
       return counter === 1 ? <Child /> : <p>1</p>;
     },
@@ -28,7 +36,7 @@ function Child() {
       );
     },
     unmount() {
-      window.unmountCounter++;
+      numUnmounts++;
     },
   };
 }
@@ -36,7 +44,6 @@ function Child() {
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
-  window.unmountCounter = 0;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {

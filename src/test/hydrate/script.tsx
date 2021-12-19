@@ -3,7 +3,9 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { render, ForgoRenderArgs, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+export let buttonRef: any = {};
 
 function Component() {
   let counter = 0;
@@ -15,11 +17,9 @@ function Component() {
         update();
       }
 
-      (window as any).myButton = {};
-
       return (
         <div>
-          <button onclick={updateCounter} ref={(window as any).myButton}>
+          <button onclick={updateCounter} ref={buttonRef}>
             Click me!
           </button>
           <p>Clicked {counter} times</p>

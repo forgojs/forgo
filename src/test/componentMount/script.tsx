@@ -3,7 +3,9 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+export let mountedOn: Element;
 
 function Component() {
   return {
@@ -11,7 +13,7 @@ function Component() {
       return <div id="hello">Hello world</div>;
     },
     mount(props: any, args: ForgoRenderArgs) {
-      (window as any).mountedOn = args.element.node;
+      mountedOn = args.element.node as Element;
     },
   };
 }

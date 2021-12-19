@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { childUnmounted, parent1Unmounted, parent2Unmounted, renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -19,10 +19,10 @@ export default function () {
       });
     });
 
-    window.renderAgain();
+    renderAgain();
 
-    should.equal(window.parent1Unmounted, true);
-    should.equal(window.parent2Unmounted, true);
-    should.equal(window.childUnmounted, true);
+    should.equal(parent1Unmounted, true);
+    should.equal(parent2Unmounted, true);
+    should.equal(childUnmounted, true);
   });
 }

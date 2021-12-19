@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run } from "./script.js";
+import { mutatedProps, renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
@@ -20,28 +20,28 @@ export default function () {
         });
       });
 
-      should.equal((window as any).mutatedProps["id"], undefined);
-      should.equal((window as any).mutatedProps["x-id"], undefined);
-      should.equal((window as any).mutatedProps["prop"], undefined);
-      (window as any).renderAgain();
+      should.equal(mutatedProps["id"], undefined);
+      should.equal(mutatedProps["x-id"], undefined);
+      should.equal(mutatedProps["prop"], undefined);
+      renderAgain();
       // We have to give the event loop a chance to run, because our test will
       // run synchronously before the MutationObserver fires and records any
       // changes
       await new Promise((resolve) => queueMicrotask(() => resolve(null)));
       should.equal(
-        (window as any).mutatedProps["id"],
+        mutatedProps["id"],
         undefined,
         "id prop should not have been mutated"
       );
       should.equal(
-        (window as any).mutatedProps["x-id"],
+        mutatedProps["x-id"],
         undefined,
         "x-id attribute should not have been mutated"
       );
       // This is a canary. If this fails, it means our MutationObserver wasn't
       // set up correctly, and we can't trust the prior assertions.
       should.equal(
-        (window as any).mutatedProps["prop"],
+        mutatedProps["prop"],
         true,
         "MutationObserver was not set up correctly"
       );

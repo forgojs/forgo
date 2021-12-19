@@ -3,13 +3,19 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
+
+let renderArgs: ForgoRenderArgs;
+
+export function renderAgain() {
+  renderArgs.update();
+}
 
 function BasicComponent() {
   let firstRender = true;
   return {
-    render(props: {}, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: {}, args: ForgoRenderArgs) {
+      renderArgs = args;
       if (firstRender) {
         firstRender = false;
         return (

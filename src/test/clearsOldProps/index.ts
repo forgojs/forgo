@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import should from "should";
-import { run } from "./script.js";
+import { renderAgain, run } from "./script.js";
 
 export default function () {
   it("clears old props", async () => {
@@ -15,7 +15,7 @@ export default function () {
 
     const innerHtml = await new Promise<string>((resolve) => {
       window.addEventListener("load", () => {
-        (window as any).renderAgain();
+        renderAgain();
         resolve(window.document.body.innerHTML);
       });
     });

@@ -559,6 +559,7 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (nodesToRemove.length) {
+          removeNodes(nodesToRemove);
           unloadNodes(nodesToRemove, []);
         }
       }
@@ -570,10 +571,13 @@ export function createForgoInstance(customEnv: any) {
       nodeInsertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
-      unloadNodes(
-        sliceNodes(childNodes, nodeInsertionOptions.currentNodeIndex, insertAt),
-        pendingAttachStates
+      const nodesToRemove = sliceNodes(
+        childNodes,
+        nodeInsertionOptions.currentNodeIndex,
+        insertAt
       );
+      removeNodes(nodesToRemove);
+      unloadNodes(nodesToRemove, pendingAttachStates);
 
       const targetElement = childNodes[
         nodeInsertionOptions.currentNodeIndex
@@ -684,10 +688,13 @@ export function createForgoInstance(customEnv: any) {
       const componentState = state.components[componentIndex];
 
       // Get rid of unwanted nodes.
-      unloadNodes(
-        sliceNodes(childNodes, nodeInsertionOptions.currentNodeIndex, insertAt),
-        pendingAttachStates.concat(componentState)
+      const nodesToRemove = sliceNodes(
+        childNodes,
+        nodeInsertionOptions.currentNodeIndex,
+        insertAt
       );
+      removeNodes(nodesToRemove);
+      unloadNodes(nodesToRemove, pendingAttachStates.concat(componentState));
 
       if (
         !componentState.component.shouldUpdate ||
@@ -703,7 +710,9 @@ export function createForgoInstance(customEnv: any) {
           props: forgoElement.props,
         };
 
-        const statesToAttach = pendingAttachStates.concat(updatedComponentState);
+        const statesToAttach = pendingAttachStates.concat(
+          updatedComponentState
+        );
 
         const previousNode = componentState.args.element.node;
 
@@ -900,7 +909,7 @@ export function createForgoInstance(customEnv: any) {
       newIndex,
       newIndex + componentState.nodes.length - numNodesReused
     );
-
+    removeNodes(nodesToRemove);
     unloadNodes(nodesToRemove, statesToAttach);
 
     // In case we rendered an array, set the node to the first node.
@@ -1009,20 +1018,30 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
+  /* 
+    Remove node from the tree.
+    Components mounted on it are not unloaded yet - since it may be reattached.    
+  */
+  function removeNodes(nodes: ChildNode[]) {
+    // for (const node of nodes) {
+    //   node.__forgo_deleted = true;
+    //   node.remove();
+    // }
+  }
+
   /*
-    Unloads components from a node list
-    This does:
-    a) Remove the node
-    b) Calls unload on all attached components
+    Unmount components from nodes.
+    We unmount only after first incompatible state, since compatible states 
+    will be reattached to new candidate node.
   */
   function unloadNodes(
     nodes: ChildNode[],
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ) {
     for (const node of nodes) {
+      const state = getForgoState(node);
       node.__forgo_deleted = true;
       node.remove();
-      const state = getForgoState(node);
       if (state) {
         const oldComponentStates = state.components;
         const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
@@ -1135,7 +1154,7 @@ export function createForgoInstance(customEnv: any) {
   */
   function findReplacementCandidateForElement<TProps>(
     forgoElement: ForgoDOMElement<TProps>,
-    nodes: NodeListOf<ChildNode> | ChildNode[],
+    nodes: NodeListOf<ChildNode>,
     searchFrom: number,
     length: number
   ): CandidateSearchResult {
@@ -1170,7 +1189,7 @@ export function createForgoInstance(customEnv: any) {
   */
   function findReplacementCandidateForComponent<TProps>(
     forgoElement: ForgoComponentElement<TProps>,
-    nodes: NodeListOf<ChildNode> | ChildNode[],
+    nodes: NodeListOf<ChildNode>,
     searchFrom: number,
     length: number,
     componentIndex: number

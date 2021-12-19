@@ -3,18 +3,25 @@ import { DOMWindow, JSDOM } from "jsdom";
 import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
-let document: HTMLDocument;
+let document: Document;
 let counter = 0;
+
+let renderArgs: ForgoRenderArgs;
+export let mountCounter: number = 0;
+
+export function renderAgain() {
+  renderArgs.update();
+}
 
 function Component() {
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
-      window.renderAgain = update;
+    render(props: any, args: ForgoRenderArgs) {
+      renderArgs = args;
       counter++;
       return <SuperCompo />;
     },
     mount() {
-      window.mountCounter++;
+      mountCounter++;
     },
   };
 }
@@ -42,7 +49,6 @@ function SuperCompo() {
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
-  window.mountCounter = 0;
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
