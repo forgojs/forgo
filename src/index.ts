@@ -238,7 +238,7 @@ export type RenderResult = {
   Fragment constructor.
   We simply use it as a marker in jsx-runtime.
 */
-export const Fragment: unique symbol = Symbol("FORGO_FRAGMENT");
+export const Fragment: unique symbol = Symbol.for("FORGO_FRAGMENT");
 
 /*
   HTML Namespaces
