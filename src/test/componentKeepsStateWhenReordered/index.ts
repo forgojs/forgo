@@ -4,7 +4,7 @@ import { run } from "./script.js";
 import { getComponentState, reorderComponents } from "./script.js";
 
 export default function () {
-  it("maintains state with reordered", async () => {
+  it("component maintains state with reordered", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",

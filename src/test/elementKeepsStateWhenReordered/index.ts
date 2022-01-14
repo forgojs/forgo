@@ -11,7 +11,7 @@ import {
 import { reorderElements } from "./script.js";
 
 export default function () {
-  it("maintains state with reordered", async () => {
+  it("element maintains state with reordered", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
