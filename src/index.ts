@@ -1775,7 +1775,7 @@ function findNodeIndex(
 }
 
 /* JSX Types */
-import { JSXTypes } from "./jsxTypes";
+import type { JSXTypes } from "./jsxTypes";
 
 declare global {
   interface ChildNode {
@@ -1784,8 +1784,4 @@ declare global {
   }
 }
 
-export import JSX = JSXTypes;
-
-export namespace createElement {
-  export import JSX = JSXTypes;
-}
+export { JSXTypes as JSX };

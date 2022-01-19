@@ -10,10 +10,10 @@
     "url": "https://github.com/forgojs/forgo"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./jsx-dev-runtime": "./jsx-dev-runtime.js",
-    "./jsx-runtime": "./jsx-runtime.js",
-    "./": "./"
+    ".": {
+      "import": "./dist/forgo.min.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "devDependencies": {
     "@types/jsdom": "^16.2.13",
@@ -28,8 +28,8 @@
   },
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "npm run clean && mkdir -p dist && npx tsc && npx esbuild src/index.ts --minify --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
-    "test": "npx mocha dist/test/test.js"
+    "build": "npm run clean && mkdir -p dist && npx tsc --emitDeclarationOnly && npx esbuild src/index.ts --minify --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
+    "test": "npx tsc && npx mocha dist/test/test.js"
   },
   "license": "MIT"
 }
