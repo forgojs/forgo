@@ -3,24 +3,8 @@
   "tasks": [
     {
       "type": "npm",
-      "script": "build",
-      "group": "build",
-      "problemMatcher": [],
-      "label": "npm: build",
-      "detail": "./build.sh"
-    },
-    {
-      "type": "npm",
-      "script": "build-test",
-      "group": "build",
-      "problemMatcher": [],
-      "label": "npm: build-test",
-      "detail": "(cd test && ./build.sh)",
-      "dependsOn": ["npm: build"]
-    },
-    {
-      "label": "build-all",
-      "dependsOn": ["npm: build", "npm: build-test"]
+      "label": "build-dev",
+      "script": "build-dev"
     }
   ]
 }

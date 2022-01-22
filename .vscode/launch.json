@@ -2,8 +2,6 @@
   "configurations": [
     {
       "args": [
-        "-r",
-        "esm",
         "--timeout",
         "999999",
         "--colors",
@@ -17,7 +15,7 @@
         "<node_internals>/**"
       ],
       "type": "node",
-      "preLaunchTask": "build-all"
+      "preLaunchTask": "build-dev"
     }
   ]
 }
