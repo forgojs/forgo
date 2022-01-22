@@ -1427,128 +1427,120 @@ export function createForgoInstance(customEnv: any) {
     if (element && element.node) {
       const parentElement = element.node.parentElement;
       if (parentElement !== null) {
-        const state = getForgoState(element.node);
-        if (state) {
-          const originalComponentState =
-            state.components[element.componentIndex];
+        const state = getExistingForgoState(element.node);
 
-          const effectiveProps =
-            props !== undefined ? props : originalComponentState.props;
+        const originalComponentState = state.components[element.componentIndex];
 
-          if (
-            !originalComponentState.component.shouldUpdate ||
-            originalComponentState.component.shouldUpdate(
-              effectiveProps,
-              originalComponentState.props
-            )
-          ) {
-            const newComponentState = {
-              ...originalComponentState,
-              props: effectiveProps,
-            };
+        const effectiveProps =
+          props !== undefined ? props : originalComponentState.props;
 
-            const parentStates = state.components.slice(
-              0,
-              element.componentIndex
+        if (
+          !originalComponentState.component.shouldUpdate ||
+          originalComponentState.component.shouldUpdate(
+            effectiveProps,
+            originalComponentState.props
+          )
+        ) {
+          const newComponentState = {
+            ...originalComponentState,
+            props: effectiveProps,
+          };
+
+          const parentStates = state.components.slice(
+            0,
+            element.componentIndex
+          );
+
+          const statesToAttach = parentStates.concat(newComponentState);
+
+          const previousNode = originalComponentState.args.element.node;
+
+          const forgoNode = originalComponentState.component.render(
+            effectiveProps,
+            originalComponentState.args
+          );
+
+          let nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
+
+          const insertionOptions: SearchableNodeInsertionOptions = {
+            type: "search",
+            currentNodeIndex: nodeIndex,
+            length: originalComponentState.nodes.length,
+            parentElement,
+          };
+
+          const renderResult = renderComponentAndRemoveStaleNodes(
+            forgoNode,
+            insertionOptions,
+            statesToAttach,
+            newComponentState,
+            false
+          );
+
+          // We have to propagate node changes up the tree.
+          for (let i = 0; i < parentStates.length; i++) {
+            const parentState = parentStates[i];
+
+            const indexOfOriginalRootNode = parentState.nodes.findIndex(
+              (x) => x === originalComponentState.nodes[0]
             );
 
-            const statesToAttach = parentStates.concat(newComponentState);
-
-            const previousNode = originalComponentState.args.element.node;
-
-            const forgoNode = originalComponentState.component.render(
-              effectiveProps,
-              originalComponentState.args
-            );
-
-            let nodeIndex = findNodeIndex(
-              parentElement.childNodes,
-              element.node
-            );
-
-            const insertionOptions: SearchableNodeInsertionOptions = {
-              type: "search",
-              currentNodeIndex: nodeIndex,
-              length: originalComponentState.nodes.length,
-              parentElement,
-            };
-
-            const renderResult = renderComponentAndRemoveStaleNodes(
-              forgoNode,
-              insertionOptions,
-              statesToAttach,
-              newComponentState,
-              false
-            );
-
-            // We have to propagate node changes up the tree.
-            for (let i = 0; i < parentStates.length; i++) {
-              const parentState = parentStates[i];
-
-              const indexOfOriginalRootNode = parentState.nodes.findIndex(
-                (x) => x === originalComponentState.nodes[0]
+            // Let's recreate the node list.
+            parentState.nodes = parentState.nodes
+              // 1. all the nodes before first node associated with rendered component.
+              .slice(0, indexOfOriginalRootNode)
+              // 2. newly created nodes.
+              .concat(renderResult.nodes)
+              // 3. nodes after last node associated with rendered component.
+              .concat(
+                parentState.nodes.slice(
+                  indexOfOriginalRootNode + originalComponentState.nodes.length
+                )
               );
 
-              // Let's recreate the node list.
-              parentState.nodes = parentState.nodes
-                // 1. all the nodes before first node associated with rendered component.
-                .slice(0, indexOfOriginalRootNode)
-                // 2. newly created nodes.
-                .concat(renderResult.nodes)
-                // 3. nodes after last node associated with rendered component.
-                .concat(
-                  parentState.nodes.slice(
-                    indexOfOriginalRootNode +
-                      originalComponentState.nodes.length
-                  )
-                );
-
-              // If there are no nodes, call unmount on it (and child states)
-              if (parentState.nodes.length === 0) {
-                unmountComponents(parentStates, i);
-                break;
-              } else {
-                // The root node might have changed, so fix it up anyway.
-                parentState.args.element.node = parentState.nodes[0];
-              }
+            // If there are no nodes, call unmount on it (and child states)
+            if (parentState.nodes.length === 0) {
+              unmountComponents(parentStates, i);
+              break;
+            } else {
+              // The root node might have changed, so fix it up anyway.
+              parentState.args.element.node = parentState.nodes[0];
             }
-
-            // Unmount rendered component itself if all nodes are gone.
-            if (renderResult.nodes.length === 0) {
-              unmountComponents([newComponentState], 0);
-            }
-
-            // Run afterRender() if defined.
-            if (originalComponentState.component.afterRender) {
-              originalComponentState.component.afterRender(effectiveProps, {
-                ...originalComponentState.args,
-                previousNode,
-              });
-            }
-
-            return renderResult;
           }
-          // shouldUpdate() returned false
-          else {
-            let indexOfNode = findNodeIndex(
+
+          // Unmount rendered component itself if all nodes are gone.
+          if (renderResult.nodes.length === 0) {
+            unmountComponents([newComponentState], 0);
+          }
+
+          // Run afterRender() if defined.
+          if (originalComponentState.component.afterRender) {
+            originalComponentState.component.afterRender(effectiveProps, {
+              ...originalComponentState.args,
+              previousNode,
+            });
+          }
+
+          return renderResult;
+        }
+        // shouldUpdate() returned false
+        else {
+          let indexOfNode = findNodeIndex(
+            parentElement.childNodes,
+            element.node
+          );
+
+          return {
+            nodes: sliceNodes(
               parentElement.childNodes,
-              element.node
-            );
-
-            return {
-              nodes: sliceNodes(
-                parentElement.childNodes,
-                indexOfNode,
-                indexOfNode + originalComponentState.nodes.length
-              ),
-            };
-          }
-        } else {
-          throw new Error(`Missing forgo state on node.`);
+              indexOfNode,
+              indexOfNode + originalComponentState.nodes.length
+            ),
+          };
         }
       } else {
         throw new Error(
-          `The rerender() function was called on a node without a parent element.`
+          `The rerender() function was called on a detached node.`
         );
       }
     } else {
@@ -1691,7 +1683,7 @@ function getExistingForgoState(node: ChildNode): NodeAttachedState {
   if (node.__forgo) {
     return node.__forgo;
   } else {
-    throw new Error("Missing state in node.");
+    throw new Error("Missing forgo state on node.");
   }
 }
 
