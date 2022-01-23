@@ -32,6 +32,8 @@ import ctorArgs from "./ctorArgs/index.js";
 import ssrSimple from "./ssr-simple/index.js";
 import componentKeepsStateWhenReordered from "./componentKeepsStateWhenReordered/index.js";
 import elementKeepsStateWhenReordered from "./elementKeepsStateWhenReordered/index.js";
+import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull/index.js";
+import unmountsNonTopLevelParentWhenNodeIsNull from "./unmountsNonTopLevelParentWhenNodeIsNull/index.js";
 
 mount();
 boundary();
@@ -67,3 +69,5 @@ ctorArgs();
 ssrSimple();
 componentKeepsStateWhenReordered();
 elementKeepsStateWhenReordered();
+unmountsParentWhenNodeIsNull();
+unmountsNonTopLevelParentWhenNodeIsNull();

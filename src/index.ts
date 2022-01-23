@@ -559,7 +559,6 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (nodesToRemove.length) {
-          removeNodes(nodesToRemove);
           unloadNodes(nodesToRemove, []);
         }
       }
@@ -576,7 +575,6 @@ export function createForgoInstance(customEnv: any) {
         nodeInsertionOptions.currentNodeIndex,
         insertAt
       );
-      removeNodes(nodesToRemove);
       unloadNodes(nodesToRemove, pendingAttachStates);
 
       const targetElement = childNodes[
@@ -693,7 +691,6 @@ export function createForgoInstance(customEnv: any) {
         nodeInsertionOptions.currentNodeIndex,
         insertAt
       );
-      removeNodes(nodesToRemove);
       unloadNodes(nodesToRemove, pendingAttachStates.concat(componentState));
 
       if (
@@ -710,17 +707,17 @@ export function createForgoInstance(customEnv: any) {
           props: forgoElement.props,
         };
 
-        const statesToAttach = pendingAttachStates.concat(
-          updatedComponentState
-        );
-
-        const previousNode = componentState.args.element.node;
-
         // Get a new element by calling render on existing component.
         const newForgoNode = updatedComponentState.component.render(
           forgoElement.props,
           updatedComponentState.args
         );
+
+        const statesToAttach = pendingAttachStates.concat(
+          updatedComponentState
+        );
+
+        const previousNode = componentState.args.element.node;
 
         const boundary = updatedComponentState.component.error
           ? updatedComponentState.component
@@ -909,8 +906,11 @@ export function createForgoInstance(customEnv: any) {
       newIndex,
       newIndex + componentState.nodes.length - numNodesReused
     );
-    removeNodes(nodesToRemove);
-    unloadNodes(nodesToRemove, statesToAttach);
+
+    // If renderResult returned no nodes (ie, null or undefined), then all state will be discarded.
+    const statesThatWillBeAttached =
+      renderResult.nodes.length > 0 ? statesToAttach : [];
+    unloadNodes(nodesToRemove, statesThatWillBeAttached);
 
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
@@ -1016,17 +1016,6 @@ export function createForgoInstance(customEnv: any) {
     } else {
       mountComponents(pendingAttachStates, 0);
     }
-  }
-
-  /* 
-    Remove node from the tree.
-    Components mounted on it are not unloaded yet - since it may be reattached.    
-  */
-  function removeNodes(nodes: ChildNode[]) {
-    // for (const node of nodes) {
-    //   node.__forgo_deleted = true;
-    //   node.remove();
-    // }
   }
 
   /*
@@ -1509,9 +1498,9 @@ export function createForgoInstance(customEnv: any) {
           }
 
           // Unmount rendered component itself if all nodes are gone.
-          if (renderResult.nodes.length === 0) {
-            unmountComponents([newComponentState], 0);
-          }
+          // if (renderResult.nodes.length === 0) {
+          //   unmountComponents([newComponentState], 0);
+          // }
 
           // Run afterRender() if defined.
           if (originalComponentState.component.afterRender) {
