@@ -1528,9 +1528,7 @@ export function createForgoInstance(customEnv: any) {
           };
         }
       } else {
-        throw new Error(
-          `The rerender() function was called on a detached node.`
-        );
+        return { nodes: [] };
       }
     } else {
       throw new Error(`Missing node information in rerender() argument.`);
