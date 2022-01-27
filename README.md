@@ -719,7 +719,7 @@ Forgo 2.0 drops support for the new JSX transform introduced via "jsx-runtime".
 This never worked with esbuild loader, and more importantly doesn't play well with ES modules.
 If you were using this previously, switch to the configurations discussed above.
 
-# Core Team
+## Core Team
 
 - [github/jeswin](https://github.com/jeswin)
 - [github/spiffytech](https://github.com/spiffytech)
