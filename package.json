@@ -3,18 +3,13 @@
   "version": "2.1.3",
   "main": "./dist/index.js",
   "type": "module",
-  "types": "./dist/index.d.ts",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/forgojs/forgo"
   },
-  "exports": {
-    ".": {
-      "import": "./dist/forgo.min.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
+  "exports": "./dist/forgo.min.js",
+  "types": "./dist/index.d.ts",
   "devDependencies": {
     "@types/jsdom": "^16.2.14",
     "@types/mocha": "^9.1.0",
@@ -28,7 +23,7 @@
   },
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "npm run clean && mkdir -p dist && npx tsc --emitDeclarationOnly && npx esbuild src/index.ts --minify --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
+    "build": "npm run clean && npx tsc --emitDeclarationOnly && npx esbuild ./src/index.ts --minify --bundle --format=esm --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
     "build-dev": "npx tsc",
     "test": "npx tsc && npx mocha dist/test/test.js"
   },
