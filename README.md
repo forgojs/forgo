@@ -721,4 +721,4 @@ If you were using this previously, switch to the configurations discussed above.
 
 ## Getting Help
 
-You can reach out to me via twitter or email. If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues).
+You can reach out to us via Twitter. If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues).
