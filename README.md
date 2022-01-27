@@ -719,6 +719,13 @@ Forgo 2.0 drops support for the new JSX transform introduced via "jsx-runtime".
 This never worked with esbuild loader, and more importantly doesn't play well with ES modules.
 If you were using this previously, switch to the configurations discussed above.
 
+# Core Team
+
+- [github/jeswin](https://github.com/jeswin)
+- [github/spiffytech](https://github.com/spiffytech)
+
 ## Getting Help
 
-You can reach out to us via Twitter. If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues).
+If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues). You can also reach out to us via Twitter (@forgojs). 
+
+
