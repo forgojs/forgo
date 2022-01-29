@@ -340,12 +340,28 @@ function Greeter(initialProps) {
 
 ### Rendering nothing
 
-Forgo tracks component state by attaching it to the component's DOM element. This allows Forgo to operate without a virtual DOM (like React has), but means that if your component render returns `null` Forgo will unmount your component. If the component unmounts itself, there is not a way to request it remount itself, although it will be recreated if the parent rerenders.
+A stateless component may elect to render nothing by returning `null` from the `render()` method:
+
+```jsx
+function EmptyComponent(initialProps) {
+  return {
+    render(props, args) {
+      return null;
+    }
+  };
+}
+```
+
+This does not work for stateful components. Forgo tracks component state by attaching it to the component's DOM element. This allows Forgo to operate without a virtual DOM (like React has), but means that if your component render returns `null` Forgo will unmount your component. If the component unmounts itself, there is not a way to request it remount itself, although it will be recreated if the parent rerenders.
 
 If you want a component to skip rendering its usual output, return an empty element, like so:
 
 ```jsx
 function EmptyComponent(initialProps) {
+  // This will be discarded if the render returns null.
+  // To keep it, always return an element.
+  const myState = Math.random();
+  
   return {
     render(props, args) {
       return <div></div>;
