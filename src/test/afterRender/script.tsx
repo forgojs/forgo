@@ -60,6 +60,28 @@ function ComponentOnTextNode() {
   };
 }
 
+function ComponentWithRef() {
+  const ref: forgo.ForgoRef<HTMLDivElement> = {};
+  return {
+    render() {
+      return <div ref={ref} />;
+    },
+    afterRender(_props: any, args: ForgoAfterRenderArgs) {
+      currentNode = args.element.node as Element;
+    },
+  };
+}
+function ComponentWithDangerouslySetInnerHTML() {
+  return {
+    render() {
+      return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
+    },
+    afterRender(_props: any, args: ForgoAfterRenderArgs) {
+      currentNode = args.element.node as Element;
+    },
+  };
+}
+
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
@@ -77,5 +99,27 @@ export function runWithTextNode(dom: JSDOM) {
 
   window.addEventListener("load", () => {
     mount(<ComponentOnTextNode />, window.document.getElementById("root"));
+  });
+}
+
+export function runWithRef(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(<ComponentWithRef />, window.document.getElementById("root"));
+  });
+}
+export function runWithDangerouslySetInnerHtml(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    mount(
+      <ComponentWithDangerouslySetInnerHTML />,
+      window.document.getElementById("root")
+    );
   });
 }

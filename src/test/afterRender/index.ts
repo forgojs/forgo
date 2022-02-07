@@ -7,6 +7,8 @@ import {
   renderAgain,
   run,
   runWithTextNode,
+  runWithRef,
+  runWithDangerouslySetInnerHtml,
 } from "./script.js";
 import should from "should";
 
@@ -65,6 +67,47 @@ export default function () {
       renderAgain();
       should.equal((previousNode as Element).nodeType, 3);
       should.equal(counterX10, 30);
+    });
+  });
+
+  describe("setting an element's attributes", () => {
+    it("skips the 'ref' attribute", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
+      });
+      const window = dom.window;
+
+      runWithRef(dom);
+
+      await new Promise<void>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve();
+        });
+      });
+
+      should.equal((currentNode as Element).getAttribute("ref"), undefined);
+    });
+
+    it("skips the 'dangerouslySetInnerHtml' attribute", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
+      });
+      const window = dom.window;
+
+      runWithDangerouslySetInnerHtml(dom);
+
+      await new Promise<void>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve();
+        });
+      });
+
+      should.equal(
+        (currentNode as Element).getAttribute("dangerouslySetInnerHTML"),
+        undefined
+      );
     });
   });
 }

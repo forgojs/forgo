@@ -14,6 +14,9 @@ export type ForgoElementProps = {
   children?: ForgoNode | ForgoNode[];
 };
 
+// Since we'll set any attribute the user passes us, we need to be sure not to
+// set Forgo-only attributes that don't make sense to appear in the DOM
+const suppressedAttributes = ["ref", "dangerouslySetInnerHTML"];
 export type ForgoDOMElementProps = {
   xmlns?: string;
   ref?: ForgoRef<Element>;
@@ -1268,6 +1271,8 @@ export function createForgoInstance(customEnv: any) {
       //  - do a (key in element) check.
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
+        if (suppressedAttributes.includes(key)) continue;
+
         // The browser will sometimes perform side effects if an attribute is
         // set, even if its value hasn't changed, so only update attrs if
         // necessary. See issue #32.
