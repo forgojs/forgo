@@ -164,6 +164,7 @@ export type NodeAttachedState = {
   props?: { [key: string]: any };
   components: NodeAttachedComponentState<any>[];
   style?: { [key: string]: any };
+  deleted?: boolean;
 };
 
 // CSS types lifted from preact.
@@ -245,7 +246,6 @@ export type DeletedNode = {
 declare global {
   interface ChildNode {
     __forgo?: NodeAttachedState;
-    __forgo_deleted?: boolean;
     __forgo_deletedNodes?: DeletedNode[];
   }
 }
@@ -298,7 +298,7 @@ export const h = createElement;
 */
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
-    if (!node.__forgo_deleted) {
+    if (!node.__forgo?.deleted) {
       return value(e);
     }
   };
@@ -1062,8 +1062,8 @@ export function createForgoInstance(customEnv: any) {
 
     for (const { node } of deletedNodes) {
       const state = getForgoState(node);
-      node.__forgo_deleted = true;
       if (state) {
+        state.deleted = true;
         const oldComponentStates = state.components;
         const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
           pendingAttachStates,
