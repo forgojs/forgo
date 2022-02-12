@@ -76,6 +76,7 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   mount?: (props: TProps, args: ForgoRenderArgs) => void;
   unmount?: (props: TProps, args: ForgoRenderArgs) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
+  __forgo?: { unmounted?: boolean };
 };
 
 /*
@@ -236,6 +237,18 @@ export type UnloadableChildNode = {
 export type RenderResult = {
   nodes: ChildNode[];
 };
+
+export type DeletedNode = {
+  node: ChildNode;
+};
+
+declare global {
+  interface ChildNode {
+    __forgo?: NodeAttachedState;
+    __forgo_deleted?: boolean;
+    __forgo_deletedNodes?: DeletedNode[];
+  }
+}
 
 /*
   Fragment constructor.
@@ -497,7 +510,7 @@ export function createForgoInstance(customEnv: any) {
       if (nodeInsertionOptions.length) {
         const searchResult = findReplacementCandidateForElement(
           forgoElement,
-          childNodes,
+          nodeInsertionOptions.parentElement,
           nodeInsertionOptions.currentNodeIndex,
           nodeInsertionOptions.length
         );
@@ -562,7 +575,7 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (nodesToRemove.length) {
-          unloadNodes(nodesToRemove, []);
+          markNodesForUnloading(nodesToRemove);
         }
       }
     }
@@ -578,15 +591,16 @@ export function createForgoInstance(customEnv: any) {
         nodeInsertionOptions.currentNodeIndex,
         insertAt
       );
-      unloadNodes(nodesToRemove, pendingAttachStates);
+      markNodesForUnloading(nodesToRemove);
 
       const targetElement = childNodes[
         nodeInsertionOptions.currentNodeIndex
       ] as Element;
 
-      renderChildNodes(targetElement);
-
       const oldComponentState = getForgoState(targetElement)?.components;
+
+      renderChildNodes(targetElement);
+      unloadMarkedNodes(targetElement, pendingAttachStates);
 
       syncStateAndProps(
         forgoElement,
@@ -653,7 +667,7 @@ export function createForgoInstance(customEnv: any) {
           const childNodes = nodeInsertionOptions.parentElement.childNodes;
           const searchResult = findReplacementCandidateForComponent(
             forgoElement,
-            childNodes,
+            nodeInsertionOptions.parentElement,
             nodeInsertionOptions.currentNodeIndex,
             nodeInsertionOptions.length,
             pendingAttachStates.length
@@ -694,7 +708,7 @@ export function createForgoInstance(customEnv: any) {
         nodeInsertionOptions.currentNodeIndex,
         insertAt
       );
-      unloadNodes(nodesToRemove, pendingAttachStates.concat(componentState));
+      markNodesForUnloading(nodesToRemove);
 
       if (
         !componentState.component.shouldUpdate ||
@@ -910,10 +924,7 @@ export function createForgoInstance(customEnv: any) {
       newIndex + componentState.nodes.length - numNodesReused
     );
 
-    // If renderResult returned no nodes (ie, null or undefined), then all state will be discarded.
-    const statesThatWillBeAttached =
-      renderResult.nodes.length > 0 ? statesToAttach : [];
-    unloadNodes(nodesToRemove, statesThatWillBeAttached);
+    markNodesForUnloading(nodesToRemove);
 
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
@@ -1022,18 +1033,36 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Unmount components from nodes.
-    We unmount only after first incompatible state, since compatible states 
-    will be reattached to new candidate node.
+    This doesn't unmount components attached to these nodes, 
+    but moves the node itself from the DOM to parentNode.__forgo_deletedNodes.
+    We sort of "mark" it for deletion, but it may be resurrected when a keyed, 
+    off-order forgo node matches a deleted node.
   */
-  function unloadNodes(
-    nodes: ChildNode[],
+  function markNodesForUnloading(nodes: ChildNode[]) {
+    if (nodes.length) {
+      const parentElement = nodes[0].parentElement as HTMLElement;
+      const deletedNodes = getDeletedNodes(parentElement);
+      for (const node of nodes) {
+        node.remove();
+        deletedNodes.push({ node });
+      }
+    }
+  }
+
+  /*
+      Unmount components from nodes.
+      We unmount only after first incompatible state, since compatible states 
+      will be reattached to new candidate node.
+    */
+  function unloadMarkedNodes(
+    parentElement: Element,
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ) {
-    for (const node of nodes) {
+    const deletedNodes = getDeletedNodes(parentElement);
+
+    for (const { node } of deletedNodes) {
       const state = getForgoState(node);
       node.__forgo_deleted = true;
-      node.remove();
       if (state) {
         const oldComponentStates = state.components;
         const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
@@ -1043,6 +1072,7 @@ export function createForgoInstance(customEnv: any) {
         unmountComponents(state.components, indexOfFirstIncompatibleState);
       }
     }
+    clearDeletedNodes(parentElement);
   }
 
   /*
@@ -1088,7 +1118,8 @@ export function createForgoInstance(customEnv: any) {
 
     for (let i = from; i < states.length; i++) {
       const state = states[i];
-      if (state.component.unmount) {
+      const component = state.component;
+      if (component.unmount) {
         // Render if:
         //  - parent has already unmounted
         //  - OR for all nodes:
@@ -1100,15 +1131,21 @@ export function createForgoInstance(customEnv: any) {
             if (!x.isConnected) {
               return true;
             } else {
-              const componentState = getExistingForgoState(x);
+              const stateOnCurrentNode = getExistingForgoState(x);
               return (
-                !componentState.components[i] ||
-                componentState.components[i].component !== state.component
+                !stateOnCurrentNode.components[i] ||
+                stateOnCurrentNode.components[i].component !== state.component
               );
             }
           })
         ) {
-          state.component.unmount(state.props, state.args);
+          if (!component.__forgo?.unmounted) {
+            component.unmount!(state.props, state.args);
+            if (!component.__forgo) {
+              component.__forgo = {};
+            }
+            component.__forgo.unmounted = true;
+          }
           parentHasUnmounted = true;
         }
       }
@@ -1146,10 +1183,11 @@ export function createForgoInstance(customEnv: any) {
   */
   function findReplacementCandidateForElement<TProps>(
     forgoElement: ForgoDOMElement<TProps>,
-    nodes: NodeListOf<ChildNode>,
+    parentElement: Element,
     searchFrom: number,
     length: number
   ): CandidateSearchResult {
+    const nodes = parentElement.childNodes;
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       if (nodeIsElement(node)) {
@@ -1170,6 +1208,26 @@ export function createForgoInstance(customEnv: any) {
         }
       }
     }
+    // Let's check deleted nodes as well.
+    if (forgoElement.key) {
+      const deletedNodes = getDeletedNodes(parentElement);
+      for (let i = 0; i < deletedNodes.length; i++) {
+        const { node } = deletedNodes[i];
+        const stateOnNode = getForgoState(node);
+        if (stateOnNode?.key === forgoElement.key) {
+          // Remove it from deletedNodes.
+          deletedNodes.splice(i, 1);
+          // Append it to the beginning of the node list.
+          const firstNodeInSearchList = nodes[searchFrom];
+          if (firstNodeInSearchList) {
+            parentElement.insertBefore(node, firstNodeInSearchList);
+          } else {
+            parentElement.appendChild(node);
+          }
+          return { found: true, index: searchFrom };
+        }
+      }
+    }
     return { found: false };
   }
 
@@ -1181,11 +1239,12 @@ export function createForgoInstance(customEnv: any) {
   */
   function findReplacementCandidateForComponent<TProps>(
     forgoElement: ForgoComponentElement<TProps>,
-    nodes: NodeListOf<ChildNode>,
+    parentElement: Element,
     searchFrom: number,
     length: number,
     componentIndex: number
   ): CandidateSearchResult {
+    const nodes = parentElement.childNodes;
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       const stateOnNode = getForgoState(node);
@@ -1199,6 +1258,28 @@ export function createForgoInstance(customEnv: any) {
             stateOnNode.components[componentIndex].ctor === forgoElement.type
           ) {
             return { found: true, index: i };
+          }
+        }
+      }
+    }
+    // Let's check deleted nodes as well.
+    if (forgoElement.key) {
+      const deletedNodes = getDeletedNodes(parentElement);
+      for (let i = 0; i < deletedNodes.length; i++) {
+        const { node } = deletedNodes[i];
+        const stateOnNode = getForgoState(node);
+        if (stateOnNode && stateOnNode.components.length > componentIndex) {
+          if (stateOnNode.components[componentIndex].key === forgoElement.key) {
+            // Remove it from deletedNodes.
+            deletedNodes.splice(i, 1);
+            // Append it to the beginning of the node list.
+            const firstNodeInSearchList = nodes[searchFrom];
+            if (firstNodeInSearchList) {
+              parentElement.insertBefore(node, firstNodeInSearchList);
+            } else {
+              parentElement.appendChild(node);
+            }
+            return { found: true, index: searchFrom };
           }
         }
       }
@@ -1492,15 +1573,17 @@ export function createForgoInstance(customEnv: any) {
                 )
               );
 
-            // If there are no nodes, call unmount on it (and child states)
-            if (parentState.nodes.length === 0) {
-              unmountComponents(parentStates, i);
-              break;
-            } else {
-              // The root node might have changed, so fix it up anyway.
+            if (parentState.nodes.length > 0) {
+              // The root node might have changed, so fix it up just in case.
               parentState.args.element.node = parentState.nodes[0];
             }
           }
+
+          // Unload marked nodes.
+          unloadMarkedNodes(
+            parentElement,
+            renderResult.nodes.length > 0 ? statesToAttach : []
+          );
 
           // Unmount rendered component itself if all nodes are gone.
           // if (renderResult.nodes.length === 0) {
@@ -1687,6 +1770,23 @@ export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
 }
 
 /*
+  We maintain a list of deleted childNodes on an element.
+  In case we need to resurrect it - on account of a subsequent out-of-order key referring that node.
+*/
+function getDeletedNodes(element: Element): DeletedNode[] {
+  if (!element.__forgo_deletedNodes) {
+    element.__forgo_deletedNodes = [];
+  }
+  return element.__forgo_deletedNodes;
+}
+
+function clearDeletedNodes(element: Element) {
+  if (!element.__forgo_deletedNodes) {
+    delete element.__forgo_deletedNodes;
+  }
+}
+
+/*
   Throw if component is a non-component
 */
 function assertIsComponent<TProps>(
@@ -1760,12 +1860,5 @@ function findNodeIndex(
 
 /* JSX Types */
 import type { JSXTypes } from "./jsxTypes";
-
-declare global {
-  interface ChildNode {
-    __forgo?: NodeAttachedState;
-    __forgo_deleted?: boolean;
-  }
-}
 
 export { JSXTypes as JSX };
