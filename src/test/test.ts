@@ -34,6 +34,7 @@ import componentKeepsStateWhenReordered from "./componentKeepsStateWhenReordered
 import elementKeepsStateWhenReordered from "./elementKeepsStateWhenReordered/index.js";
 import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull/index.js";
 import unmountsNonTopLevelParentWhenNodeIsNull from "./unmountsNonTopLevelParentWhenNodeIsNull/index.js";
+import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
 
 mount();
 boundary();
@@ -41,8 +42,8 @@ passProps();
 elementRef();
 rerender();
 hydrate();
-componentUnmount();
 componentMount();
+componentUnmount();
 nodeState();
 replaceByKey();
 clearsOldProps();
@@ -61,6 +62,7 @@ replacingFragmentWithNodeWontUnmount();
 childWithFragmentUnmounts();
 rerenderMayUnmountParents();
 rerenderMayChangeRootNode();
+rerenderMayChangeRootNodeOnParents();
 dangerouslySetInnerHTML();
 css();
 inheritedCustomElement();
