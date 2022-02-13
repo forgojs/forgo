@@ -1297,16 +1297,10 @@ export function createForgoInstance(customEnv: any) {
     isNewNode: boolean,
     pendingAttachStates: NodeAttachedComponentState<any>[]
   ) {
-    // Capture previous nodes if afterRender is defined;
-    const previousNodes: (ChildNode | undefined)[] = [];
-
     // We have to inject node into the args object.
     // components are already holding a reference to the args object.
     // They don't know yet that args.element.node is undefined.
     for (const state of pendingAttachStates) {
-      previousNodes.push(
-        state.component.afterRender ? state.args.element.node : undefined
-      );
       state.args.element.node = node;
     }
 
@@ -1552,7 +1546,15 @@ export function createForgoInstance(customEnv: any) {
             false
           );
 
-          // We have to propagate node changes up the tree.
+          // We have to propagate node changes up the component Tree.
+          // Reason 1:
+          //  Imaging Parent rendering Child1 & Child2
+          //  Child1 renders [div1, div2], and Child2 renders [div3, div4].
+          //  When Child1's rerender is called, it might return [p1] instead of [div1, div2]
+          //  Now, Parent's node list (ie state.nodes) must be refreshed to [p1, div3, div4] from [div1, div2, div3, div4]
+          // Reason 2:
+          //  If Child2 was rerendered (instead of Child1), attachProps() will incorrectly fixup parentState.element.node to div3, then to div4.
+          //  That's just how attachProps() works. We need to ressign parentState.element.node to p1.
           for (let i = 0; i < parentStates.length; i++) {
             const parentState = parentStates[i];
 
@@ -1573,6 +1575,7 @@ export function createForgoInstance(customEnv: any) {
                 )
               );
 
+            // Fix up the root node for parent.
             if (parentState.nodes.length > 0) {
               // The root node might have changed, so fix it up just in case.
               parentState.args.element.node = parentState.nodes[0];
