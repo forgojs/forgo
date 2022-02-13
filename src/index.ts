@@ -849,9 +849,7 @@ export function createForgoInstance(customEnv: any) {
           // In case we rendered an array, set the node to the first node.
           // We do this because args.element.node would be set to the last node otherwise.
           newComponentState.nodes = renderResult.nodes;
-          if (renderResult.nodes.length > 1) {
-            newComponentState.args.element.node = renderResult.nodes[0];
-          }
+          newComponentState.args.element.node = renderResult.nodes[0];
 
           if (component.afterRender) {
             // No previousNode since new component. So just args and not afterRenderArgs.
@@ -929,9 +927,7 @@ export function createForgoInstance(customEnv: any) {
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
     componentState.nodes = renderResult.nodes;
-    if (renderResult.nodes.length > 1) {
-      componentState.args.element.node = renderResult.nodes[0];
-    }
+    componentState.args.element.node = renderResult.nodes[0];
 
     return renderResult;
   }
@@ -1300,8 +1296,9 @@ export function createForgoInstance(customEnv: any) {
     // We have to inject node into the args object.
     // components are already holding a reference to the args object.
     // They don't know yet that args.element.node is undefined.
-    for (const state of pendingAttachStates) {
-      state.args.element.node = node;
+    if (pendingAttachStates.length > 0) {
+      pendingAttachStates[pendingAttachStates.length - 1].args.element.node =
+        node;
     }
 
     if (isForgoElement(forgoNode)) {
