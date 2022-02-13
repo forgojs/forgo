@@ -12,7 +12,12 @@
     "jsx": "react",
     "jsxFactory": "forgo.createElement",
     "jsxFragmentFactory": "forgo.Fragment",
-    "declaration": true
+    "declaration": true,
+    // esbuild recommends enabling this to help enforce throwing errors in
+    // scenarios where esbuild and tsc's behavior would differ
+    //
+    // https://esbuild.github.io/content-types/#isolated-modules
+    "isolatedModules": true
   },
   "include": ["./src/**/*"]
 }

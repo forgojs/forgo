@@ -1859,6 +1859,33 @@ function findNodeIndex(
 }
 
 /* JSX Types */
-import type { JSXTypes } from "./jsxTypes";
+/*
+  JSX typings expect a JSX namespace to be in scope for the forgo module (if a
+  using a jsxFactory like forgo.createElement), or attached to the naked factory
+  function (if using a jsxFactory like createElement).
 
-export { JSXTypes as JSX };
+  See: https://www.typescriptlang.org/docs/handbook/jsx.html#intrinsic-elements
+  Also: https://dev.to/ferdaber/typescript-and-jsx-part-ii---what-can-create-jsx-22h6
+  Also: https://www.innoq.com/en/blog/type-checking-tsx/
+
+  Note that importing a module turns it into a namespace on this side of the
+  import, so it doesn't need to be declared as a namespace inside jsxTypes.ts.
+  However, attempting to declare it that way causes no end of headaches either
+  when trying to reexport it here, or reexport it from a createElement
+  namespace. Some errors arise at comple or build time, and some are only
+  visible when a project attempts to consume forgo.
+*/
+// This covers a consuming project using the forgo.createElement jsxFactory
+export * as JSX from "./jsxTypes.js";
+
+// If jsxTypes is imported using named imports, esbuild doesn't know how to
+// erase the imports and gets pset that "JSX" isn't an actual literal value
+// inside the jsxTypes.ts module. We have to import as a different name than the
+// export within createElement because I can't find a way to export a namespace
+// within a namespace without using import aliases.
+import * as JSXTypes from "./jsxTypes.js";
+// The createElement namespace exists so that users can set their TypeScript
+// jsxFactory to createElement instead of forgo.createElement.
+export namespace createElement {
+  export import JSX = JSXTypes;
+}
