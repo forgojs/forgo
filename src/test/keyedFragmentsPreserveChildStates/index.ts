@@ -24,17 +24,37 @@ export default function () {
       });
     });
 
-    const getStates = () =>
-      Array.from(
+    const getStates = (targets: "swappable" | "fixed-position") => {
+      const els = Array.from(
         window.document.getElementsByClassName("stateful-grandchild")
-      ).map((el) => el.getAttribute("data-state"));
+      );
+
+      const targetEls =
+        targets === "swappable"
+          ? els.filter((el) => {
+              const attr = el.getAttribute("data-key");
+              return attr === "first-child" || attr === "second-child";
+            })
+          : [els[els.length - 1]];
+
+      const found = targetEls.map((el) => el.getAttribute("data-state"));
+      // Sanity check, because the tests pass against an empty array
+      // TODO: search by key, not class
+      if (found.length === 0) {
+        throw new Error("Should have found elements");
+      }
+      return found;
+    };
 
     // Capture the original states
-    const grandchildrenStatePass1 = getStates();
+    const grandchildrenStatePass1 = getStates("swappable");
+    console.log(window.document.documentElement.outerHTML);
+    console.log(grandchildrenStatePass1);
 
     renderAgain();
 
-    const grandchildrenStatePass2 = getStates();
+    const grandchildrenStatePass2 = getStates("swappable");
+    console.log(window.document.documentElement.outerHTML);
 
     should.deepEqual(
       grandchildrenStatePass2.reverse(),
@@ -44,7 +64,7 @@ export default function () {
 
     renderAgain();
 
-    const grandchildrenStatePass3 = getStates();
+    const grandchildrenStatePass3 = getStates("swappable");
 
     should.deepEqual(
       grandchildrenStatePass3,

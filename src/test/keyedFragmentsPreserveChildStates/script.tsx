@@ -11,15 +11,15 @@ function Parent() {
   return {
     render(_props: any, args: ForgoRenderArgs) {
       renderArgs = args;
-      return elementOrder ? (
+      const keys = elementOrder
+        ? ["first-child", "second-child"]
+        : ["second-child", "first-child"];
+
+      return (
         <>
-          <Child key="first-child" />
-          <Child key="second-child" />
-        </>
-      ) : (
-        <>
-          <Child key="second-child" />
-          <Child key="first-child" />
+          <Child key={keys[0]} />
+          <Child key={keys[1]} />
+          <Child key="last-child" />
         </>
       );
     },
@@ -33,13 +33,14 @@ function Child() {
     render(props: any, _args: ForgoRenderArgs) {
       return (
         <>
-          {props.key ? (
-            <Child />
-          ) : (
-            <p class="stateful-grandchild" data-state={state}>
-              Hello, world!
-            </p>
-          )}
+          <p
+            class="stateful-grandchild"
+            data-state={state}
+            data-key={props.key}
+          >
+            Hello, world!
+          </p>
+          {props.key ? <Child /> : null}
         </>
       );
     },
