@@ -35,6 +35,7 @@ import elementKeepsStateWhenReordered from "./elementKeepsStateWhenReordered/ind
 import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull/index.js";
 import unmountsNonTopLevelParentWhenNodeIsNull from "./unmountsNonTopLevelParentWhenNodeIsNull/index.js";
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
+import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
 
 mount();
 boundary();
@@ -73,3 +74,4 @@ componentKeepsStateWhenReordered();
 elementKeepsStateWhenReordered();
 unmountsParentWhenNodeIsNull();
 unmountsNonTopLevelParentWhenNodeIsNull();
+keyedFragmentsPreserveChildStates();
