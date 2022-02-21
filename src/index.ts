@@ -314,13 +314,13 @@ export function createForgoInstance(customEnv: any) {
   /*
     This is the main render function. forgoNode is the node to render.
   
-    nodeInsertionOptions specify which nodes need to be replaced by the new node(s), 
+    insertionOptions specify which nodes need to be replaced by the new node(s), 
     or whether the new node should be created detached from the DOM (without replacement). 
     pendingAttachStates is the list of Component State objects which will be attached to the element.
   */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
@@ -328,7 +328,7 @@ export function createForgoInstance(customEnv: any) {
     if (Array.isArray(forgoNode)) {
       return renderArray(
         forgoNode,
-        nodeInsertionOptions,
+        insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
       );
@@ -338,13 +338,13 @@ export function createForgoInstance(customEnv: any) {
       return forgoNode === undefined || forgoNode === null
         ? renderNothing(
             forgoNode,
-            nodeInsertionOptions,
+            insertionOptions,
             pendingAttachStates,
             mountOnPreExistingDOM
           )
         : renderText(
             forgoNode,
-            nodeInsertionOptions,
+            insertionOptions,
             pendingAttachStates,
             mountOnPreExistingDOM
           );
@@ -353,14 +353,14 @@ export function createForgoInstance(customEnv: any) {
     else if (isForgoDOMElement(forgoNode)) {
       return renderDOMElement(
         forgoNode,
-        nodeInsertionOptions,
+        insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
       );
     } else if (isForgoFragment(forgoNode)) {
       return renderFragment(
         forgoNode,
-        nodeInsertionOptions,
+        insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
       );
@@ -369,7 +369,7 @@ export function createForgoInstance(customEnv: any) {
     else {
       return renderComponent(
         forgoNode,
-        nodeInsertionOptions,
+        insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
       );
@@ -381,7 +381,7 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderNothing(
     forgoNode: undefined | null,
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ) {
@@ -402,12 +402,12 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderText(
     forgoNode: ForgoNonEmptyPrimitiveNode,
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node.
-    if (nodeInsertionOptions.type === "detached") {
+    if (insertionOptions.type === "detached") {
       // Text nodes will always be recreated.
       const textNode: ChildNode = env.document.createTextNode(
         stringOfPrimitiveNode(forgoNode)
@@ -429,9 +429,9 @@ export function createForgoInstance(customEnv: any) {
       );
 
       // If we're searching in a list, we replace if the current node is a text node.
-      const childNodes = nodeInsertionOptions.parentElement.childNodes;
-      if (nodeInsertionOptions.length) {
-        let targetNode = childNodes[nodeInsertionOptions.currentNodeIndex];
+      const childNodes = insertionOptions.parentElement.childNodes;
+      if (insertionOptions.length) {
+        let targetNode = childNodes[insertionOptions.currentNodeIndex];
         if (targetNode.nodeType === TEXT_NODE_TYPE) {
           targetNode.replaceWith(textNode);
 
@@ -445,8 +445,8 @@ export function createForgoInstance(customEnv: any) {
           );
           return { nodes: [textNode] };
         } else {
-          const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
-          nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
+          const nextNode = childNodes[insertionOptions.currentNodeIndex];
+          insertionOptions.parentElement.insertBefore(textNode, nextNode);
           syncStateAndProps(
             forgoNode,
             textNode,
@@ -459,15 +459,15 @@ export function createForgoInstance(customEnv: any) {
       }
       // There are no target nodes available.
       else {
-        const childNodes = nodeInsertionOptions.parentElement.childNodes;
+        const childNodes = insertionOptions.parentElement.childNodes;
         if (
           childNodes.length === 0 ||
-          nodeInsertionOptions.currentNodeIndex === 0
+          insertionOptions.currentNodeIndex === 0
         ) {
-          nodeInsertionOptions.parentElement.prepend(textNode);
+          insertionOptions.parentElement.prepend(textNode);
         } else {
-          const nextNode = childNodes[nodeInsertionOptions.currentNodeIndex];
-          nodeInsertionOptions.parentElement.insertBefore(textNode, nextNode);
+          const nextNode = childNodes[insertionOptions.currentNodeIndex];
+          insertionOptions.parentElement.insertBefore(textNode, nextNode);
         }
         syncStateAndProps(
           forgoNode,
@@ -495,42 +495,42 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoDOMElement<TProps>,
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node
-    if (nodeInsertionOptions.type === "detached") {
+    if (insertionOptions.type === "detached") {
       return addElement(undefined, null);
     }
     // We have to find a node to replace.
     else {
-      const childNodes = nodeInsertionOptions.parentElement.childNodes;
+      const childNodes = insertionOptions.parentElement.childNodes;
 
-      if (nodeInsertionOptions.length) {
+      if (insertionOptions.length) {
         const searchResult = findReplacementCandidateForElement(
           forgoElement,
-          nodeInsertionOptions.parentElement,
-          nodeInsertionOptions.currentNodeIndex,
-          nodeInsertionOptions.length
+          insertionOptions.parentElement,
+          insertionOptions.currentNodeIndex,
+          insertionOptions.length
         );
 
         if (searchResult.found) {
           return renderExistingElement(
             searchResult.index,
             childNodes,
-            nodeInsertionOptions
+            insertionOptions
           );
         } else {
           return addElement(
-            nodeInsertionOptions.parentElement,
-            childNodes[nodeInsertionOptions.currentNodeIndex]
+            insertionOptions.parentElement,
+            childNodes[insertionOptions.currentNodeIndex]
           );
         }
       } else {
         return addElement(
-          nodeInsertionOptions.parentElement,
-          childNodes[nodeInsertionOptions.currentNodeIndex]
+          insertionOptions.parentElement,
+          childNodes[insertionOptions.currentNodeIndex]
         );
       }
     }
@@ -583,18 +583,18 @@ export function createForgoInstance(customEnv: any) {
     function renderExistingElement(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
-      nodeInsertionOptions: SearchableNodeInsertionOptions
+      insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
       const nodesToRemove = sliceNodes(
         childNodes,
-        nodeInsertionOptions.currentNodeIndex,
+        insertionOptions.currentNodeIndex,
         insertAt
       );
       markNodesForUnloading(nodesToRemove);
 
       const targetElement = childNodes[
-        nodeInsertionOptions.currentNodeIndex
+        insertionOptions.currentNodeIndex
       ] as Element;
 
       const oldComponentState = getForgoState(targetElement)?.components;
@@ -647,7 +647,7 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderComponent<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoComponentElement<TProps>,
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
     // boundary: ForgoComponent<any> | undefined
@@ -655,21 +655,21 @@ export function createForgoInstance(customEnv: any) {
     const componentIndex = pendingAttachStates.length;
 
     // We need to create a detached node.
-    if (nodeInsertionOptions.type === "detached") {
+    if (insertionOptions.type === "detached") {
       return addComponent();
     }
     // We have to find a node to replace.
     else {
-      if (nodeInsertionOptions.length) {
+      if (insertionOptions.length) {
         if (mountOnPreExistingDOM) {
           return addComponent();
         } else {
-          const childNodes = nodeInsertionOptions.parentElement.childNodes;
+          const childNodes = insertionOptions.parentElement.childNodes;
           const searchResult = findReplacementCandidateForComponent(
             forgoElement,
-            nodeInsertionOptions.parentElement,
-            nodeInsertionOptions.currentNodeIndex,
-            nodeInsertionOptions.length,
+            insertionOptions.parentElement,
+            insertionOptions.currentNodeIndex,
+            insertionOptions.length,
             pendingAttachStates.length
           );
 
@@ -677,7 +677,7 @@ export function createForgoInstance(customEnv: any) {
             return renderExistingComponent(
               searchResult.index,
               childNodes,
-              nodeInsertionOptions
+              insertionOptions
             );
           }
           // No matching node found.
@@ -696,7 +696,7 @@ export function createForgoInstance(customEnv: any) {
     function renderExistingComponent(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
-      nodeInsertionOptions: SearchableNodeInsertionOptions
+      insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       const targetNode = childNodes[insertAt];
       const state = getExistingForgoState(targetNode);
@@ -705,7 +705,7 @@ export function createForgoInstance(customEnv: any) {
       // Get rid of unwanted nodes.
       const nodesToRemove = sliceNodes(
         childNodes,
-        nodeInsertionOptions.currentNodeIndex,
+        insertionOptions.currentNodeIndex,
         insertAt
       );
       markNodesForUnloading(nodesToRemove);
@@ -747,16 +747,16 @@ export function createForgoInstance(customEnv: any) {
           boundary,
           () => {
             // Create new node insertion options.
-            const insertionOptions: NodeInsertionOptions = {
+            const newInsertionOptions: NodeInsertionOptions = {
               type: "search",
-              currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
+              currentNodeIndex: insertionOptions.currentNodeIndex,
               length: updatedComponentState.nodes.length,
-              parentElement: nodeInsertionOptions.parentElement,
+              parentElement: insertionOptions.parentElement,
             };
 
             return renderComponentAndRemoveStaleNodes(
               newForgoNode,
-              insertionOptions,
+              newInsertionOptions,
               statesToAttach,
               updatedComponentState,
               mountOnPreExistingDOM
@@ -776,13 +776,13 @@ export function createForgoInstance(customEnv: any) {
       // shouldUpdate() returned false
       else {
         let indexOfNode = findNodeIndex(
-          nodeInsertionOptions.parentElement.childNodes,
+          insertionOptions.parentElement.childNodes,
           componentState.args.element.node
         );
 
         return {
           nodes: sliceNodes(
-            nodeInsertionOptions.parentElement.childNodes,
+            insertionOptions.parentElement.childNodes,
             indexOfNode,
             indexOfNode + componentState.nodes.length
           ),
@@ -826,22 +826,22 @@ export function createForgoInstance(customEnv: any) {
           const newForgoElement = component.render(forgoElement.props, args);
 
           // Create new node insertion options.
-          const insertionOptions: NodeInsertionOptions =
-            nodeInsertionOptions.type === "detached"
-              ? nodeInsertionOptions
+          const newInsertionOptions: NodeInsertionOptions =
+            insertionOptions.type === "detached"
+              ? insertionOptions
               : {
                   type: "search",
-                  currentNodeIndex: nodeInsertionOptions.currentNodeIndex,
+                  currentNodeIndex: insertionOptions.currentNodeIndex,
                   length: mountOnPreExistingDOM
-                    ? nodeInsertionOptions.length
+                    ? insertionOptions.length
                     : 0,
-                  parentElement: nodeInsertionOptions.parentElement,
+                  parentElement: insertionOptions.parentElement,
                 };
 
           // Pass it on for rendering...
           const renderResult = internalRender(
             newForgoElement,
-            insertionOptions,
+            newInsertionOptions,
             statesToAttach,
             mountOnPreExistingDOM
           );
@@ -876,7 +876,7 @@ export function createForgoInstance(customEnv: any) {
           const newForgoElement = boundary.error(props, errorArgs);
           return internalRender(
             newForgoElement,
-            nodeInsertionOptions,
+            insertionOptions,
             statesToAttach,
             mountOnPreExistingDOM
           );
@@ -938,35 +938,35 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderArray(
     forgoNodes: ForgoNode[],
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
 
-    if (nodeInsertionOptions.type === "detached") {
+    if (insertionOptions.type === "detached") {
       throw new Error(
         "Arrays and fragments cannot be rendered at the top level."
       );
     } else {
       let allNodes: ChildNode[] = [];
 
-      let currentNodeIndex = nodeInsertionOptions.currentNodeIndex;
-      let numNodes = nodeInsertionOptions.length;
+      let currentNodeIndex = insertionOptions.currentNodeIndex;
+      let numNodes = insertionOptions.length;
 
       for (const forgoNode of flattenedNodes) {
         const totalNodesBeforeRender =
-          nodeInsertionOptions.parentElement.childNodes.length;
+          insertionOptions.parentElement.childNodes.length;
 
-        const insertionOptions: SearchableNodeInsertionOptions = {
-          ...nodeInsertionOptions,
+        const newInsertionOptions: SearchableNodeInsertionOptions = {
+          ...insertionOptions,
           currentNodeIndex,
           length: numNodes,
         };
 
         const { nodes } = internalRender(
           forgoNode,
-          insertionOptions,
+          newInsertionOptions,
           pendingAttachStates,
           mountOnPreExistingDOM
         );
@@ -974,7 +974,7 @@ export function createForgoInstance(customEnv: any) {
         allNodes = allNodes.concat(nodes);
 
         const totalNodesAfterRender =
-          nodeInsertionOptions.parentElement.childNodes.length;
+          insertionOptions.parentElement.childNodes.length;
 
         const numNodesRemoved =
           totalNodesBeforeRender + nodes.length - totalNodesAfterRender;
@@ -992,13 +992,13 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderFragment(
     fragment: ForgoFragment,
-    nodeInsertionOptions: NodeInsertionOptions,
+    insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     return renderArray(
       flatten(fragment),
-      nodeInsertionOptions,
+      insertionOptions,
       pendingAttachStates,
       mountOnPreExistingDOM
     );
