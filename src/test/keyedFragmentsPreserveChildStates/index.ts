@@ -48,13 +48,10 @@ export default function () {
 
     // Capture the original states
     const grandchildrenStatePass1 = getStates("swappable");
-    console.log(window.document.documentElement.outerHTML);
-    console.log(grandchildrenStatePass1);
 
     renderAgain();
 
     const grandchildrenStatePass2 = getStates("swappable");
-    console.log(window.document.documentElement.outerHTML);
 
     should.deepEqual(
       grandchildrenStatePass2.reverse(),

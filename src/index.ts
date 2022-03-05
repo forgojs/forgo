@@ -832,9 +832,7 @@ export function createForgoInstance(customEnv: any) {
               : {
                   type: "search",
                   currentNodeIndex: insertionOptions.currentNodeIndex,
-                  length: mountOnPreExistingDOM
-                    ? insertionOptions.length
-                    : 0,
+                  length: mountOnPreExistingDOM ? insertionOptions.length : 0,
                   parentElement: insertionOptions.parentElement,
                 };
 
@@ -1246,7 +1244,10 @@ export function createForgoInstance(customEnv: any) {
       const stateOnNode = getForgoState(node);
       if (stateOnNode && stateOnNode.components.length > componentIndex) {
         if (forgoElement.key) {
-          if (stateOnNode.components[componentIndex].key === forgoElement.key) {
+          if (
+            stateOnNode.components[componentIndex].ctor === forgoElement.type &&
+            stateOnNode.components[componentIndex].key === forgoElement.key
+          ) {
             return { found: true, index: i };
           }
         } else {
@@ -1258,25 +1259,66 @@ export function createForgoInstance(customEnv: any) {
         }
       }
     }
+
+    // Check if a keyed component is mounted on this node.
+    function nodeBelongsToKeyedComponent(
+      node: ChildNode,
+      forgoElement: ForgoComponentElement<TProps>,
+      componentIndex: number
+    ) {
+      const stateOnNode = getForgoState(node);
+      if (stateOnNode && stateOnNode.components.length > componentIndex) {
+        if (stateOnNode.components[componentIndex].ctor === forgoElement.type && stateOnNode.components[componentIndex].key === forgoElement.key) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     // Let's check deleted nodes as well.
     if (forgoElement.key) {
       const deletedNodes = getDeletedNodes(parentElement);
       for (let i = 0; i < deletedNodes.length; i++) {
-        const { node } = deletedNodes[i];
-        const stateOnNode = getForgoState(node);
-        if (stateOnNode && stateOnNode.components.length > componentIndex) {
-          if (stateOnNode.components[componentIndex].key === forgoElement.key) {
-            // Remove it from deletedNodes.
-            deletedNodes.splice(i, 1);
-            // Append it to the beginning of the node list.
-            const firstNodeInSearchList = nodes[searchFrom];
-            if (firstNodeInSearchList) {
-              parentElement.insertBefore(node, firstNodeInSearchList);
-            } else {
+        const { node: deletedNode } = deletedNodes[i];
+        if (
+          nodeBelongsToKeyedComponent(
+            deletedNode,
+            forgoElement,
+            componentIndex
+          )
+        ) {
+          const nodeToResurrect: ChildNode[] = [deletedNode];
+          // Found a match!
+          // Collect all consecutive matching nodes.
+          for (let j = i + 1; j < deletedNodes.length; j++) {
+            const { node: subsequentNode } = deletedNodes[j];
+            if (
+              nodeBelongsToKeyedComponent(
+                subsequentNode,
+                forgoElement,
+                componentIndex
+              )
+            ) {
+              nodeToResurrect.push(subsequentNode);
+            }
+          }
+          // Remove it from deletedNodes.
+          deletedNodes.splice(i, nodeToResurrect.length);
+
+          // Append it to the beginning of the node list.
+          let insertBeforeNode = nodes[searchFrom];
+
+          if (insertBeforeNode) {
+            for (const node of nodeToResurrect) {
+              parentElement.insertBefore(node, insertBeforeNode);
+            }
+          } else {
+            for (const node of nodeToResurrect) {
               parentElement.appendChild(node);
             }
-            return { found: true, index: searchFrom };
           }
+
+          return { found: true, index: searchFrom };
         }
       }
     }
