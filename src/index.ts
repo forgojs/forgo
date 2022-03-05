@@ -1287,7 +1287,7 @@ export function createForgoInstance(customEnv: any) {
             componentIndex
           )
         ) {
-          const nodeToResurrect: ChildNode[] = [deletedNode];
+          const nodesToResurrect: ChildNode[] = [deletedNode];
           // Found a match!
           // Collect all consecutive matching nodes.
           for (let j = i + 1; j < deletedNodes.length; j++) {
@@ -1299,21 +1299,21 @@ export function createForgoInstance(customEnv: any) {
                 componentIndex
               )
             ) {
-              nodeToResurrect.push(subsequentNode);
+              nodesToResurrect.push(subsequentNode);
             }
           }
-          // Remove it from deletedNodes.
-          deletedNodes.splice(i, nodeToResurrect.length);
+          // Remove them from deletedNodes.
+          deletedNodes.splice(i, nodesToResurrect.length);
 
-          // Append it to the beginning of the node list.
+          // Append resurrected nodes to the beginning of the node list.
           let insertBeforeNode = nodes[searchFrom];
 
           if (insertBeforeNode) {
-            for (const node of nodeToResurrect) {
+            for (const node of nodesToResurrect) {
               parentElement.insertBefore(node, insertBeforeNode);
             }
           } else {
-            for (const node of nodeToResurrect) {
+            for (const node of nodesToResurrect) {
               parentElement.appendChild(node);
             }
           }
