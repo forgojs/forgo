@@ -130,6 +130,10 @@ export type ForgoNonEmptyPrimitiveNode =
 
 export type ForgoPrimitiveNode = ForgoNonEmptyPrimitiveNode | null | undefined;
 
+/**
+ * Anything renderable by Forgo, whether from an external source (e.g.,
+ * component.render() output), or internally (e.g., DOM nodes)
+ */
 export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 
 /*
@@ -206,12 +210,23 @@ export type DetachedNodeInsertionOptions = {
 };
 
 /**
- * The called function will search for compatible nodes to replace
+ * Instructs the renderer to search for an existing node to modify or replace,
+ * before creating a new node.
  */
 export type SearchableNodeInsertionOptions = {
   type: "search";
+  /**
+   * The element that holds the previously-rendered version of this component
+   */
   parentElement: Element;
+  /**
+   * Where under the parent's children to find the start of this component
+   */
   currentNodeIndex: number;
+  /**
+   * How many elements after currentNodeIndex belong to the element we're
+   * searching
+   */
   length: number;
 };
 
@@ -268,8 +283,11 @@ const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 /*
-  The element types we care about.
-  As defined by the standards.
+  These come from the browser's Node interface, which defines an enum of node
+  types. We'd like to just reference Node.<whatever>, but JSDOM makes us jump
+  through hoops to do that because it hates adding new globals. Getting around
+  that is more complex, and more bytes on the wire, than just hardcoding the
+  constants we care about.
 */
 const ELEMENT_NODE_TYPE = 1;
 const ATTRIBUTE_NODE_TYPE = 2;
@@ -388,10 +406,10 @@ export function createForgoInstance(customEnv: any) {
     Renders undefined and null
   */
   function renderNothing(
-    forgoNode: undefined | null,
-    insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    mountOnPreExistingDOM: boolean
+    _forgoNode: undefined | null,
+    _insertionOptions: NodeInsertionOptions,
+    _pendingAttachStates: NodeAttachedComponentState<any>[],
+    _mountOnPreExistingDOM: boolean
   ): RenderResult {
     return { nodes: [] };
   }
@@ -460,7 +478,8 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    Render a DOM element.
+    Render a DOM element. Will find + update an existing DOM element (if
+    appropriate), or insert a new element.
   
     Such as in the render function below:
     function MyComponent() {
@@ -494,6 +513,12 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
+          console.log(
+            "Transforming node:",
+            Array.from(childNodes)[searchResult.index],
+            "to match",
+            forgoElement
+          );
           return renderExistingElement(
             searchResult.index,
             childNodes,
@@ -509,52 +534,72 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function renderChildNodes(parentElement: Element) {
+      // If the user gave us exact HTML to stuff into this parent, we can
+      // skip/ignore the usual rendering logic
       if (forgoElement.props.dangerouslySetInnerHTML) {
         parentElement.innerHTML =
           forgoElement.props.dangerouslySetInnerHTML.__html;
       } else {
-        const forgoChildrenObj = forgoElement.props.children;
-
-        // Children will not be an array if single item.
-        const forgoChildren = flatten(
-          (Array.isArray(forgoChildrenObj)
-            ? forgoChildrenObj
-            : [forgoChildrenObj]
-          ).filter((x) => x !== undefined && x !== null)
+        // Coerce children to always be an array, for simplicity
+        const forgoChildren = flatten([forgoElement.props.children]).filter(
+          // Children may or may not be specified
+          (x) => x !== undefined && x !== null
         );
 
-        let currentChildNodeIndex = 0;
-
+        // Make sure that if the user prepends non-Forgo DOM children under this
+        // parent that we start with the correct offset, otherwise we'll do DOM
+        // transformations that don't make any sense for the given input.
+        const firstForgoChildIndex = Array.from(
+          parentElement.childNodes
+        ).findIndex((child) => getForgoState(child));
+        // Each node we render will push any leftover children further down the
+        // parent's list of children. After rendering everything, we can clean
+        // up anything extra. We'll know what's extra because all nodes we want
+        // to preserve come before this index.
+        let lastRenderedNodeIndex =
+          firstForgoChildIndex === -1 ? 0 : firstForgoChildIndex;
         for (const forgoChild of forgoChildren) {
-          const { nodes } = internalRender(
+          const { nodes: nodesAfterRender } = internalRender(
             forgoChild,
             {
               type: "search",
               parentElement,
-              currentNodeIndex: currentChildNodeIndex,
-              length: parentElement.childNodes.length - currentChildNodeIndex,
+              currentNodeIndex: lastRenderedNodeIndex,
+              length: parentElement.childNodes.length - lastRenderedNodeIndex,
             },
             [],
             mountOnPreExistingDOM
           );
-          currentChildNodeIndex += nodes.length;
+          lastRenderedNodeIndex += nodesAfterRender.length;
         }
 
-        // Get rid the the remaining nodes.
+        // Remove all nodes that don't correspond to the rendered output of a
+        // live component
         markNodesForUnloading(
           parentElement.childNodes,
-          currentChildNodeIndex,
+          lastRenderedNodeIndex,
           parentElement.childNodes.length
         );
       }
     }
 
+    /**
+     * If we're updating an element that was rendered in a previous render,
+     * reuse the same DOM element. Just sync its children and attributes.
+     */
     function renderExistingElement(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
       insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
+      console.log(
+        "unloading",
+        Array.from(childNodes).slice(
+          insertionOptions.currentNodeIndex,
+          insertAt
+        )
+      );
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
@@ -973,19 +1018,34 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates,
         oldComponentStates
       );
+      console.log(
+        "Electing to transform",
+        oldComponentStates[indexOfFirstIncompatibleState],
+        pendingAttachStates[indexOfFirstIncompatibleState]
+      );
       unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
       mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
     } else {
+      console.log("Mounting a new component at", pendingAttachStates[0]);
       mountComponents(pendingAttachStates, 0);
     }
   }
 
-  /*
-    This doesn't unmount components attached to these nodes, but moves the node
-    itself from the DOM to parentNode.__forgo_deletedNodes. We sort of "mark" it
-    for deletion, but it may be resurrected if it's matched by a keyed forgo
-    node that has been reordered.
-  */
+  /**
+   * This doesn't unmount components attached to these nodes, but moves the node
+   * itself from the DOM to parentNode.__forgo_deletedNodes. We sort of "mark"
+   * it for deletion, but it may be resurrected if it's matched by a keyed forgo
+   * node that has been reordered.
+   *
+   * Nodes in between `from` and `to` (not inclusive of `to`) will be marked for
+   * unloading. Use `unloadMarkedNodes()` to actually unload the nodes once
+   * we're sure we don't need to resurrect them.
+   *
+   * We don't want to remove DOM nodes that aren't owned by Forgo. I.e., if the
+   * user grabs a reference to a DOM element and manually adds children under
+   * it, we don't want to remove those children. That'll mess up e.g., charting
+   * libraries.
+   */
   function markNodesForUnloading(
     nodes: ArrayLike<ChildNode>,
     from: number,
@@ -996,6 +1056,11 @@ export function createForgoInstance(customEnv: any) {
       const parentElement = nodesToRemove[0].parentElement as HTMLElement;
       const deletedNodes = getDeletedNodes(parentElement);
       for (const node of nodesToRemove) {
+        // If the consuming application has manually mucked with the DOM don't
+        // remove things it added
+        if (!getForgoState(node)) continue;
+
+        console.log("Removing", node);
         node.remove();
         deletedNodes.push({ node });
       }
@@ -1043,6 +1108,7 @@ export function createForgoInstance(customEnv: any) {
   ): number {
     let i = 0;
 
+    console.log("evaluating states", newStates, oldStates);
     for (const newState of newStates) {
       if (oldStates.length > i) {
         const oldState = oldStates[i];
@@ -1128,12 +1194,12 @@ export function createForgoInstance(customEnv: any) {
       }
     | { found: true; index: number };
 
-  /*
-    When we try to find replacement candidates for DOM nodes,
-    we try to:
-      a) match by the key
-      b) match by the tagname
-  */
+  /**
+   * When we try to find replacement candidates for DOM nodes,
+   * we try to:
+   *   a) match by the key
+   *   b) match by the tagname
+   */
   function findReplacementCandidateForElement<TProps>(
     forgoElement: ForgoDOMElement<TProps>,
     parentElement: Element,
@@ -1141,12 +1207,25 @@ export function createForgoInstance(customEnv: any) {
     length: number
   ): CandidateSearchResult {
     const nodes = parentElement.childNodes;
+    console.log(
+      "Searching for replacements in",
+      Array.from(nodes).slice(searchFrom, searchFrom + length)
+    );
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       if (nodeIsElement(node)) {
         const stateOnNode = getForgoState(node);
+        // If the user stuffs random elements into the DOM manually, we don't
+        // want to treat them as replacement candidates - they should be left
+        // alone.
+        if (!stateOnNode) {
+          console.log("Ignoring node", node.outerHTML);
+          continue;
+        }
+
         if (forgoElement.key) {
           if (stateOnNode?.key === forgoElement.key) {
+            console.log("Found replacement (a):", node.outerHTML);
             return { found: true, index: i };
           }
         } else {
@@ -1156,6 +1235,7 @@ export function createForgoInstance(customEnv: any) {
             node.tagName.toLowerCase() === forgoElement.type &&
             (!stateOnNode || !stateOnNode.key)
           ) {
+            console.log("Found replacement (b):", node.outerHTML);
             return { found: true, index: i };
           }
         }
@@ -1184,12 +1264,12 @@ export function createForgoInstance(customEnv: any) {
     return { found: false };
   }
 
-  /*
-    When we try to find replacement candidates for Components,
-    we try to:
-      a) match by the key
-      b) match by the component constructor
-  */
+  /**
+   * When we try to find replacement candidates for Components,
+   * we try to:
+   *   a) match by the key
+   *   b) match by the component constructor
+   */
   function findReplacementCandidateForComponent<TProps>(
     forgoElement: ForgoComponentElement<TProps>,
     parentElement: Element,
@@ -1283,10 +1363,10 @@ export function createForgoInstance(customEnv: any) {
     return { found: false };
   }
 
-  /*
-    Attach props from the forgoElement on to the DOM node.
-    We also need to attach states from pendingAttachStates
-  */
+  /**
+   * Attach props from the forgoElement onto the DOM node. We also need to attach
+   * states from pendingAttachStates
+   */
   function attachProps(
     forgoNode: ForgoNode,
     node: ChildNode,
@@ -1832,7 +1912,8 @@ function styleToString(style: any): string {
 }
 
 /**
- * parentElement.childNodes is not an array
+ * node.childNodes is some funky data structure that's not really not an array,
+ * so we can't just slice it like normal
  */
 function sliceNodes(
   nodes: ArrayLike<ChildNode>,
@@ -1842,17 +1923,16 @@ function sliceNodes(
   return Array.from(nodes).slice(from, to);
 }
 
-/* parentElements.childNodes is not an array. A findIndex() for it. */
+/**
+ * node.childNodes is some funky data structure that's not really not an array,
+ * so we can't just search for the value like normal
+ */
 function findNodeIndex(
   nodes: ArrayLike<ChildNode>,
   element: ChildNode | undefined
 ): number {
-  for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i] === element) {
-      return i;
-    }
-  }
-  return -1;
+  if (!element) return -1;
+  return Array.from(nodes).indexOf(element);
 }
 
 /* JSX Types */

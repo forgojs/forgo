@@ -1,8 +1,11 @@
+import sourceMapSupport from "source-map-support";
+sourceMapSupport.install();
+
 import mount from "./mount/index.js";
 import boundary from "./boundary/index.js";
 import passProps from "./passProps/index.js";
 import elementRef from "./elementRef/index.js";
-import rerender from "./rerender/index.js";
+import rerender from "./rerender.js";
 import hydrate from "./hydrate/index.js";
 import componentUnmount from "./componentUnmount/index.js";
 import componentMount from "./componentMount/index.js";
