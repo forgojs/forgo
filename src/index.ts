@@ -198,15 +198,16 @@ export type ForgoEnvType = {
   };
 };
 
-/*
-  NodeInsertionOptions decide how nodes get attached by the callee function.
-  type = "detached" does not attach the node to the parent.
-  type = "search" requires the callee function to search for a compatible replacement.
-*/
+/**
+ * Nodes will be created as detached DOM nodes, and will not be attached to the parent
+ */
 export type DetachedNodeInsertionOptions = {
   type: "detached";
 };
 
+/**
+ * The called function will search for compatible nodes to replace
+ */
 export type SearchableNodeInsertionOptions = {
   type: "search";
   parentElement: Element;
@@ -214,6 +215,9 @@ export type SearchableNodeInsertionOptions = {
   length: number;
 };
 
+/**
+ * Decides how the called function attaches nodes to the supplied parent
+ */
 export type NodeInsertionOptions =
   | DetachedNodeInsertionOptions
   | SearchableNodeInsertionOptions;
@@ -311,13 +315,17 @@ export function createForgoInstance(customEnv: any) {
     HTMLElement: (env.window as any).HTMLElement,
   };
 
-  /*
-    This is the main render function. forgoNode is the node to render.
-  
-    insertionOptions specify which nodes need to be replaced by the new node(s), 
-    or whether the new node should be created detached from the DOM (without replacement). 
-    pendingAttachStates is the list of Component State objects which will be attached to the element.
-  */
+  /**
+    * This is the main render function.
+
+    * @param forgoNode The node to render. Can be any value renderable by Forgo,
+    * not just DOM nodes.
+    * @param insertionOptions Which nodes need to be replaced by the new
+    * node(s), or whether the new node should be created detached from the DOM
+    * (without replacement). 
+    * @param pendingAttachStates The list of Component State objects which will
+    * be attached to the element.
+    */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
     insertionOptions: NodeInsertionOptions,
@@ -384,7 +392,7 @@ export function createForgoInstance(customEnv: any) {
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
-  ) {
+  ): RenderResult {
     return { nodes: [] };
   }
 
@@ -404,81 +412,51 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNonEmptyPrimitiveNode,
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
-    mountOnPreExistingDOM: boolean
+    // TODO: Any reason to keep this parameter?
+    _mountOnPreExistingDOM: boolean
   ): RenderResult {
-    // We need to create a detached node.
-    if (insertionOptions.type === "detached") {
-      // Text nodes will always be recreated.
-      const textNode: ChildNode = env.document.createTextNode(
-        stringOfPrimitiveNode(forgoNode)
-      );
-      syncStateAndProps(
-        forgoNode,
-        textNode,
-        true,
-        pendingAttachStates,
-        undefined
-      );
-      return { nodes: [textNode] };
-    }
+    // Text nodes will always be recreated.
+    const textNode: ChildNode = env.document.createTextNode(
+      stringOfPrimitiveNode(forgoNode)
+    );
+    let oldComponentState: NodeAttachedComponentState<any>[] | undefined =
+      undefined;
+
     // We have to find a node to replace.
-    else {
-      // Text nodes will always be recreated.
-      const textNode: ChildNode = env.document.createTextNode(
-        stringOfPrimitiveNode(forgoNode)
-      );
+    if (insertionOptions.type === "search") {
+      const childNodes = insertionOptions.parentElement.childNodes;
 
       // If we're searching in a list, we replace if the current node is a text node.
-      const childNodes = insertionOptions.parentElement.childNodes;
       if (insertionOptions.length) {
-        let targetNode = childNodes[insertionOptions.currentNodeIndex];
+        const targetNode = childNodes[insertionOptions.currentNodeIndex];
         if (targetNode.nodeType === TEXT_NODE_TYPE) {
           targetNode.replaceWith(textNode);
-
-          const oldComponentState = getForgoState(targetNode)?.components;
-          syncStateAndProps(
-            forgoNode,
-            textNode,
-            true,
-            pendingAttachStates,
-            oldComponentState
-          );
-          return { nodes: [textNode] };
+          oldComponentState = getForgoState(targetNode)?.components;
         } else {
           const nextNode = childNodes[insertionOptions.currentNodeIndex];
           insertionOptions.parentElement.insertBefore(textNode, nextNode);
-          syncStateAndProps(
-            forgoNode,
-            textNode,
-            true,
-            pendingAttachStates,
-            undefined
-          );
-          return { nodes: [textNode] };
         }
       }
       // There are no target nodes available.
-      else {
-        const childNodes = insertionOptions.parentElement.childNodes;
-        if (
-          childNodes.length === 0 ||
-          insertionOptions.currentNodeIndex === 0
-        ) {
-          insertionOptions.parentElement.prepend(textNode);
-        } else {
-          const nextNode = childNodes[insertionOptions.currentNodeIndex];
-          insertionOptions.parentElement.insertBefore(textNode, nextNode);
-        }
-        syncStateAndProps(
-          forgoNode,
-          textNode,
-          true,
-          pendingAttachStates,
-          undefined
-        );
-        return { nodes: [textNode] };
+      else if (
+        childNodes.length === 0 ||
+        insertionOptions.currentNodeIndex === 0
+      ) {
+        insertionOptions.parentElement.prepend(textNode);
+      } else {
+        const nextNode = childNodes[insertionOptions.currentNodeIndex];
+        insertionOptions.parentElement.insertBefore(textNode, nextNode);
       }
     }
+
+    syncStateAndProps(
+      forgoNode,
+      textNode,
+      true,
+      pendingAttachStates,
+      oldComponentState
+    );
+    return { nodes: [textNode] };
   }
 
   /*
@@ -521,18 +499,13 @@ export function createForgoInstance(customEnv: any) {
             childNodes,
             insertionOptions
           );
-        } else {
-          return addElement(
-            insertionOptions.parentElement,
-            childNodes[insertionOptions.currentNodeIndex]
-          );
         }
-      } else {
-        return addElement(
-          insertionOptions.parentElement,
-          childNodes[insertionOptions.currentNodeIndex]
-        );
       }
+
+      return addElement(
+        insertionOptions.parentElement,
+        childNodes[insertionOptions.currentNodeIndex]
+      );
     }
 
     function renderChildNodes(parentElement: Element) {
@@ -568,15 +541,11 @@ export function createForgoInstance(customEnv: any) {
         }
 
         // Get rid the the remaining nodes.
-        const nodesToRemove = sliceNodes(
+        markNodesForUnloading(
           parentElement.childNodes,
           currentChildNodeIndex,
           parentElement.childNodes.length
         );
-
-        if (nodesToRemove.length) {
-          markNodesForUnloading(nodesToRemove);
-        }
       }
     }
 
@@ -586,12 +555,11 @@ export function createForgoInstance(customEnv: any) {
       insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
-      const nodesToRemove = sliceNodes(
+      markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
         insertAt
       );
-      markNodesForUnloading(nodesToRemove);
 
       const targetElement = childNodes[
         insertionOptions.currentNodeIndex
@@ -654,44 +622,33 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     const componentIndex = pendingAttachStates.length;
 
-    // We need to create a detached node.
-    if (insertionOptions.type === "detached") {
-      return addComponent();
-    }
-    // We have to find a node to replace.
-    else {
-      if (insertionOptions.length) {
-        if (mountOnPreExistingDOM) {
-          return addComponent();
-        } else {
-          const childNodes = insertionOptions.parentElement.childNodes;
-          const searchResult = findReplacementCandidateForComponent(
-            forgoElement,
-            insertionOptions.parentElement,
-            insertionOptions.currentNodeIndex,
-            insertionOptions.length,
-            pendingAttachStates.length
-          );
+    if (
+      // We need to create a detached node.
+      insertionOptions.type !== "detached" &&
+      // We have to find a node to replace.
+      insertionOptions.length &&
+      !mountOnPreExistingDOM
+    ) {
+      const childNodes = insertionOptions.parentElement.childNodes;
+      const searchResult = findReplacementCandidateForComponent(
+        forgoElement,
+        insertionOptions.parentElement,
+        insertionOptions.currentNodeIndex,
+        insertionOptions.length,
+        pendingAttachStates.length
+      );
 
-          if (searchResult.found) {
-            return renderExistingComponent(
-              searchResult.index,
-              childNodes,
-              insertionOptions
-            );
-          }
-          // No matching node found.
-          else {
-            return addComponent();
-          }
-        }
-      }
-      // No nodes in target node list.
-      // Nothing to unload.
-      else {
-        return addComponent();
+      if (searchResult.found) {
+        return renderExistingComponent(
+          searchResult.index,
+          childNodes,
+          insertionOptions
+        );
       }
     }
+    // No nodes in target node list, or no matching node found.
+    // Nothing to unload.
+    return addComponent();
 
     function renderExistingComponent(
       insertAt: number,
@@ -703,16 +660,15 @@ export function createForgoInstance(customEnv: any) {
       const componentState = state.components[componentIndex];
 
       // Get rid of unwanted nodes.
-      const nodesToRemove = sliceNodes(
+      markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
         insertAt
       );
-      markNodesForUnloading(nodesToRemove);
 
       if (
         !componentState.component.shouldUpdate ||
-        componentState.component.shouldUpdate(
+        !componentState.component.shouldUpdate(
           forgoElement.props,
           componentState.props
         )
@@ -914,13 +870,11 @@ export function createForgoInstance(customEnv: any) {
     const newIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    const nodesToRemove = sliceNodes(
+    markNodesForUnloading(
       insertionOptions.parentElement.childNodes,
       newIndex,
       newIndex + componentState.nodes.length - numNodesReused
     );
-
-    markNodesForUnloading(nodesToRemove);
 
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
@@ -1027,16 +981,21 @@ export function createForgoInstance(customEnv: any) {
   }
 
   /*
-    This doesn't unmount components attached to these nodes, 
-    but moves the node itself from the DOM to parentNode.__forgo_deletedNodes.
-    We sort of "mark" it for deletion, but it may be resurrected when a keyed, 
-    off-order forgo node matches a deleted node.
+    This doesn't unmount components attached to these nodes, but moves the node
+    itself from the DOM to parentNode.__forgo_deletedNodes. We sort of "mark" it
+    for deletion, but it may be resurrected if it's matched by a keyed forgo
+    node that has been reordered.
   */
-  function markNodesForUnloading(nodes: ChildNode[]) {
-    if (nodes.length) {
-      const parentElement = nodes[0].parentElement as HTMLElement;
+  function markNodesForUnloading(
+    nodes: ArrayLike<ChildNode>,
+    from: number,
+    to: number
+  ) {
+    const nodesToRemove = sliceNodes(nodes, from, to);
+    if (nodesToRemove.length) {
+      const parentElement = nodesToRemove[0].parentElement as HTMLElement;
       const deletedNodes = getDeletedNodes(parentElement);
-      for (const node of nodes) {
+      for (const node of nodesToRemove) {
         node.remove();
         deletedNodes.push({ node });
       }
@@ -1268,7 +1227,10 @@ export function createForgoInstance(customEnv: any) {
     ) {
       const stateOnNode = getForgoState(node);
       if (stateOnNode && stateOnNode.components.length > componentIndex) {
-        if (stateOnNode.components[componentIndex].ctor === forgoElement.type && stateOnNode.components[componentIndex].key === forgoElement.key) {
+        if (
+          stateOnNode.components[componentIndex].ctor === forgoElement.type &&
+          stateOnNode.components[componentIndex].key === forgoElement.key
+        ) {
           return true;
         }
       }
@@ -1281,11 +1243,7 @@ export function createForgoInstance(customEnv: any) {
       for (let i = 0; i < deletedNodes.length; i++) {
         const { node: deletedNode } = deletedNodes[i];
         if (
-          nodeBelongsToKeyedComponent(
-            deletedNode,
-            forgoElement,
-            componentIndex
-          )
+          nodeBelongsToKeyedComponent(deletedNode, forgoElement, componentIndex)
         ) {
           const nodesToResurrect: ChildNode[] = [deletedNode];
           // Found a match!
@@ -1539,8 +1497,7 @@ export function createForgoInstance(customEnv: any) {
 
         const originalComponentState = state.components[element.componentIndex];
 
-        const effectiveProps =
-          props !== undefined ? props : originalComponentState.props;
+        const effectiveProps = props ?? originalComponentState.props;
 
         if (
           !originalComponentState.component.shouldUpdate ||
@@ -1874,17 +1831,15 @@ function styleToString(style: any): string {
   }
 }
 
-/* parentElements.childNodes is not an array. A slice() for it. */
+/**
+ * parentElement.childNodes is not an array
+ */
 function sliceNodes(
   nodes: ArrayLike<ChildNode>,
   from: number,
   to: number
 ): ChildNode[] {
-  const result: ChildNode[] = [];
-  for (let i = from; i < to; i++) {
-    result.push(nodes[i]);
-  }
-  return result;
+  return Array.from(nodes).slice(from, to);
 }
 
 /* parentElements.childNodes is not an array. A findIndex() for it. */
