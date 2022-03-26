@@ -326,6 +326,10 @@ function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   };
 }
 
+/**
+ * Creates everything needed to run forgo, wrapped in a closure holding e.g.,
+ * JSDOM-specific environment overrides used in tests
+ */
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
   env.__internal = env.__internal ?? {
@@ -570,7 +574,57 @@ export function createForgoInstance(customEnv: any) {
             [],
             mountOnPreExistingDOM
           );
-          lastRenderedNodeIndex += nodesAfterRender.length;
+          // Continue down the children list to wherever's right after the stuff
+          // we just added. Because users are allowed to add arbitrary stuff to
+          // the DOM manually, we can't just jump by the count of rendered
+          // elements, since that's the count of *managed* elements, which might
+          // be interspersed with unmanaged elements that we also need to skip
+          // past.
+          if (nodesAfterRender.length) {
+            while (
+              parentElement.childNodes[lastRenderedNodeIndex] !==
+              nodesAfterRender[nodesAfterRender.length - 1]
+            ) {
+              lastRenderedNodeIndex += 1;
+            }
+            /*
+            for (
+              let i = lastRenderedNodeIndex;
+              i < parentElement.childNodes.length;
+              i++
+            ) {
+              if (
+                parentElement.childNodes[lastRenderedNodeIndex] ===
+                nodesAfterRender[nodesAfterRender.length - 1]
+              ) {
+                break;
+              }
+              lastRenderedNodeIndex += 1;
+            }
+            */
+            // Move the counter *past* the last node we inserted. E.g., if we just
+            // inserted our first node, we need to increment from 0 -> 1, where
+            // we'll start searching for the next thing we insert
+            lastRenderedNodeIndex += 1;
+            // We need to move the index (representitive of all used nodes)
+            // forward past any unmanaged nodes that have been pushed towards
+            // the end, until we encounter a managed node that we know is unused
+            while (lastRenderedNodeIndex < parentElement.childNodes.length) {
+              if (
+                getForgoState(parentElement.childNodes[lastRenderedNodeIndex])
+              ) {
+                break;
+              }
+              lastRenderedNodeIndex += 1;
+            }
+          }
+          //lastRenderedNodeIndex += nodesAfterRender.length;
+          /*
+          lastRenderedNodeIndex =
+            Array.from(parentElement.childNodes).findIndex(
+              (el) => el === nodesAfterRender[nodesAfterRender.length - 1]
+            ) + 1;
+            */
         }
 
         // Remove all nodes that don't correspond to the rendered output of a
@@ -593,13 +647,6 @@ export function createForgoInstance(customEnv: any) {
       insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
-      console.log(
-        "unloading",
-        Array.from(childNodes).slice(
-          insertionOptions.currentNodeIndex,
-          insertAt
-        )
-      );
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
@@ -1060,7 +1107,10 @@ export function createForgoInstance(customEnv: any) {
         // remove things it added
         if (!getForgoState(node)) continue;
 
-        console.log("Removing", node);
+        console.log(
+          "Removing",
+          Reflect.has(node, "outerHTML") ? (node as any).outerHTML : node
+        );
         node.remove();
         deletedNodes.push({ node });
       }
@@ -1222,6 +1272,7 @@ export function createForgoInstance(customEnv: any) {
           console.log("Ignoring node", node.outerHTML);
           continue;
         }
+        console.log("Considering node:", node.outerHTML);
 
         if (forgoElement.key) {
           if (stateOnNode?.key === forgoElement.key) {

@@ -4,14 +4,14 @@ import { DOMWindow, JSDOM } from "jsdom";
 
 import type { ForgoComponentCtor, ForgoComponentProps } from "../index.js";
 
-export interface ComponentEnvironment<ExfiltratedValues extends {}> {
+export interface ComponentEnvironment<ExportedValues extends {}> {
   window: DOMWindow;
   document: Document;
   /**
    * We use this to allow the component under test to return values to the testing
    * environment, for making assertions about its internal state
    */
-  exfiltratedValues: ExfiltratedValues;
+  exports: ExportedValues;
 }
 
 function defaultDom() {
@@ -34,9 +34,9 @@ function defaultDom() {
  * because we want tests to be able to set their own per-test props on a
  * component, which only works if the test declares the props as JSX
  */
-export async function run<Props extends {}, ExfiltratedValues extends {}>(
+export async function run<Props extends {}, ExportedValues extends {}>(
   Component: ForgoComponentCtor<
-    ForgoComponentProps & Props & ComponentEnvironment<ExfiltratedValues>
+    ForgoComponentProps & Props & ComponentEnvironment<ExportedValues>
   >,
   props: Props,
   dom: JSDOM = defaultDom()
@@ -45,10 +45,10 @@ export async function run<Props extends {}, ExfiltratedValues extends {}>(
   const document = window.document;
   forgo.setCustomEnv({ window, document });
 
-  const env: ComponentEnvironment<ExfiltratedValues> = {
+  const env: ComponentEnvironment<ExportedValues> = {
     window,
     document,
-    exfiltratedValues: {} as ExfiltratedValues,
+    exports: {} as ExportedValues,
   };
 
   window.addEventListener("load", () => {
@@ -64,5 +64,5 @@ export async function run<Props extends {}, ExfiltratedValues extends {}>(
     });
   });
 
-  return { dom, document, window, exfiltratedValues: env.exfiltratedValues };
+  return { dom, document, window, exports: env.exports };
 }
