@@ -517,12 +517,6 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
-          console.log(
-            "Transforming node:",
-            Array.from(childNodes)[searchResult.index],
-            "to match",
-            forgoElement
-          );
           return renderExistingElement(
             searchResult.index,
             childNodes,
@@ -587,28 +581,17 @@ export function createForgoInstance(customEnv: any) {
             ) {
               lastRenderedNodeIndex += 1;
             }
-            /*
-            for (
-              let i = lastRenderedNodeIndex;
-              i < parentElement.childNodes.length;
-              i++
-            ) {
-              if (
-                parentElement.childNodes[lastRenderedNodeIndex] ===
-                nodesAfterRender[nodesAfterRender.length - 1]
-              ) {
-                break;
-              }
-              lastRenderedNodeIndex += 1;
-            }
-            */
             // Move the counter *past* the last node we inserted. E.g., if we just
             // inserted our first node, we need to increment from 0 -> 1, where
             // we'll start searching for the next thing we insert
             lastRenderedNodeIndex += 1;
-            // We need to move the index (representitive of all used nodes)
-            // forward past any unmanaged nodes that have been pushed towards
-            // the end, until we encounter a managed node that we know is unused
+            // If we're updating an existing DOM element, it's possible that the
+            // user manually added some DOM nodes somewhere in the middle of our
+            // managed nodes. If that happened, we need to scan forward until we
+            // pass them and find the next managed node, which we'll use as the
+            // starting point for whatever we render next. We still need the +1
+            // above to make sure we always progress the index, in case this is
+            // our first render pass and there's nothing to scan forward to.
             while (lastRenderedNodeIndex < parentElement.childNodes.length) {
               if (
                 getForgoState(parentElement.childNodes[lastRenderedNodeIndex])
@@ -618,13 +601,6 @@ export function createForgoInstance(customEnv: any) {
               lastRenderedNodeIndex += 1;
             }
           }
-          //lastRenderedNodeIndex += nodesAfterRender.length;
-          /*
-          lastRenderedNodeIndex =
-            Array.from(parentElement.childNodes).findIndex(
-              (el) => el === nodesAfterRender[nodesAfterRender.length - 1]
-            ) + 1;
-            */
         }
 
         // Remove all nodes that don't correspond to the rendered output of a
@@ -1065,15 +1041,9 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates,
         oldComponentStates
       );
-      console.log(
-        "Electing to transform",
-        oldComponentStates[indexOfFirstIncompatibleState],
-        pendingAttachStates[indexOfFirstIncompatibleState]
-      );
       unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
       mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
     } else {
-      console.log("Mounting a new component at", pendingAttachStates[0]);
       mountComponents(pendingAttachStates, 0);
     }
   }
@@ -1107,10 +1077,6 @@ export function createForgoInstance(customEnv: any) {
         // remove things it added
         if (!getForgoState(node)) continue;
 
-        console.log(
-          "Removing",
-          Reflect.has(node, "outerHTML") ? (node as any).outerHTML : node
-        );
         node.remove();
         deletedNodes.push({ node });
       }
@@ -1158,7 +1124,6 @@ export function createForgoInstance(customEnv: any) {
   ): number {
     let i = 0;
 
-    console.log("evaluating states", newStates, oldStates);
     for (const newState of newStates) {
       if (oldStates.length > i) {
         const oldState = oldStates[i];
@@ -1257,10 +1222,6 @@ export function createForgoInstance(customEnv: any) {
     length: number
   ): CandidateSearchResult {
     const nodes = parentElement.childNodes;
-    console.log(
-      "Searching for replacements in",
-      Array.from(nodes).slice(searchFrom, searchFrom + length)
-    );
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       if (nodeIsElement(node)) {
@@ -1268,15 +1229,10 @@ export function createForgoInstance(customEnv: any) {
         // If the user stuffs random elements into the DOM manually, we don't
         // want to treat them as replacement candidates - they should be left
         // alone.
-        if (!stateOnNode) {
-          console.log("Ignoring node", node.outerHTML);
-          continue;
-        }
-        console.log("Considering node:", node.outerHTML);
+        if (!stateOnNode) continue;
 
         if (forgoElement.key) {
           if (stateOnNode?.key === forgoElement.key) {
-            console.log("Found replacement (a):", node.outerHTML);
             return { found: true, index: i };
           }
         } else {
@@ -1286,7 +1242,6 @@ export function createForgoInstance(customEnv: any) {
             node.tagName.toLowerCase() === forgoElement.type &&
             (!stateOnNode || !stateOnNode.key)
           ) {
-            console.log("Found replacement (b):", node.outerHTML);
             return { found: true, index: i };
           }
         }

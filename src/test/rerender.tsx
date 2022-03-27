@@ -23,9 +23,7 @@ const Component: ForgoComponentCtor<
     }> & { insertionPosition?: "first" | "last" | number }
 > = ({ document, exports, insertionPosition }) => {
   const addChild = (el: HTMLElement, tag: string) => {
-    console.log("inserting bonus", insertionPosition);
     if (!insertionPosition) return;
-    console.log("continuing");
 
     // We create an <article> so that it's very obvious if a bug causes forgo to
     // treat the node as a managed dom node and transform its props/children
@@ -44,7 +42,6 @@ const Component: ForgoComponentCtor<
           Array.from(el.childNodes)[insertionPosition]
         );
     }
-    console.log("After prepend", el.outerHTML);
   };
 
   Object.assign(exports, {
@@ -59,7 +56,6 @@ const Component: ForgoComponentCtor<
 
   return {
     afterRender() {
-      console.log("Prepending, counter =", counter);
       if (!insertAfterRender) return;
       addChild(exports.rootElement.value!, "child-of-root");
       if (insertionPosition === "first") {
@@ -138,7 +134,6 @@ export default function () {
 
       buttonElement.value!.click();
 
-      console.log(rootElement.value!.innerHTML);
       should.equal(subrootElement.value!.children.length, 2);
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
@@ -162,7 +157,6 @@ export default function () {
 
       buttonElement.value!.click();
 
-      console.log(rootElement.value!.innerHTML);
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
@@ -185,7 +179,6 @@ export default function () {
 
       buttonElement.value!.click();
 
-      console.log(rootElement.value!.innerHTML);
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
