@@ -585,6 +585,72 @@ function MyComponent() {
 const html = render(<MyComponent />);
 ```
 
+## Manually adding elements to the DOM
+
+Forgo allows you to insert elements into the DOM, inside a Forgo component,
+using the vanilla JS DOM API. These elements will be completely unmanaged and
+ignored by Forgo. This is useful for enabling charting libraries, such as D3.
+
+If you add unmanaged elements as siblings to managed nodes, Forgo pushes the
+unmanaged nodes towards the bottom of the sibling list as managed nodes are
+added and removed. If you don't add/remove managed nodes, the unmanaged nodes
+will stay in their original positions.
+
+### ApexCharts example
+
+[Code Sandbox](https://codesandbox.io/s/forgo-apexcharts-demo-ulkqfe?file=/src/index.tsx) for this example
+
+```jsx
+const App = () => {
+  const chartElement = {};
+  let interval;
+
+  return {
+    mount(_props, args) {
+      const chartOptions = {
+        chart: {
+          type: "line"
+        },
+        series: [
+          {
+            name: "sales",
+            data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
+          }
+        ],
+        xaxis: {
+          categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999]
+        }
+      };
+
+      const chart = new ApexCharts(chartElement.value, chartOptions);
+
+      chart.render();
+
+      interval = setInterval(() => args.update(), 1_000);
+    },
+    unmount() {
+      if (interval) clearInterval(interval);
+    },
+    render(_props, args) {
+      const now = new Date();
+      return (
+        <div>
+          <p>
+            This component continually rerenders. Forgo manages the timestamp,
+            but delegates control of the chart to ApexCharts.
+          </p>
+          <div ref={chartElement}></div>
+          <p>
+            The current time is:{" "}
+            <time datetime={now.toISOString()}>{now.toLocaleString()}</time>
+          </p>
+        </div>
+      );
+    }
+  };
+};
+```
+
 ## Try it out on CodeSandbox
 
 You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
