@@ -9,7 +9,7 @@ function getRandomString() {
   );
 }
 
-let savedState: { [key: string]: string } = {};
+const savedState = new Map<unknown, string>();
 
 export function getComponentState() {
   return savedState;
@@ -19,12 +19,15 @@ function StatefulComponent() {
   let state = getRandomString();
   return {
     render({ key }: { key: string }) {
-      savedState[key] = state;
+      savedState.set(key, state);
       return (
         <p state={state} key={key}>
-          Component #${key}
+          Component #{key}
         </p>
       );
+    },
+    unmount({ key }: { key: string }) {
+      savedState.delete(key);
     },
   };
 }
@@ -39,13 +42,14 @@ export function reorderComponents() {
 
 function ContainerComponent() {
   return {
-    render(props: {}, args: forgo.ForgoRenderArgs) {
-      savedState = {};
+    render(_props: {}, args: forgo.ForgoRenderArgs) {
+      savedState.clear();
       containerArgs = args;
       return (
         <div>
           {sortOrder === 1 ? (
             <>
+              <StatefulComponent key={0} />
               <StatefulComponent key="1" />
               <StatefulComponent key="2" />
               <StatefulComponent key="3" />
@@ -57,6 +61,7 @@ function ContainerComponent() {
               <StatefulComponent key="1" />
               <StatefulComponent key="4" />
               <StatefulComponent key="3" />
+              <StatefulComponent key={0} />
               <StatefulComponent key="2" />
               <StatefulComponent key="5" />
             </>

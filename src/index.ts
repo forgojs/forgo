@@ -1231,16 +1231,17 @@ export function createForgoInstance(customEnv: any) {
         // alone.
         if (!stateOnNode) continue;
 
-        if (forgoElement.key) {
-          if (stateOnNode?.key === forgoElement.key) {
-            return { found: true, index: i };
-          }
+        if (
+          forgoElement.key !== undefined &&
+          stateOnNode?.key === forgoElement.key
+        ) {
+          return { found: true, index: i };
         } else {
           // If the candidate has a key defined,
           //  we don't match it with an unkeyed forgo element
           if (
             node.tagName.toLowerCase() === forgoElement.type &&
-            (!stateOnNode || !stateOnNode.key)
+            !stateOnNode?.key
           ) {
             return { found: true, index: i };
           }
@@ -1248,7 +1249,7 @@ export function createForgoInstance(customEnv: any) {
       }
     }
     // Let's check deleted nodes as well.
-    if (forgoElement.key) {
+    if (forgoElement.key !== undefined) {
       const deletedNodes = getDeletedNodes(parentElement);
       for (let i = 0; i < deletedNodes.length; i++) {
         const { node } = deletedNodes[i];
@@ -1288,7 +1289,7 @@ export function createForgoInstance(customEnv: any) {
       const node = nodes[i] as ChildNode;
       const stateOnNode = getForgoState(node);
       if (stateOnNode && stateOnNode.components.length > componentIndex) {
-        if (forgoElement.key) {
+        if (forgoElement.key !== undefined) {
           if (
             stateOnNode.components[componentIndex].ctor === forgoElement.type &&
             stateOnNode.components[componentIndex].key === forgoElement.key
@@ -1324,7 +1325,7 @@ export function createForgoInstance(customEnv: any) {
     }
 
     // Let's check deleted nodes as well.
-    if (forgoElement.key) {
+    if (forgoElement.key !== undefined) {
       const deletedNodes = getDeletedNodes(parentElement);
       for (let i = 0; i < deletedNodes.length; i++) {
         const { node: deletedNode } = deletedNodes[i];
