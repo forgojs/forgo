@@ -8,14 +8,37 @@
         "${workspaceFolder}/dist/test/test"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "name": "Mocha Tests",
+      "name": "Mocha Tests (all)",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "request": "launch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "type": "node",
       "preLaunchTask": "build-dev"
+    },
+
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Mocha (filtered)",
+      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+      "args": [
+        "--timeout",
+        "999999",
+        "--colors",
+        "${workspaceFolder}/dist/test/test",
+        "-f",
+        "'${input:filter}'"
+      ],
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": ["<node_internals>/**"],
+      "preLaunchTask": "build-dev"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "filter",
+      "type": "promptString",
+      "description": "Enter a Mocha tests filter"
     }
   ]
 }
