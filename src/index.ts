@@ -1098,10 +1098,9 @@ export function createForgoInstance(customEnv: any) {
 
         // Remove transferredState from the node
         // Since it has already been remounted elsewhere.
-        const oldComponentStates = state.components;
         const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
           transferredState,
-          oldComponentStates
+          state.components
         );
         state.components = state.components.slice(
           indexOfFirstIncompatibleState
