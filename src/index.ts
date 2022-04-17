@@ -608,8 +608,7 @@ export function createForgoInstance(customEnv: any) {
         markNodesForUnloading(
           parentElement.childNodes,
           lastRenderedNodeIndex,
-          parentElement.childNodes.length,
-          []
+          parentElement.childNodes.length
         );
       }
     }
@@ -627,8 +626,7 @@ export function createForgoInstance(customEnv: any) {
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
-        insertAt,
-        []
+        insertAt
       );
 
       const targetElement = childNodes[
@@ -733,8 +731,7 @@ export function createForgoInstance(customEnv: any) {
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
-        insertAt,
-        []
+        insertAt
       );
 
       if (
@@ -945,14 +942,35 @@ export function createForgoInstance(customEnv: any) {
     const deleteFromIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    const somethingHasBeenRendered = renderResult.nodes.length > 0;
-
-    markNodesForUnloading(
+    const deletedNodes = markNodesForUnloading(
       insertionOptions.parentElement.childNodes,
       deleteFromIndex,
-      deleteFromIndex + componentState.nodes.length - numNodesReused,
-      somethingHasBeenRendered ? statesToAttach : []
+      deleteFromIndex + componentState.nodes.length - numNodesReused
     );
+
+    /*
+     * transferredState is the state that's already been remounted on a different node.
+     * Components in transferredState should not be unmounted, since this is already
+     * being tracked on a different node. Hence transferredState needs to be removed
+     * from deletedNodes.
+     */
+
+    const transferredState =
+      renderResult.nodes.length > 0 ? statesToAttach : [];
+
+    // Patch state in deletedNodes to exclude what's been already transferred.
+    for (const deletedNode of deletedNodes) {
+      const state = getForgoState(deletedNode);
+      if (state) {
+        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+          transferredState,
+          state.components
+        );
+        state.components = state.components.slice(
+          indexOfFirstIncompatibleState
+        );
+      }
+    }
 
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
@@ -1072,18 +1090,14 @@ export function createForgoInstance(customEnv: any) {
    * user grabs a reference to a DOM element and manually adds children under
    * it, we don't want to remove those children. That'll mess up e.g., charting
    * libraries.
-   *
-   * transferredState is the state that's already been remounted on a different node.
-   * Components in transferredState should not be unmounted, since this is already
-   * being tracked on a different node. Hence transferredState needs to be removed
-   * from deletedNodes.
    */
   function markNodesForUnloading(
     nodes: ArrayLike<ChildNode>,
     from: number,
-    to: number,
-    transferredState: NodeAttachedComponentState<any>[]
-  ) {
+    to: number
+  ): ChildNode[] {
+    const justDeletedNodes: ChildNode[] = [];
+
     const nodesToRemove = sliceNodes(nodes, from, to);
     if (nodesToRemove.length) {
       const parentElement = nodesToRemove[0].parentElement as HTMLElement;
@@ -1095,20 +1109,12 @@ export function createForgoInstance(customEnv: any) {
         if (!state) continue;
 
         node.remove();
-
-        // Remove transferredState from the node
-        // Since it has already been remounted elsewhere.
-        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
-          transferredState,
-          state.components
-        );
-        state.components = state.components.slice(
-          indexOfFirstIncompatibleState
-        );
-
+        justDeletedNodes.push(node);
         deletedNodes.push({ node });
       }
     }
+
+    return justDeletedNodes;
   }
 
   /*
