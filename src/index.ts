@@ -1867,8 +1867,8 @@ function getDeletedNodes(element: Element): DeletedNode[] {
 }
 
 function clearDeletedNodes(element: Element) {
-  if (!element.__forgo_deletedNodes) {
-    delete element.__forgo_deletedNodes;
+  if (element.__forgo_deletedNodes) {
+    element.__forgo_deletedNodes = [];
   }
 }
 
