@@ -608,7 +608,8 @@ export function createForgoInstance(customEnv: any) {
         markNodesForUnloading(
           parentElement.childNodes,
           lastRenderedNodeIndex,
-          parentElement.childNodes.length
+          parentElement.childNodes.length,
+          []
         );
       }
     }
@@ -626,7 +627,8 @@ export function createForgoInstance(customEnv: any) {
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
-        insertAt
+        insertAt,
+        []
       );
 
       const targetElement = childNodes[
@@ -731,7 +733,8 @@ export function createForgoInstance(customEnv: any) {
       markNodesForUnloading(
         childNodes,
         insertionOptions.currentNodeIndex,
-        insertAt
+        insertAt,
+        []
       );
 
       if (
@@ -935,13 +938,20 @@ export function createForgoInstance(customEnv: any) {
       renderResult.nodes.length -
       totalNodesAfterRender;
 
-    const newIndex =
+    // Since we have re-rendered, we might need to delete a bunch of nodes from the previous render.
+    // That list begins from currentIndex + num nodes in latest render.
+    // Delete up to deleteFromIndex + componentState.nodes.length - numNodesReused,
+    //  in which componentState.nodes.length is num nodes from previous render.
+    const deleteFromIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
+
+    const somethingHasBeenRendered = renderResult.nodes.length > 0;
 
     markNodesForUnloading(
       insertionOptions.parentElement.childNodes,
-      newIndex,
-      newIndex + componentState.nodes.length - numNodesReused
+      deleteFromIndex,
+      deleteFromIndex + componentState.nodes.length - numNodesReused,
+      somethingHasBeenRendered ? statesToAttach : []
     );
 
     // In case we rendered an array, set the node to the first node.
@@ -1062,11 +1072,17 @@ export function createForgoInstance(customEnv: any) {
    * user grabs a reference to a DOM element and manually adds children under
    * it, we don't want to remove those children. That'll mess up e.g., charting
    * libraries.
+   *
+   * transferredState is the state that's already been remounted on a different node.
+   * Components in transferredState should not be unmounted, since this is already
+   * being tracked on a different node. Hence transferredState needs to be removed
+   * from deletedNodes.
    */
   function markNodesForUnloading(
     nodes: ArrayLike<ChildNode>,
     from: number,
-    to: number
+    to: number,
+    transferredState: NodeAttachedComponentState<any>[]
   ) {
     const nodesToRemove = sliceNodes(nodes, from, to);
     if (nodesToRemove.length) {
@@ -1075,9 +1091,22 @@ export function createForgoInstance(customEnv: any) {
       for (const node of nodesToRemove) {
         // If the consuming application has manually mucked with the DOM don't
         // remove things it added
-        if (!getForgoState(node)) continue;
+        const state = getForgoState(node);
+        if (!state) continue;
 
         node.remove();
+
+        // Remove transferredState from the node
+        // Since it has already been remounted elsewhere.
+        const oldComponentStates = state.components;
+        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+          transferredState,
+          oldComponentStates
+        );
+        state.components = state.components.slice(
+          indexOfFirstIncompatibleState
+        );
+
         deletedNodes.push({ node });
       }
     }
@@ -1593,7 +1622,7 @@ export function createForgoInstance(customEnv: any) {
             originalComponentState.props
           )
         ) {
-          const newComponentState = {
+          const componentStateWithUpdatedProps = {
             ...originalComponentState,
             props: effectiveProps,
           };
@@ -1603,7 +1632,9 @@ export function createForgoInstance(customEnv: any) {
             element.componentIndex
           );
 
-          const statesToAttach = parentStates.concat(newComponentState);
+          const statesToAttach = parentStates.concat(
+            componentStateWithUpdatedProps
+          );
 
           const previousNode = originalComponentState.args.element.node;
 
@@ -1625,7 +1656,7 @@ export function createForgoInstance(customEnv: any) {
             forgoNode,
             insertionOptions,
             statesToAttach,
-            newComponentState,
+            componentStateWithUpdatedProps,
             false
           );
 
