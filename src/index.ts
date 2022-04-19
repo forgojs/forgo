@@ -935,14 +935,42 @@ export function createForgoInstance(customEnv: any) {
       renderResult.nodes.length -
       totalNodesAfterRender;
 
-    const newIndex =
+    // Since we have re-rendered, we might need to delete a bunch of nodes from the previous render.
+    // That list begins from currentIndex + num nodes in latest render.
+    // Delete up to deleteFromIndex + componentState.nodes.length - numNodesReused,
+    //  in which componentState.nodes.length is num nodes from previous render.
+    const deleteFromIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    markNodesForUnloading(
+    const deletedNodes = markNodesForUnloading(
       insertionOptions.parentElement.childNodes,
-      newIndex,
-      newIndex + componentState.nodes.length - numNodesReused
+      deleteFromIndex,
+      deleteFromIndex + componentState.nodes.length - numNodesReused
     );
+
+    /*
+     * transferredState is the state that's already been remounted on a different node.
+     * Components in transferredState should not be unmounted, since this is already
+     * being tracked on a different node. Hence transferredState needs to be removed
+     * from deletedNodes.
+     */
+
+    const transferredState =
+      renderResult.nodes.length > 0 ? statesToAttach : [];
+
+    // Patch state in deletedNodes to exclude what's been already transferred.
+    for (const deletedNode of deletedNodes) {
+      const state = getForgoState(deletedNode);
+      if (state) {
+        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+          transferredState,
+          state.components
+        );
+        state.components = state.components.slice(
+          indexOfFirstIncompatibleState
+        );
+      }
+    }
 
     // In case we rendered an array, set the node to the first node.
     // We do this because args.element.node would be set to the last node otherwise.
@@ -1067,7 +1095,9 @@ export function createForgoInstance(customEnv: any) {
     nodes: ArrayLike<ChildNode>,
     from: number,
     to: number
-  ) {
+  ): ChildNode[] {
+    const justDeletedNodes: ChildNode[] = [];
+
     const nodesToRemove = sliceNodes(nodes, from, to);
     if (nodesToRemove.length) {
       const parentElement = nodesToRemove[0].parentElement as HTMLElement;
@@ -1075,12 +1105,16 @@ export function createForgoInstance(customEnv: any) {
       for (const node of nodesToRemove) {
         // If the consuming application has manually mucked with the DOM don't
         // remove things it added
-        if (!getForgoState(node)) continue;
+        const state = getForgoState(node);
+        if (!state) continue;
 
         node.remove();
+        justDeletedNodes.push(node);
         deletedNodes.push({ node });
       }
     }
+
+    return justDeletedNodes;
   }
 
   /*
@@ -1593,7 +1627,7 @@ export function createForgoInstance(customEnv: any) {
             originalComponentState.props
           )
         ) {
-          const newComponentState = {
+          const componentStateWithUpdatedProps = {
             ...originalComponentState,
             props: effectiveProps,
           };
@@ -1603,7 +1637,9 @@ export function createForgoInstance(customEnv: any) {
             element.componentIndex
           );
 
-          const statesToAttach = parentStates.concat(newComponentState);
+          const statesToAttach = parentStates.concat(
+            componentStateWithUpdatedProps
+          );
 
           const previousNode = originalComponentState.args.element.node;
 
@@ -1625,7 +1661,7 @@ export function createForgoInstance(customEnv: any) {
             forgoNode,
             insertionOptions,
             statesToAttach,
-            newComponentState,
+            componentStateWithUpdatedProps,
             false
           );
 
