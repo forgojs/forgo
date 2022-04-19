@@ -39,7 +39,7 @@ import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull/index.j
 import unmountsNonTopLevelParentWhenNodeIsNull from "./unmountsNonTopLevelParentWhenNodeIsNull/index.js";
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
 import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
-import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount/index.js";
+import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.js";
 
 mount();
 boundary();
