@@ -1,42 +1,32 @@
 import should from "should";
 import * as forgo from "../index.js";
-import { ComponentEnvironment, run } from "./componentRunner.js";
-import type {
-  ForgoComponentCtor,
-  ForgoComponentProps,
-  ForgoRenderArgs,
-} from "../index.js";
+import { run } from "./componentRunner.js";
+import type { ForgoRenderArgs } from "../index.js";
 
-const Component: ForgoComponentCtor<
-  ForgoComponentProps &
-    ComponentEnvironment<{
-      renderArgs: ForgoRenderArgs;
-      renderCount: number;
-      unmountCount: number;
-    }> & {}
-> = ({ exports }) => {
-  exports.unmountCount = 0;
-  exports.renderCount = 0;
+export let unmountCount = 0;
+export let renderCount = 0;
+export let renderArgs: ForgoRenderArgs;
 
+function Component() {
   function Child() {
     return {
       render(props: any, args: ForgoRenderArgs) {
-        exports.renderCount++;
-        if (exports.renderCount % 2 === 0) {
+        renderCount++;
+        if (renderCount % 2 === 0) {
           return <div>This is a div</div>;
         } else {
           return <p>But this is a paragraph</p>;
         }
       },
       unmount() {
-        exports.unmountCount++;
+        unmountCount++;
       },
     };
   }
 
   return {
     render(props: any, args: ForgoRenderArgs) {
-      exports.renderArgs = args;
+      renderArgs = args;
       return (
         <section>
           <Child />
@@ -44,21 +34,21 @@ const Component: ForgoComponentCtor<
       );
     },
   };
-};
+}
 
 export default function () {
   describe("root element changes", () => {
     it("does not unmount", async () => {
-      const { window, exports } = await run(Component, {});
+      await run(<Component />, {});
 
-      exports.renderArgs.update();
-      exports.renderArgs.update();
-      exports.renderArgs.update();
-      exports.renderArgs.update();
-      exports.renderArgs.update();
+      renderArgs.update();
+      renderArgs.update();
+      renderArgs.update();
+      renderArgs.update();
+      renderArgs.update();
 
-      exports.renderCount.should.equal(6);
-      exports.unmountCount.should.equal(0);
+      renderCount.should.equal(6);
+      unmountCount.should.equal(0);
     });
   });
 }

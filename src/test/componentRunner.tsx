@@ -2,8 +2,6 @@ import * as forgo from "../index.js";
 import htmlFile from "./htmlFile.js";
 import { DOMWindow, JSDOM } from "jsdom";
 
-import type { ForgoComponentCtor, ForgoComponentProps } from "../index.js";
-
 export interface ComponentEnvironment<ExportedValues extends {}> {
   window: DOMWindow;
   document: Document;
@@ -34,29 +32,31 @@ function defaultDom() {
  * because we want tests to be able to set their own per-test props on a
  * component, which only works if the test declares the props as JSX
  */
-export async function run<Props extends {}, ExportedValues extends {}>(
-  Component: ForgoComponentCtor<
-    ForgoComponentProps & Props & ComponentEnvironment<ExportedValues>
-  >,
-  props: Props,
+export async function run<TProps, TExports>(
+  componentBuilder: (
+    props: TProps,
+    window: DOMWindow,
+    document: Document
+  ) => {
+    node: forgo.ForgoNode;
+  },
+  props: TProps,
   dom: JSDOM = defaultDom()
-) {
+): Promise<{
+  dom: JSDOM;
+  document: Document;
+  window: DOMWindow;
+}> {
   const window = dom.window;
   const document = window.document;
   forgo.setCustomEnv({ window, document });
 
-  const env: ComponentEnvironment<ExportedValues> = {
-    window,
-    document,
-    exports: {} as ExportedValues,
-  };
+  const { node } = componentBuilder(props, window, document);
 
   window.addEventListener("load", () => {
-    forgo.mount(
-      <Component {...env} {...props} />,
-      document.getElementById("root")
-    );
+    forgo.mount(node, document.getElementById("root"));
   });
+
   // Wait for the component to actually render
   await new Promise<void>((resolve) => {
     window.addEventListener("load", () => {
@@ -64,5 +64,5 @@ export async function run<Props extends {}, ExportedValues extends {}>(
     });
   });
 
-  return { dom, document, window, exports: env.exports };
+  return { dom, document, window };
 }

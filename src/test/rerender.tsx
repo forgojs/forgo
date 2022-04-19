@@ -3,25 +3,22 @@ import should from "should";
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
 
-import type {
-  ForgoComponentCtor,
-  ForgoComponentProps,
-  ForgoRenderArgs,
-} from "../index.js";
-import type { ComponentEnvironment } from "./componentRunner.js";
+import type { ForgoRenderArgs } from "../index.js";
+import { DOMWindow } from "jsdom";
 
 const unmanagedNodeTagName = "article";
 
-const Component: ForgoComponentCtor<
-  ForgoComponentProps &
-    ComponentEnvironment<{
-      buttonElement: forgo.ForgoRef<HTMLButtonElement>;
-      rootElement: forgo.ForgoRef<HTMLDivElement>;
-      subrootElement: forgo.ForgoRef<HTMLDivElement>;
-      pElement: forgo.ForgoRef<HTMLParagraphElement>;
-      remove: () => void;
-    }> & { insertionPosition?: "first" | "last" | number }
-> = ({ document, exports, insertionPosition }) => {
+export let buttonElement: forgo.ForgoRef<HTMLButtonElement> = {};
+export let rootElement: forgo.ForgoRef<HTMLDivElement> = {};
+export let subrootElement: forgo.ForgoRef<HTMLDivElement> = {};
+export let pElement: forgo.ForgoRef<HTMLParagraphElement> = {};
+export let remove: () => void;
+
+function Component(props: { insertionPosition?: "first" | "last" | number }) {
+  let counter = 0;
+  let insertAfterRender = true;
+  const { insertionPosition } = props;
+
   const addChild = (el: HTMLElement, tag: string) => {
     if (!insertionPosition) return;
 
@@ -44,22 +41,12 @@ const Component: ForgoComponentCtor<
     }
   };
 
-  Object.assign(exports, {
-    buttonElement: {} as forgo.ForgoRef<HTMLButtonElement>,
-    rootElement: {} as forgo.ForgoRef<HTMLDivElement>,
-    subrootElement: {} as forgo.ForgoRef<HTMLDivElement>,
-    pElement: {} as forgo.ForgoRef<HTMLParagraphElement>,
-  });
-
-  let counter = 0;
-  let insertAfterRender = true;
-
   return {
     afterRender() {
       if (!insertAfterRender) return;
-      addChild(exports.rootElement.value!, "child-of-root");
+      addChild(rootElement.value!, "child-of-root");
       if (insertionPosition === "first") {
-        addChild(exports.subrootElement.value!, "child-of-subroot");
+        addChild(subrootElement.value!, "child-of-subroot");
       }
     },
     render(_props: any, { update }: ForgoRenderArgs) {
@@ -67,45 +54,38 @@ const Component: ForgoComponentCtor<
         counter++;
         update();
       }
-      Object.assign(exports, {
-        remove() {
-          exports.rootElement
-            .value!.querySelectorAll("[data-forgo]")
-            .forEach((el) => el.remove());
-          // The test that uses this asserts that all these nodes are gone, so
-          // don't add one after we call update(). We have to call update() to
-          // know that Forgo doesn't misbehave when nodes it saw before disappear.
-          insertAfterRender = false;
-          update();
-        },
-      });
+      remove = () => {
+        rootElement
+          .value!.querySelectorAll("[data-forgo]")
+          .forEach((el) => el.remove());
+        // The test that uses this asserts that all these nodes are gone, so
+        // don't add one after we call update(). We have to call update() to
+        // know that Forgo doesn't misbehave when nodes it saw before disappear.
+        insertAfterRender = false;
+        update();
+      };
 
       return (
-        <div ref={exports.rootElement} id="root">
-          <button
-            onclick={updateCounter}
-            ref={exports.buttonElement}
-            id="button"
-          >
+        <div ref={rootElement} id="root">
+          <button onclick={updateCounter} ref={buttonElement} id="button">
             Click me!
           </button>
-          <p id="p" ref={exports.pElement}>
+          <p id="p" ref={pElement}>
             Clicked {counter} times
           </p>
-          <div ref={exports.subrootElement} id="subRoot"></div>
+          <div ref={subrootElement} id="subRoot"></div>
         </div>
       );
     },
   };
-};
+}
 
 export default function () {
   describe("rerendering", () => {
     it("rerenders", async () => {
-      const {
-        window,
-        exports: { buttonElement },
-      } = await run(Component, {});
+      const { window } = await run(<Component />);
+
+      const { buttonElement } = getExports();
 
       buttonElement.value!.click();
       buttonElement.value!.click();
@@ -122,7 +102,7 @@ export default function () {
     it("preserves children inserted with DOM APIs that are prepended to the front of the children list", async () => {
       const {
         exports: { buttonElement, rootElement, subrootElement },
-      } = await run(Component, { insertionPosition: "first" as const });
+      } = await run(createComponent, { insertionPosition: "first" as const });
 
       should.equal(subrootElement.value!.children.length, 1);
       should.equal(
@@ -146,7 +126,7 @@ export default function () {
     it("preserves children inserted with DOM APIs that are appended after of managed children", async () => {
       const {
         exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: "last" as const });
+      } = await run(createComponent, { insertionPosition: "last" as const });
 
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
@@ -168,7 +148,7 @@ export default function () {
     it("preserves children inserted with DOM APIs that inserted in the middle of managed children", async () => {
       const {
         exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      } = await run(createComponent, { insertionPosition: 2 });
 
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
@@ -190,7 +170,7 @@ export default function () {
     it("doesn't add attributes to unmanaged elements", async () => {
       const {
         exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      } = await run(createComponent, { insertionPosition: 2 });
 
       const el = rootElement.value!.querySelector(
         '[data-forgo="child-of-root"]'
@@ -217,7 +197,7 @@ export default function () {
     it("doesn't convert an unmanaged element into a managed element", async () => {
       const {
         exports: { rootElement, buttonElement, pElement, subrootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      } = await run(createComponent, { insertionPosition: 2 });
 
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
@@ -241,7 +221,7 @@ export default function () {
     });
 
     it("leaves managed nodes alone when an unmanaged node is removed from the DOM", async () => {
-      const { exports } = await run(Component, { insertionPosition: 2 });
+      const { exports } = await run(createComponent, { insertionPosition: 2 });
       const { rootElement, buttonElement } = exports;
 
       // Sanity check that our tests are correctly identifying unmanaged nodes
