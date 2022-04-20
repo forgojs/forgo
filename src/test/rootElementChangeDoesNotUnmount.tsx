@@ -3,9 +3,9 @@ import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
 import type { ForgoRenderArgs } from "../index.js";
 
-export let unmountCount = 0;
-export let renderCount = 0;
-export let renderArgs: ForgoRenderArgs;
+let unmountCount = 0;
+let renderCount = 0;
+let renderArgs: ForgoRenderArgs;
 
 function Component() {
   function Child() {
@@ -39,7 +39,7 @@ function Component() {
 export default function () {
   describe("root element changes", () => {
     it("does not unmount", async () => {
-      await run(<Component />, {});
+      await run(() => <Component />);
 
       renderArgs.update();
       renderArgs.update();

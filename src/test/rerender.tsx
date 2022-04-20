@@ -8,16 +8,29 @@ import { DOMWindow } from "jsdom";
 
 const unmanagedNodeTagName = "article";
 
-export let buttonElement: forgo.ForgoRef<HTMLButtonElement> = {};
-export let rootElement: forgo.ForgoRef<HTMLDivElement> = {};
-export let subrootElement: forgo.ForgoRef<HTMLDivElement> = {};
-export let pElement: forgo.ForgoRef<HTMLParagraphElement> = {};
-export let remove: () => void;
+let buttonElement: forgo.ForgoRef<HTMLButtonElement> = {};
+let rootElement: forgo.ForgoRef<HTMLDivElement> = {};
+let subrootElement: forgo.ForgoRef<HTMLDivElement> = {};
+let pElement: forgo.ForgoRef<HTMLParagraphElement> = {};
+let remove: () => void;
 
-function Component(props: { insertionPosition?: "first" | "last" | number }) {
+/* To be called in beforeEach() */
+function clear() {
+  buttonElement = {};
+  rootElement = {};
+  subrootElement = {};
+  pElement = {};
+  remove = () => {};
+}
+
+function Component(props: {
+  insertionPosition?: "first" | "last" | number;
+  window: DOMWindow;
+  document: Document;
+}) {
   let counter = 0;
   let insertAfterRender = true;
-  const { insertionPosition } = props;
+  const { insertionPosition, window, document } = props;
 
   const addChild = (el: HTMLElement, tag: string) => {
     if (!insertionPosition) return;
@@ -82,10 +95,10 @@ function Component(props: { insertionPosition?: "first" | "last" | number }) {
 
 export default function () {
   describe("rerendering", () => {
-    it("rerenders", async () => {
-      const { window } = await run(<Component />);
+    beforeEach(clear);
 
-      const { buttonElement } = getExports();
+    it("rerenders", async () => {
+      const { window } = await run((env) => <Component {...env} />);
 
       buttonElement.value!.click();
       buttonElement.value!.click();
@@ -100,9 +113,9 @@ export default function () {
      * not specified as part of the JSX.
      */
     it("preserves children inserted with DOM APIs that are prepended to the front of the children list", async () => {
-      const {
-        exports: { buttonElement, rootElement, subrootElement },
-      } = await run(createComponent, { insertionPosition: "first" as const });
+      await run((env) => (
+        <Component insertionPosition={"first" as const} {...env} />
+      ));
 
       should.equal(subrootElement.value!.children.length, 1);
       should.equal(
@@ -124,9 +137,9 @@ export default function () {
     });
 
     it("preserves children inserted with DOM APIs that are appended after of managed children", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(createComponent, { insertionPosition: "last" as const });
+      await run((env) => (
+        <Component insertionPosition={"last" as const} {...env} />
+      ));
 
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
@@ -146,9 +159,7 @@ export default function () {
     });
 
     it("preserves children inserted with DOM APIs that inserted in the middle of managed children", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(createComponent, { insertionPosition: 2 });
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       should.equal(
         rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
@@ -168,9 +179,7 @@ export default function () {
     });
 
     it("doesn't add attributes to unmanaged elements", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(createComponent, { insertionPosition: 2 });
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       const el = rootElement.value!.querySelector(
         '[data-forgo="child-of-root"]'
@@ -195,9 +204,7 @@ export default function () {
      * managed nodes.
      */
     it("doesn't convert an unmanaged element into a managed element", async () => {
-      const {
-        exports: { rootElement, buttonElement, pElement, subrootElement },
-      } = await run(createComponent, { insertionPosition: 2 });
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
@@ -221,8 +228,7 @@ export default function () {
     });
 
     it("leaves managed nodes alone when an unmanaged node is removed from the DOM", async () => {
-      const { exports } = await run(createComponent, { insertionPosition: 2 });
-      const { rootElement, buttonElement } = exports;
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       // Sanity check that our tests are correctly identifying unmanaged nodes
       // before testing their removal
@@ -233,7 +239,7 @@ export default function () {
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
       buttonElement.value!.click();
-      exports.remove();
+      remove();
 
       // All unmanaged nodes are gone
       should.equal(

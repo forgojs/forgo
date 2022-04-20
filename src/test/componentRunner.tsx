@@ -2,14 +2,9 @@ import * as forgo from "../index.js";
 import htmlFile from "./htmlFile.js";
 import { DOMWindow, JSDOM } from "jsdom";
 
-export interface ComponentEnvironment<ExportedValues extends {}> {
+export interface ComponentEnvironment {
   window: DOMWindow;
   document: Document;
-  /**
-   * We use this to allow the component under test to return values to the testing
-   * environment, for making assertions about its internal state
-   */
-  exports: ExportedValues;
 }
 
 function defaultDom() {
@@ -32,15 +27,10 @@ function defaultDom() {
  * because we want tests to be able to set their own per-test props on a
  * component, which only works if the test declares the props as JSX
  */
-export async function run<TProps, TExports>(
-  componentBuilder: (
-    props: TProps,
-    window: DOMWindow,
-    document: Document
-  ) => {
+export async function run<TProps>(
+  componentBuilder: (env: ComponentEnvironment) => {
     node: forgo.ForgoNode;
   },
-  props: TProps,
   dom: JSDOM = defaultDom()
 ): Promise<{
   dom: JSDOM;
@@ -51,7 +41,7 @@ export async function run<TProps, TExports>(
   const document = window.document;
   forgo.setCustomEnv({ window, document });
 
-  const { node } = componentBuilder(props, window, document);
+  const node = componentBuilder({ window, document });
 
   window.addEventListener("load", () => {
     forgo.mount(node, document.getElementById("root"));
