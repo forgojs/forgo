@@ -7,7 +7,7 @@ let document: Document;
 
 function Parent1() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <Parent2 />;
     },
   };
@@ -15,7 +15,7 @@ function Parent1() {
 
 function Parent2() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <Child />;
     },
   };
@@ -23,7 +23,7 @@ function Parent2() {
 
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -31,7 +31,7 @@ export function renderAgain() {
 
 function Child() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return counter === 1 ? (

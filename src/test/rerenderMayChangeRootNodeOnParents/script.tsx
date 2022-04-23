@@ -5,15 +5,15 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-export let parentArgs: ForgoRenderArgs;
+export let parentArgs: ForgoRenderArgs<{}>;
 
 function Parent() {
   return {
-    mount(props: any, args: ForgoRenderArgs) {
+    mount(props: any, args: ForgoRenderArgs<{}>) {
       parentArgs = args;
     },
 
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <Child />;
     },
   };
@@ -21,7 +21,7 @@ function Parent() {
 
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -29,7 +29,7 @@ export function renderAgain() {
 
 function Child() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return counter === 1 ? (

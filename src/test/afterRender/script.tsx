@@ -10,7 +10,7 @@ import {
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -23,7 +23,7 @@ export let counterX10: number;
 function Component() {
   let counter: number = 0;
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return counter === 1 ? (
@@ -36,7 +36,7 @@ function Component() {
         </p>
       );
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
+    afterRender(props: any, args: ForgoAfterRenderArgs<{}>) {
       currentNode = args.element.node as Element;
       previousNode = args.previousNode as Element;
       counterX10 = counter * 10;
@@ -47,12 +47,12 @@ function Component() {
 function ComponentOnTextNode() {
   let counter: number = 0;
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return "Hello world";
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
+    afterRender(props: any, args: ForgoAfterRenderArgs<{}>) {
       currentNode = args.element.node as Element;
       previousNode = args.previousNode as Element;
       counterX10 = counter * 10;
@@ -66,7 +66,7 @@ function ComponentWithRef() {
     render() {
       return <div ref={ref} />;
     },
-    afterRender(_props: any, args: ForgoAfterRenderArgs) {
+    afterRender(_props: any, args: ForgoAfterRenderArgs<{}>) {
       currentNode = args.element.node as Element;
     },
   };
@@ -76,7 +76,7 @@ function ComponentWithDangerouslySetInnerHTML() {
     render() {
       return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
     },
-    afterRender(_props: any, args: ForgoAfterRenderArgs) {
+    afterRender(_props: any, args: ForgoAfterRenderArgs<{}>) {
       currentNode = args.element.node as Element;
     },
   };

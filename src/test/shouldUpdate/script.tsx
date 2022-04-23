@@ -5,7 +5,7 @@ import { mount, ForgoRenderArgs, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -15,7 +15,7 @@ export function Parent() {
   let counter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return <div>Counter is {counter}</div>;

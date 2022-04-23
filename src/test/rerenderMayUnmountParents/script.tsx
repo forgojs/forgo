@@ -9,7 +9,7 @@ export let parent1Unmounted = false;
 export let parent2Unmounted = false;
 export let childUnmounted = false;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -17,7 +17,7 @@ export function renderAgain() {
 
 function Parent1() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <Parent2 />;
     },
     unmount() {
@@ -28,7 +28,7 @@ function Parent1() {
 
 function Parent2() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <Child />;
     },
     unmount() {
@@ -41,7 +41,7 @@ let counter = 0;
 
 function Child() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return counter === 1 ? <div>This is a child node.</div> : <></>;

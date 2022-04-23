@@ -8,7 +8,7 @@ let counter = 0;
 
 export let numUnmounts = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -16,7 +16,7 @@ export function renderAgain() {
 
 function Component() {
   return {
-    render(props: any, componentRenderArgs: ForgoRenderArgs) {
+    render(props: any, componentRenderArgs: ForgoRenderArgs<{}>) {
       renderArgs = componentRenderArgs;
       counter++;
       return counter === 1 ? <Child /> : <p>1</p>;
@@ -26,7 +26,7 @@ function Component() {
 
 function Child() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return (
         <>
           <div>1</div>

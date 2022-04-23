@@ -5,11 +5,11 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 let elementOrder = true;
 function Parent() {
   return {
-    render(_props: any, args: ForgoRenderArgs) {
+    render(_props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       const keys = elementOrder
         ? ["first-child", "second-child"]
@@ -30,7 +30,7 @@ function Child() {
   const state = Math.random().toString();
 
   return {
-    render(props: any, _args: ForgoRenderArgs) {
+    render(props: any, _args: ForgoRenderArgs<{}>) {
       return (
         <>
           <p

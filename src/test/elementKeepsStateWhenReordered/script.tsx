@@ -10,7 +10,7 @@ function getRandomString() {
 }
 
 let sortOrder = 1;
-let renderArgs: forgo.ForgoRenderArgs;
+let renderArgs: forgo.ForgoRenderArgs<{}>;
 
 export function reorderElements() {
   sortOrder = 2;
@@ -25,7 +25,7 @@ export let inputRef5: forgo.ForgoRef<HTMLInputElement> = {}
 
 function ContainerComponent() {
   return {
-    render(props: {}, args: forgo.ForgoRenderArgs) {
+    render(props: {}, args: forgo.ForgoRenderArgs<{}>) {
       renderArgs = args;
       return (
         <div>

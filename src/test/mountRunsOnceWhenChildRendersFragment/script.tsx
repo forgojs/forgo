@@ -6,7 +6,7 @@ let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 export let mountCounter: number = 0;
 
 export function renderAgain() {
@@ -15,7 +15,7 @@ export function renderAgain() {
 
 function Component() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return <SuperCompo />;

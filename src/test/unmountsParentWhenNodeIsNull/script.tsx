@@ -5,7 +5,7 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 let isFirstRender = true;
 
@@ -17,7 +17,7 @@ export function renderAgain() {
 
 function Parent() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       if (isFirstRender) {
         isFirstRender = false;

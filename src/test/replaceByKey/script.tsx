@@ -14,7 +14,7 @@ type ParentProps = {
 
 export let unmountedElements: string[] = [];
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 export function renderAgain() {
   renderArgs.update();
 }
@@ -23,7 +23,7 @@ function Parent(initialProps: ParentProps) {
   unmountedElements = [];
   let firstRender = true;
   return {
-    render(props: ParentProps, args: ForgoRenderArgs) {
+    render(props: ParentProps, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
 
       if (firstRender) {

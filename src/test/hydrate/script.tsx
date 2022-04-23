@@ -11,7 +11,7 @@ function Component() {
   let counter = 0;
 
   return {
-    render(props: any, { update }: ForgoRenderArgs) {
+    render(props: any, { update }: ForgoRenderArgs<{}>) {
       function updateCounter() {
         counter++;
         update();

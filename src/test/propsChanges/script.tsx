@@ -10,7 +10,7 @@ import {
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -42,7 +42,7 @@ function Component() {
       });
       observer.observe(el.value!, { attributes: true });
     },
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return (
@@ -51,7 +51,7 @@ function Component() {
         </div>
       );
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
+    afterRender(props: any, args: ForgoAfterRenderArgs<{}>) {
       currentNode = args.element.node as Element;
       previousNode = args.previousNode as Element;
       counterX10 = counter * 10;

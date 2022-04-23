@@ -61,7 +61,7 @@ function componentFactory() {
           addChild(state.subrootElement.value!, "child-of-subroot");
         }
       },
-      render(_props: any, { update }: ForgoRenderArgs) {
+      render(_props: any, { update }: ForgoRenderArgs<{}>) {
         function updateCounter() {
           counter++;
           update();

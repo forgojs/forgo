@@ -7,7 +7,7 @@ let document: Document;
 
 function Component() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return (
         <>
           <div>1</div>
@@ -21,7 +21,7 @@ function Component() {
 
 function NestedFragmentComponent() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return (
         <>
           <>

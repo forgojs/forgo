@@ -8,7 +8,7 @@ let document: Document;
 export let parentCounter = 0;
 export let childCounter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 export function renderAgain() {
   renderArgs.update();
 }
@@ -17,7 +17,7 @@ function Parent() {
   parentCounter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       parentCounter++;
       return (
         <div>
@@ -33,7 +33,7 @@ function ParentWithSharedNode() {
   parentCounter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       parentCounter++;
       return <Child />;
     },
@@ -44,7 +44,7 @@ function Child() {
   childCounter = 0;
 
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       childCounter++;
       return (

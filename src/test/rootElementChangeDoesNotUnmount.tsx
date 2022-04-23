@@ -7,13 +7,13 @@ function componentFactory() {
   const state = {
     unmountCount: 0,
     renderCount: 0,
-    renderArgs: undefined as ForgoRenderArgs | undefined,
+    renderArgs: undefined as ForgoRenderArgs<{}> | undefined,
   };
 
   function Component() {
     function Child() {
       return {
-        render(props: any, args: ForgoRenderArgs) {
+        render(props: any, args: ForgoRenderArgs<{}>) {
           state.renderCount++;
           if (state.renderCount % 2 === 0) {
             return <div>This is a div</div>;
@@ -28,7 +28,7 @@ function componentFactory() {
     }
 
     return {
-      render(props: any, args: ForgoRenderArgs) {
+      render(props: any, args: ForgoRenderArgs<{}>) {
         state.renderArgs = args;
         return (
           <section>

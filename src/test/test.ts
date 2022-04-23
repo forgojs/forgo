@@ -40,6 +40,7 @@ import unmountsNonTopLevelParentWhenNodeIsNull from "./unmountsNonTopLevelParent
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
 import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
 import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.js";
+import runtimeLifecycleEvents from "./runtimeLifecycleEvents.js";
 
 mount();
 boundary();
@@ -80,3 +81,4 @@ unmountsParentWhenNodeIsNull();
 unmountsNonTopLevelParentWhenNodeIsNull();
 keyedFragmentsPreserveChildStates();
 rootElementChangeDoesNotUnmount();
+runtimeLifecycleEvents();

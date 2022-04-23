@@ -48,16 +48,17 @@ export type ForgoElementArg = {
   componentIndex: number;
 };
 
-export type ForgoRenderArgs = {
+export type ForgoRenderArgs<TProps> = {
   element: ForgoElementArg;
   update: (props?: any) => RenderResult;
+  component: ForgoComponent<TProps>
 };
 
-export type ForgoErrorArgs = ForgoRenderArgs & {
+export type ForgoErrorArgs<TProps> = ForgoRenderArgs<TProps> & {
   error: any;
 };
 
-export type ForgoAfterRenderArgs = ForgoRenderArgs & {
+export type ForgoAfterRenderArgs<TProps> = ForgoRenderArgs<TProps> & {
   previousNode?: ChildNode;
 };
 
@@ -70,11 +71,11 @@ export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   5. shouldUpdate() is optional. Let's you bail out of a render().
 */
 export type ForgoComponent<TProps extends ForgoComponentProps> = {
-  render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
-  afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
-  error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
-  mount?: (props: TProps, args: ForgoRenderArgs) => void;
-  unmount?: (props: TProps, args: ForgoRenderArgs) => void;
+  render: (props: TProps, args: ForgoRenderArgs<TProps>) => ForgoNode | ForgoNode[];
+  afterRender?: (props: TProps, args: ForgoAfterRenderArgs<TProps>) => void;
+  error?: (props: TProps, args: ForgoErrorArgs<TProps>) => ForgoNode;
+  mount?: (props: TProps, args: ForgoRenderArgs<TProps>) => void;
+  unmount?: (props: TProps, args: ForgoRenderArgs<TProps>) => void;
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
   __forgo?: { unmounted?: boolean };
 };
@@ -154,7 +155,7 @@ export type NodeAttachedComponentState<TProps> = {
   ctor: ForgoComponentCtor<TProps>;
   component: ForgoComponent<TProps>;
   props: TProps;
-  args: ForgoRenderArgs;
+  args: ForgoRenderArgs<TProps>;
   nodes: ChildNode[];
   isMounted: boolean;
 };
@@ -305,8 +306,8 @@ export function createElement<TProps extends ForgoElementProps & { key?: any }>(
     arguments.length > 3
       ? flatten(Array.from(arguments).slice(2))
       : arguments.length === 3
-      ? flatten(arguments[2])
-      : undefined;
+        ? flatten(arguments[2])
+        : undefined;
   const key = props.key ?? undefined;
   return { type, props, key, __is_forgo_element__: true };
 }
@@ -367,17 +368,17 @@ export function createForgoInstance(customEnv: any) {
     else if (!isForgoElement(forgoNode)) {
       return forgoNode === undefined || forgoNode === null
         ? renderNothing(
-            forgoNode,
-            insertionOptions,
-            pendingAttachStates,
-            mountOnPreExistingDOM
-          )
+          forgoNode,
+          insertionOptions,
+          pendingAttachStates,
+          mountOnPreExistingDOM
+        )
         : renderText(
-            forgoNode,
-            insertionOptions,
-            pendingAttachStates,
-            mountOnPreExistingDOM
-          );
+          forgoNode,
+          insertionOptions,
+          pendingAttachStates,
+          mountOnPreExistingDOM
+        );
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -815,13 +816,15 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function addComponent(): RenderResult {
-      const args: ForgoRenderArgs = {
-        element: { componentIndex },
-        update: (props) => rerender(args.element, props),
-      };
-
       const ctor = forgoElement.type;
       const component = ctor(forgoElement.props, { environment: env });
+      
+      const args: ForgoRenderArgs<TProps> = {
+        element: { componentIndex },
+        update: (props) => rerender(args.element, props),
+        component
+      };
+
       assertIsComponent(ctor, component);
 
       const boundary = component.error ? component : undefined;
@@ -854,11 +857,11 @@ export function createForgoInstance(customEnv: any) {
             insertionOptions.type === "detached"
               ? insertionOptions
               : {
-                  type: "search",
-                  currentNodeIndex: insertionOptions.currentNodeIndex,
-                  length: mountOnPreExistingDOM ? insertionOptions.length : 0,
-                  parentElement: insertionOptions.parentElement,
-                };
+                type: "search",
+                currentNodeIndex: insertionOptions.currentNodeIndex,
+                length: mountOnPreExistingDOM ? insertionOptions.length : 0,
+                parentElement: insertionOptions.parentElement,
+              };
 
           // Pass it on for rendering...
           const renderResult = internalRender(
@@ -885,7 +888,7 @@ export function createForgoInstance(customEnv: any) {
 
     function withErrorBoundary(
       props: TProps,
-      args: ForgoRenderArgs,
+      args: ForgoRenderArgs<TProps>,
       statesToAttach: NodeAttachedComponentState<any>[],
       boundary: ForgoComponent<any> | undefined,
       exec: () => RenderResult
@@ -1239,8 +1242,8 @@ export function createForgoInstance(customEnv: any) {
 
   type CandidateSearchResult =
     | {
-        found: false;
-      }
+      found: false;
+    }
     | { found: true; index: number };
 
   /**
@@ -1572,8 +1575,7 @@ export function createForgoInstance(customEnv: any) {
       }
     } else {
       throw new Error(
-        `The mount() function was called on a non-element (${
-          typeof container === "string" ? container : container?.tagName
+        `The mount() function was called on a non-element (${typeof container === "string" ? container : container?.tagName
         }).`
       );
     }
@@ -1756,11 +1758,11 @@ export function createForgoInstance(customEnv: any) {
     if (forgoElement.props.is) {
       return namespaceURI
         ? env.document.createElementNS(namespaceURI, forgoElement.type, {
-            is: forgoElement.props.is,
-          })
+          is: forgoElement.props.is,
+        })
         : env.document.createElement(forgoElement.type, {
-            is: forgoElement.props.is,
-          });
+          is: forgoElement.props.is,
+        });
     } else {
       return namespaceURI
         ? env.document.createElementNS(namespaceURI, forgoElement.type)
@@ -1819,13 +1821,13 @@ function flatten(itemOrItems: ForgoNode | ForgoNode[]): ForgoNode[] {
     const items = Array.isArray(itemOrItems)
       ? itemOrItems
       : isForgoFragment(itemOrItems)
-      ? Array.isArray(itemOrItems.props.children)
-        ? itemOrItems.props.children
-        : itemOrItems.props.children !== undefined &&
-          itemOrItems.props.children !== null
-        ? [itemOrItems.props.children]
-        : []
-      : [itemOrItems];
+        ? Array.isArray(itemOrItems.props.children)
+          ? itemOrItems.props.children
+          : itemOrItems.props.children !== undefined &&
+            itemOrItems.props.children !== null
+            ? [itemOrItems.props.children]
+            : []
+        : [itemOrItems];
     for (const entry of items) {
       if (Array.isArray(entry) || isForgoFragment(entry)) {
         recurse(entry, ret);
@@ -1917,8 +1919,7 @@ function assertIsComponent<TProps>(
 ) {
   if (!component.render) {
     throw new Error(
-      `${
-        ctor.name || "Unnamed"
+      `${ctor.name || "Unnamed"
       } component constructor must return an object having a render() function.`
     );
   }

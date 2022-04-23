@@ -30,7 +30,7 @@ function ErrorBoundary(
     render({ children }) {
       return <div>{children}</div>;
     },
-    error(props: ErrorBoundaryProps, args: ForgoErrorArgs) {
+    error(props: ErrorBoundaryProps, args: ForgoErrorArgs<ErrorBoundaryProps>) {
       return (
         <p>
           Error in {props.name}: {args.error.message}

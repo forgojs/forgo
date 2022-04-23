@@ -9,10 +9,10 @@ export let mountedOn: Element;
 
 function Component() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       return <div id="hello">Hello world</div>;
     },
-    mount(props: any, args: ForgoRenderArgs) {
+    mount(props: any, args: ForgoRenderArgs<{}>) {
       mountedOn = args.element.node as Element;
     },
   };

@@ -33,7 +33,7 @@ function StatefulComponent() {
 }
 
 let sortOrder = 1;
-let containerArgs: forgo.ForgoRenderArgs;
+let containerArgs: forgo.ForgoRenderArgs<{}>;
 
 export function reorderComponents() {
   sortOrder = 2;
@@ -42,7 +42,7 @@ export function reorderComponents() {
 
 function ContainerComponent() {
   return {
-    render(_props: {}, args: forgo.ForgoRenderArgs) {
+    render(_props: {}, args: forgo.ForgoRenderArgs<{}>) {
       savedState.clear();
       containerArgs = args;
       return (

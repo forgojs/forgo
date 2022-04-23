@@ -6,7 +6,7 @@ let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let renderArgs: ForgoRenderArgs<{}>;
 
 export function renderAgain() {
   renderArgs.update();
@@ -16,7 +16,7 @@ export let mountCounter = 0;
 
 function Component() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(props: any, args: ForgoRenderArgs<{}>) {
       renderArgs = args;
       counter++;
       return counter === 1 ? (
