@@ -7,16 +7,19 @@ let document: Document;
 
 export let mountedOn: Element;
 
-function Component() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const TestComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
+  const component = new forgo.Component({
+    render() {
       return <div id="hello">Hello world</div>;
     },
-    mount(props: any, args: ForgoRenderArgs) {
-      mountedOn = args.element.node as Element;
-    },
-  };
-}
+  });
+  component.addEventListener("mount", (_props, component) => {
+    mountedOn = component.__internal.element.node as Element;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -24,6 +27,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }

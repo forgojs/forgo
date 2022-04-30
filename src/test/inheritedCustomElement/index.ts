@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import should from "should";
 import { run } from "./script.js";
 export default function () {
   it("works with inherited custom elements", async () => {

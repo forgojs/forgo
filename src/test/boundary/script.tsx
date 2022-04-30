@@ -1,47 +1,48 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
 import {
-  ForgoComponent,
+  Component,
   ForgoComponentProps,
   mount,
   setCustomEnv,
-  ForgoErrorArgs,
 } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-function ErrorComponent() {
-  return {
+const ErrorComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
+  return new forgo.Component({
     render() {
       throw new Error("Some error occurred :(");
     },
-  };
-}
+  });
+};
 
-interface ErrorBoundaryProps extends ForgoComponentProps {
+interface ErrorBoundaryComponentProps extends ForgoComponentProps {
   name: string;
 }
 
-function ErrorBoundary(
-  props: ErrorBoundaryProps
-): ForgoComponent<ErrorBoundaryProps> {
-  return {
+const ErrorBoundary: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ErrorBoundaryComponentProps
+> = () => {
+  return new Component({
     render({ children }) {
       return <div>{children}</div>;
     },
-    error(props: ErrorBoundaryProps, args: ForgoErrorArgs) {
+    error(props: ErrorBoundaryComponentProps, error) {
       return (
         <p>
-          Error in {props.name}: {args.error.message}
+          Error in {props.name}: {(error as Error).message}
         </p>
       );
     },
-  };
-}
+  });
+};
 
-function App() {
-  return {
+const App: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -51,8 +52,8 @@ function App() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

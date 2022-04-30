@@ -6,28 +6,30 @@ let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps>;
 export let mountCounter: number = 0;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Component() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const TestComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
+  component = new forgo.Component({
+    render() {
       counter++;
       return <SuperCompo />;
     },
-    mount() {
-      mountCounter++;
-    },
-  };
-}
+  });
+  component.addEventListener("mount", () => {
+    mountCounter++;
+  });
+  return component;
+};
 
-function SuperCompo() {
-  return {
+const SuperCompo: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  return new forgo.Component({
     render() {
       return counter === 1 ? (
         <>
@@ -43,8 +45,8 @@ function SuperCompo() {
         </>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -52,6 +54,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }

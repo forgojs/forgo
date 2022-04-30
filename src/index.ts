@@ -52,10 +52,6 @@ export type ForgoRenderArgs = {
   update: (props?: any) => RenderResult;
 };
 
-export type ForgoErrorArgs = ForgoRenderArgs & {
-  error: any;
-};
-
 export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   previousNode?: ChildNode;
 };

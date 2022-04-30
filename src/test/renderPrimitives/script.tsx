@@ -11,29 +11,35 @@ type ComponentProps = {
 
 export type Wrapping = "DIV" | "NONE" | "FRAGMENT";
 
-function ComponentReturningWrappedPrimitive(props: ComponentProps) {
-  return {
+const ComponentReturningWrappedPrimitive: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ComponentProps
+> = (_props: ComponentProps) => {
+  return new forgo.Component<forgo.ForgoComponentProps & ComponentProps>({
     render(props: ComponentProps) {
       return <div id="mydiv">{props.value}</div>;
     },
-  };
-}
+  });
+};
 
-function ComponentReturningPrimitive(props: ComponentProps) {
-  return {
+const ComponentReturningPrimitive: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ComponentProps
+> = (_props: ComponentProps) => {
+  return new forgo.Component<forgo.ForgoComponentProps & ComponentProps>({
     render(props: ComponentProps) {
       return props.value;
     },
-  };
-}
+  });
+};
 
-function ComponentReturningPrimitiveInFragment(props: ComponentProps) {
-  return {
+const ComponentReturningPrimitiveInFragment: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ComponentProps
+> = (_props: ComponentProps) => {
+  return new forgo.Component<forgo.ForgoComponentProps & ComponentProps>({
     render(props: ComponentProps) {
       return <>{props.value}</>;
     },
-  };
-}
+  });
+};
 
 export function runWithUndefinedProps(dom: JSDOM, wrapping: Wrapping) {
   window = dom.window;

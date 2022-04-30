@@ -5,17 +5,18 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps>;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function BasicComponent() {
+const BasicComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
   let firstRender = true;
-  return {
-    render(props: {}, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       if (firstRender) {
         firstRender = false;
         return (
@@ -31,8 +32,9 @@ function BasicComponent() {
         );
       }
     },
-  };
-}
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

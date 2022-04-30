@@ -5,20 +5,19 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps>;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
 export let hasUnmounted = false;
 
-function Parent() {
+const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   let firstRender = true;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       if (firstRender) {
         firstRender = false;
         return <Child />;
@@ -26,19 +25,21 @@ function Parent() {
         return <div>The child should have unmounted.</div>;
       }
     },
-  };
-}
+  });
+  return component;
+};
 
-function Child() {
-  return {
+const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  const component = new forgo.Component({
     render() {
       return <div>This is the child component</div>;
     },
-    unmount() {
-      hasUnmounted = true;
-    },
-  };
-}
+  });
+  component.addEventListener("unmount", () => {
+    hasUnmounted = true;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

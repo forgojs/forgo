@@ -5,13 +5,15 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-function BasicComponent() {
-  return {
+const BasicComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
+  return new forgo.Component({
     render() {
       return <div>Hello world</div>;
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

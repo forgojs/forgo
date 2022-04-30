@@ -1,30 +1,31 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
 import {
-  ForgoRenderArgs,
   ForgoAfterRenderArgs,
   mount,
   setCustomEnv,
+  Component,
 } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let component: Component<forgo.ForgoComponentProps>;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-export let currentNode: Element | undefined;
-export let previousNode: Element | undefined;
+export let currentNode: ChildNode | undefined;
+export let previousNode: ChildNode | undefined;
 export let counterX10: number;
 
-function Component() {
+const TestComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
   let counter: number = 0;
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new Component({
+    render() {
       counter++;
       return counter === 1 ? (
         <div id="hello" prop="hello">
@@ -36,51 +37,71 @@ function Component() {
         </p>
       );
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
-      currentNode = args.element.node as Element;
-      previousNode = args.previousNode as Element;
+  });
+  component.addEventListener(
+    "afterRender",
+    (_props, previousNode_, component) => {
+      currentNode = component.__internal.element.node;
+      previousNode = previousNode_;
       counterX10 = counter * 10;
-    },
-  };
-}
+    }
+  );
+  return component;
+};
 
 function ComponentOnTextNode() {
   let counter: number = 0;
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new Component({
+    render() {
       counter++;
       return "Hello world";
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
-      currentNode = args.element.node as Element;
-      previousNode = args.previousNode as Element;
+  });
+  component.addEventListener(
+    "afterRender",
+    (_props, previousNode_, component) => {
+      currentNode = component.__internal.element.node;
+      previousNode = previousNode_;
       counterX10 = counter * 10;
-    },
-  };
+    }
+  );
+  return component;
 }
 
-function ComponentWithRef() {
+const ComponentWithRef: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
   const ref: forgo.ForgoRef<HTMLDivElement> = {};
-  return {
+  const component = new forgo.Component({
     render() {
       return <div ref={ref} />;
     },
-    afterRender(_props: any, args: ForgoAfterRenderArgs) {
-      currentNode = args.element.node as Element;
-    },
-  };
-}
-function ComponentWithDangerouslySetInnerHTML() {
-  return {
+  });
+  component.addEventListener(
+    "afterRender",
+    (_props, _previousNode, component) => {
+      currentNode = component.__internal.element.node;
+    }
+  );
+  return component;
+};
+
+const ComponentWithDangerouslySetInnerHTML: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
+  const component = new forgo.Component({
     render() {
       return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
     },
-    afterRender(_props: any, args: ForgoAfterRenderArgs) {
-      currentNode = args.element.node as Element;
-    },
-  };
-}
+  });
+  component.addEventListener(
+    "afterRender",
+    (_props, _previousNode, component) => {
+      currentNode = component.__internal.element.node;
+    }
+  );
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -88,7 +109,7 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }
 

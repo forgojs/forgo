@@ -26,15 +26,15 @@ export default function () {
       node2FirstPass as ChildNode
     ) as NodeAttachedState;
     should.equal(
-      stateFirstPass.components[0].args.element.node,
+      stateFirstPass.components[0].component.__internal.element.node,
       node1FirstPass
     );
     should.equal(
-      stateFirstPass.components[1].args.element.node,
+      stateFirstPass.components[1].component.__internal.element.node,
       node1FirstPass
     );
     should.equal(
-      stateFirstPass.components[2].args.element.node,
+      stateFirstPass.components[2].component.__internal.element.node,
       node1FirstPass
     );
 
@@ -45,15 +45,15 @@ export default function () {
       node2SecondPass as ChildNode
     ) as NodeAttachedState;
     should.equal(
-      stateSecondPass.components[0].args.element.node,
+      stateSecondPass.components[0].component.__internal.element.node,
       node2SecondPass
     );
     should.equal(
-      stateSecondPass.components[1].args.element.node,
+      stateSecondPass.components[1].component.__internal.element.node,
       node2SecondPass
     );
     should.equal(
-      stateSecondPass.components[2].args.element.node,
+      stateSecondPass.components[2].component.__internal.element.node,
       node2SecondPass
     );
   });

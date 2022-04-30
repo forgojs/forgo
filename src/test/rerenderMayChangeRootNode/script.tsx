@@ -5,34 +5,32 @@ import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-function Parent1() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      return <Parent2 />;
-    },
-  };
+let component: forgo.Component<forgo.ForgoComponentProps>;
+export function renderAgain() {
+  component.update();
 }
 
-function Parent2() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const Parent1: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  return new forgo.Component({
+    render() {
+      return <Parent2 />;
+    },
+  });
+};
+
+const Parent2: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  return new forgo.Component({
+    render() {
       return <Child />;
     },
-  };
-}
+  });
+};
 
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
-
-export function renderAgain() {
-  renderArgs.update();
-}
-
-function Child() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  component = new forgo.Component({
+    render() {
       counter++;
       return counter === 1 ? (
         <>
@@ -49,8 +47,9 @@ function Child() {
         </>
       );
     },
-  };
-}
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

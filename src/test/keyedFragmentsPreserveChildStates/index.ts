@@ -2,7 +2,6 @@ import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import { renderAgain, run } from "./script.js";
 import should from "should";
-import { getForgoState, NodeAttachedState } from "../../index.js";
 
 export default function () {
   /**

@@ -8,16 +8,16 @@ let document: Document;
 export let parentCounter = 0;
 export let childCounter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps>;
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Parent() {
+const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   parentCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+  return new forgo.Component({
+    render() {
       parentCounter++;
       return (
         <div>
@@ -26,26 +26,27 @@ function Parent() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
-function ParentWithSharedNode() {
+const ParentWithSharedNode: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
   parentCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+  return new forgo.Component({
+    render() {
       parentCounter++;
       return <Child />;
     },
-  };
-}
+  });
+};
 
-function Child() {
+const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   childCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       childCounter++;
       return (
         <div>
@@ -53,8 +54,9 @@ function Child() {
         </div>
       );
     },
-  };
-}
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

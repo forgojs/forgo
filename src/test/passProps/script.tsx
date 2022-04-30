@@ -5,8 +5,8 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-function Parent() {
-  return {
+const Parent: forgo.ForgoComponentCtor<forgo.ForgoElementProps> = () => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -14,16 +14,21 @@ function Parent() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
-function Greet(props: { text: string }) {
-  return {
+interface GreetProps {
+  text: string;
+}
+const Greet: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & GreetProps
+> = () => {
+  return new forgo.Component<forgo.ForgoComponentProps & GreetProps>({
     render(props: { text: string }) {
       return <div>{props.text}</div>;
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

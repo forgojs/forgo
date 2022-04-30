@@ -10,10 +10,10 @@ import {
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps>;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
 export let currentNode: Element | undefined;
@@ -23,27 +23,16 @@ export let mutatedProps: {
   [key: string]: boolean;
 } = {};
 
-function Component() {
+const TestComponent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps
+> = () => {
   let counter: number = 0;
 
   const el: forgo.ForgoRef<HTMLDivElement> = {};
   mutatedProps = {};
 
-  return {
-    mount() {
-      // Detect each time attributes are changed (after the first render)
-      const observer = new window.MutationObserver((mutations) => {
-        const elMutation = mutations.find(
-          (mutation) => mutation.target === el.value
-        );
-        if (elMutation?.attributeName) {
-          mutatedProps[elMutation.attributeName] = true;
-        }
-      });
-      observer.observe(el.value!, { attributes: true });
-    },
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       counter++;
       return (
         <div id="hello" prop={counter === 1 ? "hello" : "world"} ref={el}>
@@ -51,13 +40,29 @@ function Component() {
         </div>
       );
     },
-    afterRender(props: any, args: ForgoAfterRenderArgs) {
-      currentNode = args.element.node as Element;
-      previousNode = args.previousNode as Element;
+  });
+  component.addEventListener("mount", () => {
+    // Detect each time attributes are changed (after the first render)
+    const observer = new window.MutationObserver((mutations) => {
+      const elMutation = mutations.find(
+        (mutation) => mutation.target === el.value
+      );
+      if (elMutation?.attributeName) {
+        mutatedProps[elMutation.attributeName] = true;
+      }
+    });
+    observer.observe(el.value!, { attributes: true });
+  });
+  component.addEventListener(
+    "afterRender",
+    (_props: any, previousNode, component) => {
+      currentNode = component.__internal.element.node as Element;
+      previousNode = previousNode as Element;
       counterX10 = counter * 10;
-    },
-  };
-}
+    }
+  );
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -65,6 +70,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }

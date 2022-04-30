@@ -14,18 +14,18 @@ type ParentProps = {
 
 export let unmountedElements: string[] = [];
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<forgo.ForgoComponentProps & ParentProps>;
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Parent(initialProps: ParentProps) {
+const Parent: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ParentProps
+> = () => {
   unmountedElements = [];
   let firstRender = true;
-  return {
-    render(props: ParentProps, args: ForgoRenderArgs) {
-      renderArgs = args;
-
+  component = new forgo.Component<forgo.ForgoComponentProps & ParentProps>({
+    render(props: ParentProps) {
       if (firstRender) {
         firstRender = false;
         return (
@@ -43,22 +43,32 @@ function Parent(initialProps: ParentProps) {
         );
       }
     },
-  };
-}
+  });
+  return component;
+};
 
-function Child(props: { key: any; id: string }) {
+interface ChildProps {
+  key: any;
+  id: string;
+}
+const Child: forgo.ForgoComponentCtor<
+  forgo.ForgoComponentProps & ChildProps
+> = () => {
   let myId = "NA";
 
-  return {
-    render(props: { key: any; id: string }) {
-      myId = props.id;
-      return <div>Hello {props.id}</div>;
-    },
-    unmount() {
-      unmountedElements.push(myId);
-    },
-  };
-}
+  const component = new forgo.Component<forgo.ForgoComponentProps & ChildProps>(
+    {
+      render(props: { key: any; id: string }) {
+        myId = props.id;
+        return <div>Hello {props.id}</div>;
+      },
+    }
+  );
+  component.addEventListener("unmount", () => {
+    unmountedElements.push(myId);
+  });
+  return component;
+};
 
 export function runStringKey(dom: JSDOM) {
   window = dom.window;
