@@ -14,7 +14,7 @@ export default function () {
 
     run(dom);
 
-    const element = await new Promise<ForgoRef<HTMLElement>>((resolve) => {
+    await new Promise<ForgoRef<HTMLElement>>((resolve) => {
       window.addEventListener("load", () => {
         resolve(window.myInput);
       });
@@ -24,12 +24,15 @@ export default function () {
     should.exist(greetingDiv.__forgo);
     should.equal(greetingDiv.__forgo.components.length, 2);
     should.equal(greetingDiv.__forgo.key, "mydiv");
+    console.log("cows", greetingDiv.__forgo);
     should.equal(
-      greetingDiv.__forgo.components[0].args.element.componentIndex,
+      greetingDiv.__forgo.components[0].component.__internal.element
+        .componentIndex,
       0
     );
     should.equal(
-      greetingDiv.__forgo.components[1].args.element.componentIndex,
+      greetingDiv.__forgo.components[1].component.__internal.element
+        .componentIndex,
       1
     );
   });

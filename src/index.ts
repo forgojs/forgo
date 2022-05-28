@@ -26,13 +26,13 @@ export type ForgoDOMElementProps = {
 export type ForgoComponentProps = ForgoElementProps;
 
 /*
-  This is the constructor of a ForgoComponent, called a 'Component Constructor'.
+  This is the constructor of a Component, called a 'Component Constructor'.
  
   The terminology is different from React here. 
   For example, in <MyComponent />, the MyComponent is the Component Constructor.
   
   The Component Constructor is defined by the type ForgoComponentCtor, 
-  and it returns a Component (of type ForgoComponent).
+  and it returns a Component.
 */
 export type ForgoCtorArgs = {
   environment: ForgoEnvType;
@@ -47,23 +47,13 @@ export type ForgoElementArg = {
   componentIndex: number;
 };
 
-export type ForgoRenderArgs = {
-  element: ForgoElementArg;
-  update: (props?: any) => RenderResult;
-};
-
-export type ForgoAfterRenderArgs = ForgoRenderArgs & {
-  previousNode?: ChildNode;
-};
-
-/*
-  ForgoComponent contains three functions.
-  1. render() returns the actual DOM to render.
-  2. error() is called with a subcomponent throws an error.
-  3. mount() is optional. Gets called when attached to a real DOM Node.
-  4. unmount() is optional. Gets called just before unmount.
-  5. shouldUpdate() is optional. Let's you bail out of a render().
-*/
+/**
+ * These are methods that a component may implement. Every component is required
+ * to have a render method.
+ * 1. render() returns the actual DOM to render.
+ * 2. error() is called when this component, or one of its children, throws an
+ *    error.
+ */
 export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
   render: (
     props: Props,
@@ -75,18 +65,6 @@ export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
     component: Component<Props>
   ) => ForgoNode;
 }
-// TODO: delete this after finishing the Component class stuff (#59)
-/*
-export type ForgoComponent<TProps extends ForgoComponentProps> = {
-  render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
-  afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
-  error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
-  mount?: (props: TProps, args: ForgoRenderArgs) => void;
-  unmount?: (props: TProps, args: ForgoRenderArgs) => void;
-  shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
-  __forgo?: { unmounted?: boolean };
-};
-*/
 
 /*
   A ForgoNode is the output of the render() function.
@@ -163,7 +141,6 @@ export type NodeAttachedComponentState<TProps> = {
   ctor: ForgoComponentCtor<TProps>;
   component: Component<TProps>;
   props: TProps;
-  args: ForgoRenderArgs;
   nodes: ChildNode[];
   isMounted: boolean;
 };
@@ -333,7 +310,6 @@ interface ComponentEventListeners<Props> extends ComponentEventListenerBase {
   >;
 }
 
-// TODO: Kill ForgoComponent and move its declarations here
 interface ComponentInternal<Props> {
   unmounted: boolean;
   registeredMethods: ForgoComponentMethods<Props>;
@@ -381,7 +357,6 @@ const lifecycleEmitters = {
  * listeners. You may pass it around your application and to 3rd-party libraries
  * to build reusable logic.
  */
-// TODO: Kill the 'ForgoRenderArgs' type and move its stuff onto this class
 export class Component<Props extends ForgoComponentProps> {
   /** @internal */
   public __internal: ComponentInternal<Props>;
@@ -502,12 +477,7 @@ export function createForgoInstance(customEnv: any) {
             pendingAttachStates,
             mountOnPreExistingDOM
           )
-        : renderText(
-            forgoNode,
-            insertionOptions,
-            pendingAttachStates,
-            mountOnPreExistingDOM
-          );
+        : renderText(forgoNode, insertionOptions, pendingAttachStates);
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -525,7 +495,7 @@ export function createForgoInstance(customEnv: any) {
         mountOnPreExistingDOM
       );
     }
-    // Component.
+    // Component
     else {
       return renderComponent(
         forgoNode,
@@ -536,9 +506,9 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  /* 
-    Renders undefined and null
-  */
+  /**
+   * Renders undefined and null
+   */
   function renderNothing(
     _forgoNode: undefined | null,
     _insertionOptions: NodeInsertionOptions,
@@ -548,24 +518,22 @@ export function createForgoInstance(customEnv: any) {
     return { nodes: [] };
   }
 
-  /*
-    Render a string.
+  /**
+   * Render a string.
   
-    Such as in the render function below:
-    function MyComponent() {
-      return {
-        render() {
-          return "Hello world"
-        }
-      }
-    }
-  */
+   * Such as in the render function below:
+   * function MyComponent() {
+   *   return new forgo.Component({
+   *     render() {
+   *       return "Hello world"
+   *     }
+   *   })
+   * }
+   */
   function renderText(
     forgoNode: ForgoNonEmptyPrimitiveNode,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    // TODO: Any reason to keep this parameter?
-    _mountOnPreExistingDOM: boolean
+    pendingAttachStates: NodeAttachedComponentState<any>[]
   ): RenderResult {
     // Text nodes will always be recreated.
     const textNode: ChildNode = env.document.createTextNode(
@@ -898,7 +866,6 @@ export function createForgoInstance(customEnv: any) {
 
         const renderResult = withErrorBoundary(
           forgoElement.props,
-          updatedComponentState.args,
           statesToAttach,
           boundary,
           () => {
@@ -946,11 +913,6 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function addComponent(): RenderResult {
-      const args: ForgoRenderArgs = {
-        element: { componentIndex },
-        update: (props) => rerender(args.element, props),
-      };
-
       const ctor = forgoElement.type;
       const component = ctor(forgoElement.props);
       assertIsComponent(ctor, component);
@@ -967,7 +929,6 @@ export function createForgoInstance(customEnv: any) {
         ctor,
         component,
         props: forgoElement.props,
-        args,
         nodes: [],
         isMounted: false,
       };
@@ -976,7 +937,6 @@ export function createForgoInstance(customEnv: any) {
 
       return withErrorBoundary(
         forgoElement.props,
-        args,
         statesToAttach,
         boundary,
         () => {
@@ -1026,7 +986,6 @@ export function createForgoInstance(customEnv: any) {
 
     function withErrorBoundary(
       props: TProps,
-      args: ForgoRenderArgs,
       statesToAttach: NodeAttachedComponentState<any>[],
       boundary: Component<any> | undefined,
       exec: () => RenderResult
@@ -1214,10 +1173,8 @@ export function createForgoInstance(customEnv: any) {
         oldComponentStates
       );
       unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
-      mountComponents(pendingAttachStates, indexOfFirstIncompatibleState);
-    } else {
-      mountComponents(pendingAttachStates, 0);
     }
+    mountComponents(pendingAttachStates, 0);
   }
 
   /**
@@ -1369,7 +1326,9 @@ export function createForgoInstance(customEnv: any) {
   ) {
     for (let i = from; i < states.length; i++) {
       const state = states[i];
-      // TODO: Do we really only set isMounted conditionally? What's it used for?
+      // This function is called in every syncStateAndProps() call, so many of
+      // the calls will be for already-mounted components. Only fire the mount
+      // lifecycle events when appropriate.
       if (!state.isMounted) {
         lifecycleEmitters.mount(state.component, state.props);
       }

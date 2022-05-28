@@ -2,7 +2,7 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type { ForgoRef, ForgoRenderArgs } from "../index.js";
+import type { ForgoRef } from "../index.js";
 import { DOMWindow } from "jsdom";
 
 const unmanagedNodeTagName = "article";
