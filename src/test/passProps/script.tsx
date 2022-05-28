@@ -20,10 +20,8 @@ const Parent: forgo.ForgoComponentCtor<forgo.ForgoElementProps> = () => {
 interface GreetProps {
   text: string;
 }
-const Greet: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps & GreetProps
-> = () => {
-  return new forgo.Component<forgo.ForgoComponentProps & GreetProps>({
+const Greet: forgo.ForgoComponentCtor<GreetProps> = () => {
+  return new forgo.Component<GreetProps>({
     render(props: { text: string }) {
       return <div>{props.text}</div>;
     },

@@ -5,7 +5,7 @@ import { mount, setCustomEnv, Component } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: Component<forgo.ForgoComponentProps>;
+let component: Component;
 
 export function renderAgain() {
   component.update();
@@ -15,9 +15,7 @@ export let currentNode: ChildNode | undefined;
 export let previousNode: ChildNode | undefined;
 export let counterX10: number;
 
-const TestComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const TestComponent: forgo.ForgoComponentCtor = () => {
   let counter: number = 0;
   component = new Component({
     render() {
@@ -63,9 +61,7 @@ function ComponentOnTextNode() {
   return component;
 }
 
-const ComponentWithRef: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const ComponentWithRef: forgo.ForgoComponentCtor = () => {
   const ref: forgo.ForgoRef<HTMLDivElement> = {};
   const component = new forgo.Component({
     render() {
@@ -81,9 +77,7 @@ const ComponentWithRef: forgo.ForgoComponentCtor<
   return component;
 };
 
-const ComponentWithDangerouslySetInnerHTML: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const ComponentWithDangerouslySetInnerHTML: forgo.ForgoComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;

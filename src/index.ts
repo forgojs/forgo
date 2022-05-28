@@ -25,22 +25,9 @@ export type ForgoDOMElementProps = {
 
 export type ForgoComponentProps = ForgoElementProps;
 
-/*
-  This is the constructor of a Component, called a 'Component Constructor'.
- 
-  The terminology is different from React here. 
-  For example, in <MyComponent />, the MyComponent is the Component Constructor.
-  
-  The Component Constructor is defined by the type ForgoComponentCtor, 
-  and it returns a Component.
-*/
-export type ForgoCtorArgs = {
-  environment: ForgoEnvType;
-};
-
-export type ForgoComponentCtor<TProps extends ForgoComponentProps> = (
-  props: TProps
-) => Component<TProps>;
+export type ForgoComponentCtor<Props extends {} = {}> = (
+  props: Props & ForgoComponentProps
+) => Component<Props>;
 
 export type ForgoElementArg = {
   node?: ChildNode;
@@ -56,11 +43,11 @@ export type ForgoElementArg = {
  */
 export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
   render: (
-    props: Props,
+    props: Props & ForgoComponentProps,
     component: Component<Props>
   ) => ForgoNode | ForgoNode[];
   error?: (
-    props: Props,
+    props: Props & ForgoComponentProps,
     error: unknown,
     component: Component<Props>
   ) => ForgoNode;
@@ -298,15 +285,23 @@ type ComponentEventListenerBase = {
 interface ComponentEventListeners<Props> extends ComponentEventListenerBase {
   afterRender: Array<
     (
-      props: Props,
+      props: Props & ForgoComponentProps,
       previousNode: ChildNode | undefined,
       component: Component<Props>
     ) => void
   >;
-  mount: Array<(props: Props, component: Component<Props>) => void>;
-  unmount: Array<(props: Props, component: Component<Props>) => void>;
+  mount: Array<
+    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+  >;
+  unmount: Array<
+    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+  >;
   shouldUpdate: Array<
-    (newProps: Props, oldProps: Props, component: Component<Props>) => boolean
+    (
+      newProps: Props & ForgoComponentProps,
+      oldProps: Props & ForgoComponentProps,
+      component: Component<Props>
+    ) => boolean
   >;
 }
 
@@ -357,7 +352,7 @@ const lifecycleEmitters = {
  * listeners. You may pass it around your application and to 3rd-party libraries
  * to build reusable logic.
  */
-export class Component<Props extends ForgoComponentProps> {
+export class Component<Props extends {} = {}> {
   /** @internal */
   public __internal: ComponentInternal<Props>;
 

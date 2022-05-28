@@ -1,18 +1,11 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import {
-  Component,
-  ForgoComponentProps,
-  mount,
-  setCustomEnv,
-} from "../../index.js";
+import { Component, mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-const ErrorComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const ErrorComponent: forgo.ForgoComponentCtor = () => {
   return new forgo.Component({
     render() {
       throw new Error("Some error occurred :(");
@@ -20,12 +13,12 @@ const ErrorComponent: forgo.ForgoComponentCtor<
   });
 };
 
-interface ErrorBoundaryComponentProps extends ForgoComponentProps {
+interface ErrorBoundaryComponentProps {
   name: string;
 }
 
 const ErrorBoundary: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps & ErrorBoundaryComponentProps
+  ErrorBoundaryComponentProps
 > = () => {
   return new Component({
     render({ children }) {
@@ -41,7 +34,7 @@ const ErrorBoundary: forgo.ForgoComponentCtor<
   });
 };
 
-const App: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const App: forgo.ForgoComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

@@ -5,13 +5,11 @@ function componentFactory() {
   const state = {
     unmountCount: 0,
     renderCount: 0,
-    component: null as forgo.Component<forgo.ForgoComponentProps> | null,
+    component: null as forgo.Component | null,
   };
 
-  const TestComponent: forgo.ForgoComponentCtor<
-    forgo.ForgoComponentProps
-  > = () => {
-    const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+  const TestComponent: forgo.ForgoComponentCtor = () => {
+    const Child: forgo.ForgoComponentCtor = () => {
       const component = new forgo.Component({
         render() {
           state.renderCount++;

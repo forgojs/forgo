@@ -8,15 +8,13 @@ let counter = 0;
 
 export let numUnmounts = 0;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 
 export function renderAgain() {
   component.update();
 }
 
-const TestComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const TestComponent: forgo.ForgoComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;
@@ -26,7 +24,7 @@ const TestComponent: forgo.ForgoComponentCtor<
   return component;
 };
 
-const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return (

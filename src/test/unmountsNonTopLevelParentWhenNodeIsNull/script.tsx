@@ -9,12 +9,12 @@ let isFirstRender = true;
 
 export let hasUnmounted = false;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 export function renderAgain() {
   component.update();
 }
 
-const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   component = new forgo.Component({
     render() {
       if (isFirstRender) {
@@ -31,7 +31,7 @@ const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   return component;
 };
 
-const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent: forgo.ForgoComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

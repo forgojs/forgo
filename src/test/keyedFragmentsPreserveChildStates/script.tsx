@@ -10,9 +10,9 @@ export function renderAgain() {
   component.update();
 }
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 let elementOrder = true;
-const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent: forgo.ForgoComponentCtor = () => {
   component = new forgo.Component({
     render() {
       const keys = elementOrder
@@ -34,12 +34,10 @@ const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
 interface ChildProps {
   key?: unknown;
 }
-const Child: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps & ChildProps
-> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   const state = Math.random().toString();
 
-  return new forgo.Component<forgo.ForgoComponentProps & ChildProps>({
+  return new forgo.Component<ChildProps>({
     render(props) {
       return (
         <>

@@ -5,12 +5,12 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 export function renderAgain() {
   component.update();
 }
 
-const Parent1: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent1: forgo.ForgoComponentCtor = () => {
   return new forgo.Component({
     render() {
       return <Parent2 />;
@@ -18,7 +18,7 @@ const Parent1: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   });
 };
 
-const Parent2: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent2: forgo.ForgoComponentCtor = () => {
   return new forgo.Component({
     render() {
       return <Child />;
@@ -28,7 +28,7 @@ const Parent2: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
 
 let counter = 0;
 
-const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;

@@ -6,16 +6,14 @@ let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 export let unmountCounter: number = 0;
 
 export function renderAgain() {
   component.update();
 }
 
-const TestComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const TestComponent: forgo.ForgoComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;

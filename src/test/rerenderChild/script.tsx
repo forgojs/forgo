@@ -8,12 +8,12 @@ let document: Document;
 export let parentCounter = 0;
 export let childCounter = 0;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 export function renderAgain() {
   component.update();
 }
 
-const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent: forgo.ForgoComponentCtor = () => {
   parentCounter = 0;
 
   return new forgo.Component({
@@ -29,9 +29,7 @@ const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   });
 };
 
-const ParentWithSharedNode: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const ParentWithSharedNode: forgo.ForgoComponentCtor = () => {
   parentCounter = 0;
 
   return new forgo.Component({
@@ -42,7 +40,7 @@ const ParentWithSharedNode: forgo.ForgoComponentCtor<
   });
 };
 
-const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   childCounter = 0;
 
   component = new forgo.Component({

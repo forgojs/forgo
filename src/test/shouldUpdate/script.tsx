@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 
 export function renderAgain() {
   component.update();

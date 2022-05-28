@@ -11,7 +11,7 @@ function getRandomString() {
 
 export const componentStates = new Map<unknown, string>();
 
-interface StatefulComponentProps extends forgo.ForgoComponentProps {
+interface StatefulComponentProps {
   key: unknown;
 }
 const StatefulComponent: forgo.ForgoComponentCtor<
@@ -35,16 +35,14 @@ const StatefulComponent: forgo.ForgoComponentCtor<
 };
 
 let sortOrder = 1;
-let containerComponent: forgo.Component<forgo.ForgoComponentProps>;
+let containerComponent: forgo.Component;
 
 export function reorderComponents() {
   sortOrder = 2;
   containerComponent.update({});
 }
 
-const ContainerComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const ContainerComponent: forgo.ForgoComponentCtor = () => {
   containerComponent = new forgo.Component({
     render() {
       componentStates.clear();

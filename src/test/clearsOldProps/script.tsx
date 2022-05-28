@@ -5,15 +5,13 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 
 export function renderAgain() {
   component.update();
 }
 
-const BasicComponent: forgo.ForgoComponentCtor<
-  forgo.ForgoComponentProps
-> = () => {
+const BasicComponent: forgo.ForgoComponentCtor = () => {
   let firstRender = true;
   component = new forgo.Component({
     render() {

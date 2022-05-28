@@ -27,9 +27,9 @@ function componentFactory() {
     window: DOMWindow;
     document: Document;
   }
-  const TestComponent: forgo.ForgoComponentCtor<
-    forgo.ForgoComponentProps & TestComponentProps
-  > = (props) => {
+  const TestComponent: forgo.ForgoComponentCtor<TestComponentProps> = (
+    props
+  ) => {
     let counter = 0;
     let insertAfterRender = true;
     const { insertionPosition, document } = props;
@@ -56,9 +56,7 @@ function componentFactory() {
       }
     };
 
-    const component = new forgo.Component<
-      forgo.ForgoComponentProps & TestComponentProps
-    >({
+    const component = new forgo.Component<TestComponentProps>({
       render(_props, component) {
         function updateCounter() {
           counter++;

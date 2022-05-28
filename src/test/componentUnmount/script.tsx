@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component<forgo.ForgoComponentProps>;
+let component: forgo.Component;
 
 export function renderAgain() {
   component.update();
@@ -13,7 +13,7 @@ export function renderAgain() {
 
 export let hasUnmounted = false;
 
-const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Parent: forgo.ForgoComponentCtor = () => {
   let firstRender = true;
 
   component = new forgo.Component({
@@ -29,7 +29,7 @@ const Parent: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
   return component;
 };
 
-const Child: forgo.ForgoComponentCtor<forgo.ForgoComponentProps> = () => {
+const Child: forgo.ForgoComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <div>This is the child component</div>;
