@@ -34,25 +34,6 @@ export type ForgoElementArg = {
   componentIndex: number;
 };
 
-/**
- * These are methods that a component may implement. Every component is required
- * to have a render method.
- * 1. render() returns the actual DOM to render.
- * 2. error() is called when this component, or one of its children, throws an
- *    error.
- */
-export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
-  render: (
-    props: Props & ForgoComponentProps,
-    component: Component<Props>
-  ) => ForgoNode | ForgoNode[];
-  error?: (
-    props: Props & ForgoComponentProps,
-    error: unknown,
-    component: Component<Props>
-  ) => ForgoNode;
-}
-
 /*
   A ForgoNode is the output of the render() function.
   It can represent:
@@ -267,6 +248,25 @@ const ATTRIBUTE_NODE_TYPE = 2;
 const TEXT_NODE_TYPE = 3;
 
 /**
+ * These are methods that a component may implement. Every component is required
+ * to have a render method.
+ * 1. render() returns the actual DOM to render.
+ * 2. error() is called when this component, or one of its children, throws an
+ *    error.
+ */
+export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
+  render: (
+    props: Props & ForgoComponentProps,
+    component: Component<Props>
+  ) => ForgoNode | ForgoNode[];
+  error?: (
+    props: Props & ForgoComponentProps,
+    error: unknown,
+    component: Component<Props>
+  ) => ForgoNode;
+}
+
+/**
  * This type gives us an exhaustive type check, guaranteeing that if we add a
  * new lifecycle event to the array, any types that can be derived from that
  * information will fail to typecheck until they handle the new event.
@@ -283,18 +283,18 @@ type ComponentEventListenerBase = {
 // event listener. Maybe we need to default to unknown instead of void for the
 // return type?
 interface ComponentEventListeners<Props> extends ComponentEventListenerBase {
+  mount: Array<
+    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+  >;
+  unmount: Array<
+    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+  >;
   afterRender: Array<
     (
       props: Props & ForgoComponentProps,
       previousNode: ChildNode | undefined,
       component: Component<Props>
     ) => void
-  >;
-  mount: Array<
-    (props: Props & ForgoComponentProps, component: Component<Props>) => void
-  >;
-  unmount: Array<
-    (props: Props & ForgoComponentProps, component: Component<Props>) => void
   >;
   shouldUpdate: Array<
     (
