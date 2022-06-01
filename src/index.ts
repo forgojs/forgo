@@ -635,9 +635,6 @@ export function createForgoInstance(customEnv: any) {
 
       const oldComponentState = getForgoState(targetElement)?.components;
 
-      renderChildNodes(targetElement);
-      unloadMarkedNodes(targetElement, pendingAttachStates);
-
       syncStateAndProps(
         forgoElement,
         targetElement,
@@ -645,6 +642,9 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates,
         oldComponentState
       );
+
+      renderChildNodes(targetElement);
+      unloadMarkedNodes(targetElement, pendingAttachStates);
 
       return { nodes: [targetElement] };
     }
@@ -663,8 +663,6 @@ export function createForgoInstance(customEnv: any) {
         forgoElement.props.ref.value = newElement;
       }
 
-      renderChildNodes(newElement);
-
       syncStateAndProps(
         forgoElement,
         newElement,
@@ -672,6 +670,8 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates,
         undefined
       );
+
+      renderChildNodes(newElement);
 
       return { nodes: [newElement] };
     }
