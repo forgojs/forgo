@@ -471,13 +471,8 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    syncStateAndProps(
-      forgoNode,
-      textNode,
-      true,
-      pendingAttachStates,
-      oldComponentState
-    );
+    syncAttrsAndState(forgoNode, textNode, true, pendingAttachStates);
+    remountComponents(pendingAttachStates, oldComponentState);
     return { nodes: [textNode] };
   }
 
@@ -635,16 +630,17 @@ export function createForgoInstance(customEnv: any) {
 
       const oldComponentState = getForgoState(targetElement)?.components;
 
-      syncStateAndProps(
+      syncAttrsAndState(
         forgoElement,
         targetElement,
         false,
-        pendingAttachStates,
-        oldComponentState
+        pendingAttachStates
       );
 
       renderChildNodes(targetElement);
       unloadMarkedNodes(targetElement, pendingAttachStates);
+
+      remountComponents(pendingAttachStates, oldComponentState);
 
       return { nodes: [targetElement] };
     }
@@ -663,15 +659,11 @@ export function createForgoInstance(customEnv: any) {
         forgoElement.props.ref.value = newElement;
       }
 
-      syncStateAndProps(
-        forgoElement,
-        newElement,
-        true,
-        pendingAttachStates,
-        undefined
-      );
+      syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
 
       renderChildNodes(newElement);
+
+      remountComponents(pendingAttachStates, undefined);
 
       return { nodes: [newElement] };
     }
@@ -1052,18 +1044,14 @@ export function createForgoInstance(customEnv: any) {
     );
   }
 
-  /*
-    Sync component states and props between a newNode and an oldNode.
-  */
-  function syncStateAndProps(
-    forgoNode: ForgoNode,
-    node: ChildNode,
-    isNewNode: boolean,
+  /**
+   * Attach component states to DOM nodes and call unmount/mount lifecycle
+   * methods
+   */
+  function remountComponents(
     pendingAttachStates: NodeAttachedComponentState<any>[],
     oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
-    attachProps(forgoNode, node, isNewNode, pendingAttachStates);
-
     if (oldComponentStates) {
       const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
         pendingAttachStates,
@@ -1408,7 +1396,7 @@ export function createForgoInstance(customEnv: any) {
    * Attach props from the forgoElement onto the DOM node. We also need to attach
    * states from pendingAttachStates
    */
-  function attachProps(
+  function syncAttrsAndState(
     forgoNode: ForgoNode,
     node: ChildNode,
     isNewNode: boolean,

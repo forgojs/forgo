@@ -11,6 +11,7 @@ const TestComponent: ForgoComponentCtor<
     ComponentEnvironment<{
       parentEl: forgo.ForgoRef<HTMLDivElement>;
       idAttr: string | null;
+      parentChildrenCount: number;
     }>
 > = ({ exports }) => {
   const Child: ForgoComponentCtor<ForgoComponentProps> = () => {
@@ -26,6 +27,9 @@ const TestComponent: ForgoComponentCtor<
 
   exports.parentEl = {};
   return {
+    mount() {
+      exports.parentChildrenCount = exports.parentEl.value!.childNodes.length;
+    },
     render() {
       return (
         <div ref={exports.parentEl} id="hello">
@@ -44,10 +48,16 @@ export default function () {
       should.equal(exports.parentEl.value!.id, "hello");
     });
 
-    it("finishes rendering the parent before calling the child's mount()", async () => {
+    it("renders the parent's attributes before calling the child's mount()", async () => {
       const { exports } = await run(TestComponent, {});
 
       should.equal(exports.idAttr, "hello");
+    });
+
+    it("renders all descendants before calling the parent's mount()", async () => {
+      const { exports } = await run(TestComponent, {});
+
+      should.equal(exports.parentChildrenCount, 1);
     });
   });
 }
