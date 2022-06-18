@@ -2,74 +2,72 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-
-import type {
-  ForgoComponentCtor,
-  ForgoComponentProps,
-  ForgoRenderArgs,
-} from "../index.js";
-import type { ComponentEnvironment } from "./componentRunner.js";
+import type { ForgoRef, ForgoRenderArgs } from "../index.js";
+import { DOMWindow } from "jsdom";
 
 const unmanagedNodeTagName = "article";
 
-const Component: ForgoComponentCtor<
-  ForgoComponentProps &
-    ComponentEnvironment<{
-      buttonElement: forgo.ForgoRef<HTMLButtonElement>;
-      rootElement: forgo.ForgoRef<HTMLDivElement>;
-      subrootElement: forgo.ForgoRef<HTMLDivElement>;
-      pElement: forgo.ForgoRef<HTMLParagraphElement>;
-      remove: () => void;
-    }> & { insertionPosition?: "first" | "last" | number }
-> = ({ document, exports, insertionPosition }) => {
-  const addChild = (el: HTMLElement, tag: string) => {
-    if (!insertionPosition) return;
-
-    // We create an <article> so that it's very obvious if a bug causes forgo to
-    // treat the node as a managed dom node and transform its props/children
-    const newElement = document.createElement(unmanagedNodeTagName);
-    newElement.setAttribute("data-forgo", tag);
-    switch (insertionPosition) {
-      case "first":
-        el.prepend(newElement);
-        break;
-      case "last":
-        el.append(newElement);
-        break;
-      default:
-        el.insertBefore(
-          newElement,
-          Array.from(el.childNodes)[insertionPosition]
-        );
-    }
+function componentFactory() {
+  const state: {
+    buttonElement: ForgoRef<HTMLButtonElement>;
+    rootElement: ForgoRef<HTMLDivElement>;
+    subrootElement: ForgoRef<HTMLDivElement>;
+    pElement: ForgoRef<HTMLParagraphElement>;
+    remove: () => void;
+  } = {
+    buttonElement: {},
+    rootElement: {},
+    subrootElement: {},
+    pElement: {},
+    remove: () => {},
   };
 
-  Object.assign(exports, {
-    buttonElement: {} as forgo.ForgoRef<HTMLButtonElement>,
-    rootElement: {} as forgo.ForgoRef<HTMLDivElement>,
-    subrootElement: {} as forgo.ForgoRef<HTMLDivElement>,
-    pElement: {} as forgo.ForgoRef<HTMLParagraphElement>,
-  });
+  function Component(props: {
+    insertionPosition?: "first" | "last" | number;
+    window: DOMWindow;
+    document: Document;
+  }) {
+    let counter = 0;
+    let insertAfterRender = true;
+    const { insertionPosition, document } = props;
 
-  let counter = 0;
-  let insertAfterRender = true;
+    const addChild = (el: HTMLElement, tag: string) => {
+      if (!insertionPosition) return;
 
-  return {
-    afterRender() {
-      if (!insertAfterRender) return;
-      addChild(exports.rootElement.value!, "child-of-root");
-      if (insertionPosition === "first") {
-        addChild(exports.subrootElement.value!, "child-of-subroot");
+      // We create an <article> so that it's very obvious if a bug causes forgo to
+      // treat the node as a managed dom node and transform its props/children
+      const newElement = document.createElement(unmanagedNodeTagName);
+      newElement.setAttribute("data-forgo", tag);
+      switch (insertionPosition) {
+        case "first":
+          el.prepend(newElement);
+          break;
+        case "last":
+          el.append(newElement);
+          break;
+        default:
+          el.insertBefore(
+            newElement,
+            Array.from(el.childNodes)[insertionPosition]
+          );
       }
-    },
-    render(_props: any, { update }: ForgoRenderArgs) {
-      function updateCounter() {
-        counter++;
-        update();
-      }
-      Object.assign(exports, {
-        remove() {
-          exports.rootElement
+    };
+
+    return {
+      afterRender() {
+        if (!insertAfterRender) return;
+        addChild(state.rootElement.value!, "child-of-root");
+        if (insertionPosition === "first") {
+          addChild(state.subrootElement.value!, "child-of-subroot");
+        }
+      },
+      render(_props: any, { update }: ForgoRenderArgs) {
+        function updateCounter() {
+          counter++;
+          update();
+        }
+        state.remove = () => {
+          state.rootElement
             .value!.querySelectorAll("[data-forgo]")
             .forEach((el) => el.remove());
           // The test that uses this asserts that all these nodes are gone, so
@@ -77,35 +75,40 @@ const Component: ForgoComponentCtor<
           // know that Forgo doesn't misbehave when nodes it saw before disappear.
           insertAfterRender = false;
           update();
-        },
-      });
+        };
 
-      return (
-        <div ref={exports.rootElement} id="root">
-          <button
-            onclick={updateCounter}
-            ref={exports.buttonElement}
-            id="button"
-          >
-            Click me!
-          </button>
-          <p id="p" ref={exports.pElement}>
-            Clicked {counter} times
-          </p>
-          <div ref={exports.subrootElement} id="subRoot"></div>
-        </div>
-      );
-    },
+        return (
+          <div ref={state.rootElement} id="root">
+            <button
+              onclick={updateCounter}
+              ref={state.buttonElement}
+              id="button"
+            >
+              Click me!
+            </button>
+            <p id="p" ref={state.pElement}>
+              Clicked {counter} times
+            </p>
+            <div ref={state.subrootElement} id="subRoot"></div>
+          </div>
+        );
+      },
+    };
+  }
+  return {
+    Component,
+    state,
   };
-};
+}
 
 export default function () {
   describe("rerendering", () => {
     it("rerenders", async () => {
       const {
-        window,
-        exports: { buttonElement },
-      } = await run(Component, {});
+        Component,
+        state: { buttonElement },
+      } = componentFactory();
+      const { window } = await run((env) => <Component {...env} />);
 
       buttonElement.value!.click();
       buttonElement.value!.click();
@@ -120,45 +123,51 @@ export default function () {
      * not specified as part of the JSX.
      */
     it("preserves children inserted with DOM APIs that are prepended to the front of the children list", async () => {
-      const {
-        exports: { buttonElement, rootElement, subrootElement },
-      } = await run(Component, { insertionPosition: "first" as const });
+      const { Component, state } = componentFactory();
 
-      should.equal(subrootElement.value!.children.length, 1);
+      await run((env) => (
+        <Component insertionPosition={"first" as const} {...env} />
+      ));
+
+      should.equal(state.subrootElement.value!.children.length, 1);
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         1,
         "Root element should have the appended element"
       );
 
-      buttonElement.value!.click();
+      state.buttonElement.value!.click();
 
-      should.equal(subrootElement.value!.children.length, 2);
+      should.equal(state.subrootElement.value!.children.length, 2);
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         2,
         "Root element should have both appended elements"
       );
     });
 
     it("preserves children inserted with DOM APIs that are appended after of managed children", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: "last" as const });
+      const { Component, state } = componentFactory();
+
+      await run((env) => (
+        <Component insertionPosition={"last" as const} {...env} />
+      ));
 
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
+        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
         1,
         "Root element should have the appended element"
       );
 
-      buttonElement.value!.click();
+      state.buttonElement.value!.click();
 
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
+        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
         2,
         "Root element should have both appended elements"
@@ -166,21 +175,21 @@ export default function () {
     });
 
     it("preserves children inserted with DOM APIs that inserted in the middle of managed children", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      const { Component, state } = componentFactory();
+
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
+        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
         1,
         "Root element should have the appended element"
       );
 
-      buttonElement.value!.click();
+      state.buttonElement.value!.click();
 
       should.equal(
-        rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
+        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
           .length,
         2,
         "Root element should have both appended elements"
@@ -188,17 +197,17 @@ export default function () {
     });
 
     it("doesn't add attributes to unmanaged elements", async () => {
-      const {
-        exports: { buttonElement, rootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      const { Component, state } = componentFactory();
 
-      const el = rootElement.value!.querySelector(
+      await run((env) => <Component insertionPosition={2} {...env} />);
+
+      const el = state.rootElement.value!.querySelector(
         '[data-forgo="child-of-root"]'
       )!;
 
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
-      buttonElement.value!.click();
+      state.buttonElement.value!.click();
 
       should.equal(Array.from(el.attributes).length, 1);
       const [{ name: attrName, value: attrValue }] = Array.from(el.attributes);
@@ -215,15 +224,15 @@ export default function () {
      * managed nodes.
      */
     it("doesn't convert an unmanaged element into a managed element", async () => {
-      const {
-        exports: { rootElement, buttonElement, pElement, subrootElement },
-      } = await run(Component, { insertionPosition: 2 });
+      const { Component, state } = componentFactory();
+
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
-      buttonElement.value!.click();
+      state.buttonElement.value!.click();
 
-      [buttonElement, pElement, subrootElement].forEach((el) =>
+      [state.buttonElement, state.pElement, state.subrootElement].forEach((el) =>
         should.notEqual(el.value!.tagName, unmanagedNodeTagName)
       );
 
@@ -231,9 +240,9 @@ export default function () {
       // covers if there's any case where Forgo mis-transforms the elements
       // without updating the ref.
       [
-        rootElement.value!.querySelector("#button"),
-        rootElement.value!.querySelector("#p"),
-        rootElement.value!.querySelector("#subRoot"),
+        state.rootElement.value!.querySelector("#button"),
+        state.rootElement.value!.querySelector("#p"),
+        state.rootElement.value!.querySelector("#subRoot"),
       ].forEach((el) => {
         should.exist(el);
         should.notEqual(el!.tagName, unmanagedNodeTagName);
@@ -241,31 +250,32 @@ export default function () {
     });
 
     it("leaves managed nodes alone when an unmanaged node is removed from the DOM", async () => {
-      const { exports } = await run(Component, { insertionPosition: 2 });
-      const { rootElement, buttonElement } = exports;
+      const { Component, state } = componentFactory();
+
+      await run((env) => <Component insertionPosition={2} {...env} />);
 
       // Sanity check that our tests are correctly identifying unmanaged nodes
       // before testing their removal
       should.notEqual(
-        rootElement.value!.querySelectorAll("[data-forgo]").length,
+        state.rootElement.value!.querySelectorAll("[data-forgo]").length,
         0
       );
       // Mutate the component to force it to interact with the unmanaged element
       // we added after the first render
-      buttonElement.value!.click();
-      exports.remove();
+      state.buttonElement.value!.click();
+      state.remove();
 
       // All unmanaged nodes are gone
       should.equal(
-        rootElement.value!.querySelectorAll("[data-forgo]").length,
+        state.rootElement.value!.querySelectorAll("[data-forgo]").length,
         0
       );
 
       // All managed nodes still exist
       [
-        rootElement.value!.querySelector("#button"),
-        rootElement.value!.querySelector("#p"),
-        rootElement.value!.querySelector("#subRoot"),
+        state.rootElement.value!.querySelector("#button"),
+        state.rootElement.value!.querySelector("#p"),
+        state.rootElement.value!.querySelector("#subRoot"),
       ].forEach((el) => {
         should.exist(el);
         should.notEqual(el!.tagName, unmanagedNodeTagName);
