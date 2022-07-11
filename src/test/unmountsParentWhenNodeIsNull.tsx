@@ -14,6 +14,10 @@ const componentFactory = () => {
   } = { hasUnmounted: false, update: () => undefined };
 
   const Component: ForgoComponentCtor<ForgoComponentProps> = () => {
+    // We keep this inside the component ctor closure to test that the component
+    // doesn't get recreated when it stops rendering null
+    const internalState = Math.random().toString();
+
     return {
       render(_props, args) {
         state.update = args.update;
@@ -21,7 +25,7 @@ const componentFactory = () => {
         if (renderCount % 2 === 0) {
           return null;
         } else {
-          return <div>Hello, world</div>;
+          return <div>Internal state is {internalState}</div>;
         }
       },
       afterRender(_props, args) {
@@ -39,7 +43,12 @@ export default function () {
   it("does not unmount parent when render returns null", async () => {
     const { Component, state } = componentFactory();
 
-    await run(() => <Component />);
+    const { document } = await run(() => <Component />);
+
+    const internalStateText = state.renderedElement!.textContent;
+    // Sanity checks
+    should.equal(typeof internalStateText, "string");
+    should.notEqual(internalStateText, "");
 
     state.update();
     should.equal(state.hasUnmounted, false);
@@ -48,5 +57,7 @@ export default function () {
     state.update();
     should.equal(state.hasUnmounted, false);
     should.equal(state.renderedElement!.nodeType, 1);
+    const newInternalStateText = state.renderedElement!.textContent;
+    should.equal(newInternalStateText, internalStateText);
   });
 }
