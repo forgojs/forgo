@@ -35,7 +35,7 @@ import ctorArgs from "./ctorArgs/index.js";
 import ssrSimple from "./ssr-simple/index.js";
 import componentKeepsStateWhenReordered from "./componentKeepsStateWhenReordered/index.js";
 import elementKeepsStateWhenReordered from "./elementKeepsStateWhenReordered/index.js";
-import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull/index.js";
+import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull.js";
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
 import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
 import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.js";
