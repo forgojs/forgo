@@ -1,10 +1,10 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { hasUnmounted, renderAgain, run } from "./script.js";
+import { hasUnmounted, renderAgain, run, renderedElement } from "./script.js";
 import should from "should";
 
 export default function () {
-  it("unmounts parent when node is null", async () => {
+  it("does not unmount parent when render returns null", async () => {
     const dom = new JSDOM(htmlFile(), {
       runScripts: "outside-only",
       resources: "usable",
@@ -20,7 +20,11 @@ export default function () {
     });
 
     renderAgain();
+    should.equal(hasUnmounted, false);
+    should.equal(renderedElement.nodeType, 8);
 
-    should.equal(hasUnmounted, true);
+    renderAgain();
+    should.equal(hasUnmounted, false);
+    should.equal(renderedElement.nodeType, 1);
   });
 }

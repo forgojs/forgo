@@ -126,7 +126,9 @@ export type ForgoNonEmptyPrimitiveNode =
   | number
   | boolean
   | object
-  | BigInt;
+  | BigInt
+  | null
+  | undefined;
 
 export type ForgoPrimitiveNode = ForgoNonEmptyPrimitiveNode | null | undefined;
 
@@ -290,12 +292,12 @@ const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
   constants we care about.
 */
 const ELEMENT_NODE_TYPE = 1;
-const ATTRIBUTE_NODE_TYPE = 2;
 const TEXT_NODE_TYPE = 3;
+const COMMENT_NODE_TYPE = 8;
 
-/*
-  jsxFactory function
-*/
+/**
+ * jsxFactory function
+ */
 export function createElement<TProps extends ForgoElementProps & { key?: any }>(
   type: string | ForgoComponentCtor<TProps>,
   props: TProps
@@ -365,19 +367,12 @@ export function createForgoInstance(customEnv: any) {
     }
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
-      return forgoNode === undefined || forgoNode === null
-        ? renderNothing(
-            forgoNode,
-            insertionOptions,
-            pendingAttachStates,
-            mountOnPreExistingDOM
-          )
-        : renderText(
-            forgoNode,
-            insertionOptions,
-            pendingAttachStates,
-            mountOnPreExistingDOM
-          );
+      return renderNonElement(
+        forgoNode,
+        insertionOptions,
+        pendingAttachStates,
+        mountOnPreExistingDOM
+      );
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -406,18 +401,6 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  /* 
-    Renders undefined and null
-  */
-  function renderNothing(
-    _forgoNode: undefined | null,
-    _insertionOptions: NodeInsertionOptions,
-    _pendingAttachStates: NodeAttachedComponentState<any>[],
-    _mountOnPreExistingDOM: boolean
-  ): RenderResult {
-    return { nodes: [] };
-  }
-
   /*
     Render a string.
   
@@ -430,17 +413,20 @@ export function createForgoInstance(customEnv: any) {
       }
     }
   */
-  function renderText(
+  function renderNonElement(
     forgoNode: ForgoNonEmptyPrimitiveNode,
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     // TODO: Any reason to keep this parameter?
     _mountOnPreExistingDOM: boolean
   ): RenderResult {
-    // Text nodes will always be recreated.
-    const textNode: ChildNode = env.document.createTextNode(
-      stringOfPrimitiveNode(forgoNode)
-    );
+    // Text and comment nodes will always be recreated (why?).
+    let node: ChildNode;
+    if (forgoNode === null || forgoNode === undefined) {
+      node = env.document.createComment("null component render");
+    } else {
+      node = env.document.createTextNode(stringOfPrimitiveNode(forgoNode));
+    }
     let oldComponentState: NodeAttachedComponentState<any>[] | undefined =
       undefined;
 
@@ -451,12 +437,15 @@ export function createForgoInstance(customEnv: any) {
       // If we're searching in a list, we replace if the current node is a text node.
       if (insertionOptions.length) {
         const targetNode = childNodes[insertionOptions.currentNodeIndex];
-        if (targetNode.nodeType === TEXT_NODE_TYPE) {
-          targetNode.replaceWith(textNode);
+        if (
+          targetNode.nodeType === TEXT_NODE_TYPE ||
+          targetNode.nodeType === COMMENT_NODE_TYPE
+        ) {
+          targetNode.replaceWith(node);
           oldComponentState = getForgoState(targetNode)?.components;
         } else {
           const nextNode = childNodes[insertionOptions.currentNodeIndex];
-          insertionOptions.parentElement.insertBefore(textNode, nextNode);
+          insertionOptions.parentElement.insertBefore(node, nextNode);
         }
       }
       // There are no target nodes available.
@@ -464,21 +453,21 @@ export function createForgoInstance(customEnv: any) {
         childNodes.length === 0 ||
         insertionOptions.currentNodeIndex === 0
       ) {
-        insertionOptions.parentElement.prepend(textNode);
+        insertionOptions.parentElement.prepend(node);
       } else {
         const nextNode = childNodes[insertionOptions.currentNodeIndex];
-        insertionOptions.parentElement.insertBefore(textNode, nextNode);
+        insertionOptions.parentElement.insertBefore(node, nextNode);
       }
     }
 
     syncStateAndProps(
       forgoNode,
-      textNode,
+      node,
       true,
       pendingAttachStates,
       oldComponentState
     );
-    return { nodes: [textNode] };
+    return { nodes: [node] };
   }
 
   /*
@@ -1430,7 +1419,10 @@ export function createForgoInstance(customEnv: any) {
         for (const key in currentState.props) {
           if (!(key in forgoNode.props)) {
             if (key !== "children" && key !== "xmlns") {
-              if (node.nodeType === TEXT_NODE_TYPE) {
+              if (
+                node.nodeType === TEXT_NODE_TYPE ||
+                node.nodeType === COMMENT_NODE_TYPE
+              ) {
                 delete (node as any)[key];
               } else if (node instanceof env.__internal.HTMLElement) {
                 if (key in node) {
@@ -1471,7 +1463,10 @@ export function createForgoInstance(customEnv: any) {
         // necessary. See issue #32.
         if (currentState?.props?.[key] !== value) {
           if (key !== "children" && key !== "xmlns") {
-            if (node.nodeType === TEXT_NODE_TYPE) {
+            if (
+              node.nodeType === TEXT_NODE_TYPE ||
+              node.nodeType === COMMENT_NODE_TYPE
+            ) {
               (node as any)[key] = value;
             } else if (node instanceof env.__internal.HTMLElement) {
               if (key === "style") {
@@ -1839,17 +1834,19 @@ function flatten(itemOrItems: ForgoNode | ForgoNode[]): ForgoNode[] {
   return recurse(itemOrItems, []);
 }
 
-/*
-  ForgoNodes can be primitive types.
-  Convert all primitive types to their string representation.
-*/
-function stringOfPrimitiveNode(node: ForgoNonEmptyPrimitiveNode): string {
+/**
+ * ForgoNodes can be primitive types. Convert all primitive types to their
+ * string representation.
+ */
+function stringOfPrimitiveNode(
+  node: NonNullable<ForgoNonEmptyPrimitiveNode>
+): string {
   return node.toString();
 }
 
-/*
-  Get Node Types
-*/
+/**
+ * Get Node Types
+ */
 function isForgoElement(forgoNode: ForgoNode): forgoNode is ForgoElement<any> {
   return (
     forgoNode !== undefined &&

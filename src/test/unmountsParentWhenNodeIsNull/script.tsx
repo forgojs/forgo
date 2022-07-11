@@ -7,8 +7,9 @@ let document: Document;
 
 let renderArgs: ForgoRenderArgs;
 
-let isFirstRender = true;
+let renderCount = 0;
 
+export let renderedElement: ChildNode;
 export let hasUnmounted = false;
 
 export function renderAgain() {
@@ -17,14 +18,17 @@ export function renderAgain() {
 
 function Parent() {
   return {
-    render(props: any, args: ForgoRenderArgs) {
+    render(_props: any, args: ForgoRenderArgs) {
       renderArgs = args;
-      if (isFirstRender) {
-        isFirstRender = false;
-        return <div>Hello, world</div>;
-      } else {
+      renderCount += 1;
+      if (renderCount % 2 === 0) {
         return null;
+      } else {
+        return <div>Hello, world</div>;
       }
+    },
+    afterRender(_props: any, args: ForgoRenderArgs) {
+      renderedElement = args.element.node!;
     },
     unmount() {
       hasUnmounted = true;
