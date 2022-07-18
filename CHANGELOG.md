@@ -1,4 +1,5 @@
 # Unreleased
+- Fix #62: ensure that a child component's `mount()` lifecycle method is only called after its parent has completely finished rendering
 - Feature: Allow components to return `null` or `undefined` from their `render()` method (#39)
 
 # 3.1.1
