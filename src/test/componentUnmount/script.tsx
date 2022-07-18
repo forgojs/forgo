@@ -35,7 +35,7 @@ const Child: forgo.ForgoComponentCtor = () => {
       return <div>This is the child component</div>;
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     hasUnmounted = true;
   });
   return component;

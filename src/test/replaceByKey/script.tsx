@@ -58,7 +58,7 @@ const Child: forgo.ForgoComponentCtor<ChildProps> = () => {
       return <div>Hello {props.id}</div>;
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     unmountedElements.push(myId);
   });
   return component;

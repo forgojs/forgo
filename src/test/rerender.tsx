@@ -90,7 +90,7 @@ function componentFactory() {
         );
       },
     });
-    component.addEventListener("afterRender", () => {
+    component.afterRender(() => {
       if (!insertAfterRender) return;
       addChild(state.rootElement.value!, "child-of-root");
       if (insertionPosition === "first") {

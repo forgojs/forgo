@@ -25,7 +25,7 @@ const Parent: forgo.ForgoComponentCtor = () => {
       }
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     hasUnmounted = true;
   });
   return component;

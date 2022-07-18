@@ -34,7 +34,7 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       );
     },
   });
-  component.addEventListener("mount", () => {
+  component.mount(() => {
     // Detect each time attributes are changed (after the first render)
     const observer = new window.MutationObserver((mutations) => {
       const elMutation = mutations.find(
@@ -46,14 +46,11 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
     });
     observer.observe(el.value!, { attributes: true });
   });
-  component.addEventListener(
-    "afterRender",
-    (_props: any, previousNode, component) => {
-      currentNode = component.__internal.element.node as Element;
-      previousNode = previousNode as Element;
-      counterX10 = counter * 10;
-    }
-  );
+  component.afterRender((_props: any, previousNode, component) => {
+    currentNode = component.__internal.element.node as Element;
+    previousNode = previousNode as Element;
+    counterX10 = counter * 10;
+  });
   return component;
 };
 

@@ -28,7 +28,7 @@ const StatefulComponent: forgo.ForgoComponentCtor<
       );
     },
   });
-  component.addEventListener("unmount", ({ key }) => {
+  component.unmount(({ key }) => {
     componentStates.delete(key);
   });
   return component;

@@ -33,7 +33,7 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       );
     },
   });
-  component.addEventListener("mount", () => {
+  component.mount(() => {
     mountCounter++;
   });
   return component;

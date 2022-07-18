@@ -20,7 +20,7 @@ function componentFactory() {
           }
         },
       });
-      component.addEventListener("unmount", () => {
+      component.unmount(() => {
         state.unmountCount++;
       });
       return component;

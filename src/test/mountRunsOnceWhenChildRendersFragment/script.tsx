@@ -20,7 +20,7 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       return <SuperCompo />;
     },
   });
-  component.addEventListener("mount", () => {
+  component.mount(() => {
     mountCounter++;
   });
   return component;

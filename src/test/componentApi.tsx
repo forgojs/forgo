@@ -61,36 +61,34 @@ function componentFactory() {
         return <p>Hello, world!</p>;
       },
     });
-    component.addEventListener("mount", (...args) =>
-      state.mount.push({ key: "mount1", args })
-    );
-    component.addEventListener("mount", (...args) => {
+    component.mount((...args) => state.mount.push({ key: "mount1", args }));
+    component.mount((...args) => {
       state.mount.push({ key: "mount2", args });
 
-      component.addEventListener("unmount", (...args) =>
+      component.unmount((...args) =>
         state.unmount.push({ key: "unmount3", args })
       );
     });
 
-    component.addEventListener("unmount", (...args) =>
+    component.unmount((...args) =>
       state.unmount.push({ key: "unmount1", args })
     );
-    component.addEventListener("unmount", (...args) =>
+    component.unmount((...args) =>
       state.unmount.push({ key: "unmount2", args })
     );
 
-    component.addEventListener("afterRender", (...args) =>
+    component.afterRender((...args) =>
       state.afterRender.push({ key: "afterRender1", args })
     );
-    component.addEventListener("afterRender", (...args) =>
+    component.afterRender((...args) =>
       state.afterRender.push({ key: "afterRender2", args })
     );
 
-    component.addEventListener("shouldUpdate", (...args) => {
+    component.shouldUpdate((...args) => {
       state.shouldUpdate.push({ key: "shouldUpdate1", args });
       return false;
     });
-    component.addEventListener("shouldUpdate", (...args) => {
+    component.shouldUpdate((...args) => {
       state.shouldUpdate.push({ key: "shouldUpdate2", args });
       return args[0].forceUpdate ?? false;
     });

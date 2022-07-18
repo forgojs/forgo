@@ -21,7 +21,7 @@ const Parent1: forgo.ForgoComponentCtor = () => {
       return <Parent2 />;
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     parent1Unmounted = true;
   });
   return component;
@@ -33,7 +33,7 @@ const Parent2: forgo.ForgoComponentCtor = () => {
       return <Child />;
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     parent2Unmounted = true;
   });
   return component;
@@ -48,7 +48,7 @@ const Child: forgo.ForgoComponentCtor = () => {
       return counter === 1 ? <div>This is a child node.</div> : <></>;
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     childUnmounted = true;
   });
   return component;

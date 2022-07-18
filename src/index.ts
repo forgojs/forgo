@@ -313,7 +313,7 @@ interface ComponentInternal<Props> {
 }
 
 const lifecycleEmitters = {
-  mount<Props, Return = void>(component: Component<Props>, props: Props): void {
+  mount<Props>(component: Component<Props>, props: Props): void {
     component.__internal.eventListeners.mount.forEach((cb) =>
       cb(props, component)
     );
@@ -379,17 +379,24 @@ export class Component<Props extends {} = {}> {
     rerender(this.__internal.element, props);
   }
 
-  public addEventListener<Event extends keyof ComponentEventListeners<Props>>(
-    event: Event,
-    listener: ComponentEventListeners<Props>[Event][number]
+  public mount(listener: ComponentEventListeners<Props>["mount"][number]) {
+    this.__internal.eventListeners["mount"].push(listener as any);
+  }
+
+  public unmount(listener: ComponentEventListeners<Props>["unmount"][number]) {
+    this.__internal.eventListeners["unmount"].push(listener as any);
+  }
+
+  public shouldUpdate(
+    listener: ComponentEventListeners<Props>["shouldUpdate"][number]
   ) {
-    if (!Object.keys(lifecycleEmitters).includes(event)) {
-      throw new Error(`No such component lifecycle event: ${event}`);
-    }
-    // No idea why TypeScript can't figure out that the listener is okay to push
-    // to the array. It's not narrowing the type of the array correctly based on
-    // the event's type.
-    this.__internal.eventListeners[event].push(listener as any);
+    this.__internal.eventListeners["shouldUpdate"].push(listener as any);
+  }
+
+  public afterRender(
+    listener: ComponentEventListeners<Props>["afterRender"][number]
+  ) {
+    this.__internal.eventListeners["afterRender"].push(listener as any);
   }
 }
 

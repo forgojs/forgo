@@ -20,7 +20,7 @@ export function Parent() {
       return <div>Counter is {counter}</div>;
     },
   });
-  component.addEventListener("shouldUpdate", () => {
+  component.shouldUpdate(() => {
     return false;
   });
   return component;

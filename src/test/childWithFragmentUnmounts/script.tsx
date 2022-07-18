@@ -36,7 +36,7 @@ const Child: forgo.ForgoComponentCtor = () => {
       );
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     numUnmounts++;
   });
   return component;

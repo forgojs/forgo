@@ -13,7 +13,7 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       return <div id="hello">Hello world</div>;
     },
   });
-  component.addEventListener("mount", (_props, component) => {
+  component.mount((_props, component) => {
     mountedOn = component.__internal.element.node as Element;
   });
   return component;

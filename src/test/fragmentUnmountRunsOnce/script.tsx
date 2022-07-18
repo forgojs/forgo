@@ -32,7 +32,7 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       );
     },
   });
-  component.addEventListener("unmount", () => {
+  component.unmount(() => {
     unmountCounter++;
   });
   return component;

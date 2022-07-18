@@ -31,14 +31,11 @@ const TestComponent: forgo.ForgoComponentCtor = () => {
       );
     },
   });
-  component.addEventListener(
-    "afterRender",
-    (_props, previousNode_, component) => {
-      currentNode = component.__internal.element.node;
-      previousNode = previousNode_;
-      counterX10 = counter * 10;
-    }
-  );
+  component.afterRender((_props, previousNode_, component) => {
+    currentNode = component.__internal.element.node;
+    previousNode = previousNode_;
+    counterX10 = counter * 10;
+  });
   return component;
 };
 
@@ -50,14 +47,11 @@ function ComponentOnTextNode() {
       return "Hello world";
     },
   });
-  component.addEventListener(
-    "afterRender",
-    (_props, previousNode_, component) => {
-      currentNode = component.__internal.element.node;
-      previousNode = previousNode_;
-      counterX10 = counter * 10;
-    }
-  );
+  component.afterRender((_props, previousNode_, component) => {
+    currentNode = component.__internal.element.node;
+    previousNode = previousNode_;
+    counterX10 = counter * 10;
+  });
   return component;
 }
 
@@ -68,12 +62,9 @@ const ComponentWithRef: forgo.ForgoComponentCtor = () => {
       return <div ref={ref} />;
     },
   });
-  component.addEventListener(
-    "afterRender",
-    (_props, _previousNode, component) => {
-      currentNode = component.__internal.element.node;
-    }
-  );
+  component.afterRender((_props, _previousNode, component) => {
+    currentNode = component.__internal.element.node;
+  });
   return component;
 };
 
@@ -83,12 +74,9 @@ const ComponentWithDangerouslySetInnerHTML: forgo.ForgoComponentCtor = () => {
       return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
     },
   });
-  component.addEventListener(
-    "afterRender",
-    (_props, _previousNode, component) => {
-      currentNode = component.__internal.element.node;
-    }
-  );
+  component.afterRender((_props, _previousNode, component) => {
+    currentNode = component.__internal.element.node;
+  });
   return component;
 };
 
