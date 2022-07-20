@@ -7,7 +7,7 @@ let document: Document;
 
 const someIntegers = [1, 2, 3, 4];
 
-const BasicComponent: forgo.ForgoComponentCtor = () => {
+const BasicComponent: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (
@@ -32,7 +32,7 @@ export function runArrays(dom: JSDOM) {
   });
 }
 
-const BasicComponentNested: forgo.ForgoComponentCtor = () => {
+const BasicComponentNested: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

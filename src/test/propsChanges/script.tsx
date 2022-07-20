@@ -18,7 +18,7 @@ export let mutatedProps: {
   [key: string]: boolean;
 } = {};
 
-const TestComponent: forgo.ForgoComponentCtor = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   let counter: number = 0;
 
   const el: forgo.ForgoRef<HTMLDivElement> = {};

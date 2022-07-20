@@ -15,7 +15,7 @@ export function renderAgain() {
   component.update();
 }
 
-const Parent1: forgo.ForgoComponentCtor = () => {
+const Parent1: forgo.ForgoNewComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <Parent2 />;
@@ -27,7 +27,7 @@ const Parent1: forgo.ForgoComponentCtor = () => {
   return component;
 };
 
-const Parent2: forgo.ForgoComponentCtor = () => {
+const Parent2: forgo.ForgoNewComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <Child />;
@@ -41,7 +41,7 @@ const Parent2: forgo.ForgoComponentCtor = () => {
 
 let counter = 0;
 
-const Child: forgo.ForgoComponentCtor = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;

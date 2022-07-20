@@ -12,7 +12,7 @@ export function renderAgain() {
 
 let childComponent: forgo.Component;
 
-const Parent: forgo.ForgoComponentCtor = () => {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   parentComponent = new forgo.Component({
     render() {
       return <Child />;
@@ -23,7 +23,7 @@ const Parent: forgo.ForgoComponentCtor = () => {
 
 let counter = 0;
 
-const Child: forgo.ForgoComponentCtor = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   childComponent = new forgo.Component({
     render() {
       counter++;

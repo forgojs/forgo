@@ -27,7 +27,7 @@ function componentFactory() {
     window: DOMWindow;
     document: Document;
   }
-  const TestComponent: forgo.ForgoComponentCtor<TestComponentProps> = (
+  const TestComponent: forgo.ForgoNewComponentCtor<TestComponentProps> = (
     props
   ) => {
     let counter = 0;

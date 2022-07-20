@@ -14,7 +14,7 @@ export function renderAgain() {
   component.update();
 }
 
-const Child: forgo.ForgoComponentCtor = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
       if (isFirstRender) {
@@ -31,7 +31,7 @@ const Child: forgo.ForgoComponentCtor = () => {
   return component;
 };
 
-const Parent: forgo.ForgoComponentCtor = () => {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

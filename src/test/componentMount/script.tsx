@@ -7,7 +7,7 @@ let document: Document;
 
 export let mountedOn: Element;
 
-const TestComponent: forgo.ForgoComponentCtor = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <div id="hello">Hello world</div>;

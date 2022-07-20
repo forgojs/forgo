@@ -52,7 +52,7 @@ function componentFactory() {
     foo: string;
     forceUpdate?: boolean;
   }
-  const TestComponent: forgo.ForgoComponentCtor<TestComponentProps> = (
+  const TestComponent: forgo.ForgoNewComponentCtor<TestComponentProps> = (
     _props
   ) => {
     const component = new forgo.Component<TestComponentProps>({
@@ -105,7 +105,7 @@ function componentFactory() {
    * We use the wrapper to have a way for tests to unmount the actual component
    * we're testing
    */
-  const Wrapper: forgo.ForgoComponentCtor<WrapperProps> = () => {
+  const Wrapper: forgo.ForgoNewComponentCtor<WrapperProps> = () => {
     const wrapper = new forgo.Component<WrapperProps>({
       render(props) {
         if (props.unmount) return <p>Unmounted!</p>;
@@ -208,6 +208,69 @@ export default function () {
         state.unmount.map(({ key }) => key),
         ["unmount1", "unmount2", "unmount3"]
       );
+    });
+  });
+
+  describe("The legacy component API", () => {
+    it("still works", async () => {
+      interface Props {
+        foo: number;
+      }
+      let mounted: Props | null = null;
+      let unmounted: Props | null = null;
+      let rendered: Props | null = null;
+      let afterRender: Props | null = null;
+      let shouldUpdate: Props | null = null;
+
+      const LegacyComponent: forgo.ForgoComponentCtor<
+        forgo.ForgoComponentProps & Props
+      > = () => {
+        return {
+          mount(props) {
+            mounted = props;
+          },
+          unmount(props) {
+            unmounted = props;
+          },
+          render(props) {
+            rendered = props;
+            return <p>Hello, world!</p>;
+          },
+          afterRender(props) {
+            afterRender = props;
+          },
+          shouldUpdate(props) {
+            shouldUpdate = props;
+            return true;
+          },
+        };
+      };
+
+      interface ParentProps {
+        renderChild: boolean;
+      }
+      let component: forgo.Component<ParentProps>;
+      const ParentComponent: forgo.ForgoNewComponentCtor<ParentProps> = () => {
+        component = new forgo.Component<ParentProps>({
+          render({ renderChild }) {
+            if (renderChild) return <LegacyComponent foo={1} />;
+            return null;
+          },
+        });
+        return component;
+      };
+
+      await run(() => <ParentComponent renderChild={true} />);
+      // We have to render once just to render, then render again to kick
+      // shouldUpdate, then render again to kick unmount
+      component!.update();
+      component!.update({ renderChild: false });
+
+      should.deepEqual(mounted!.foo, 1);
+      should.deepEqual(unmounted!.foo, 1);
+      should.deepEqual(rendered!.foo, 1);
+      should.deepEqual(afterRender!.foo, 1);
+      should.deepEqual(shouldUpdate!.foo, 1);
     });
   });
 }

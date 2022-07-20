@@ -19,7 +19,7 @@ export function renderAgain() {
   component.update();
 }
 
-const Parent: forgo.ForgoComponentCtor<ParentProps> = () => {
+const Parent: forgo.ForgoNewComponentCtor<ParentProps> = () => {
   unmountedElements = [];
   let firstRender = true;
   component = new forgo.Component<ParentProps>({
@@ -49,7 +49,7 @@ interface ChildProps {
   key: any;
   id: string;
 }
-const Child: forgo.ForgoComponentCtor<ChildProps> = () => {
+const Child: forgo.ForgoNewComponentCtor<ChildProps> = () => {
   let myId = "NA";
 
   const component = new forgo.Component<ChildProps>({

@@ -13,7 +13,7 @@ export function renderAgain() {
 
 export let hasUnmounted = false;
 
-const Parent: forgo.ForgoComponentCtor = () => {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   let firstRender = true;
 
   component = new forgo.Component({
@@ -29,7 +29,7 @@ const Parent: forgo.ForgoComponentCtor = () => {
   return component;
 };
 
-const Child: forgo.ForgoComponentCtor = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   const component = new forgo.Component({
     render() {
       return <div>This is the child component</div>;

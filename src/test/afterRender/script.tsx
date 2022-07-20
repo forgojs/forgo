@@ -15,7 +15,7 @@ export let currentNode: ChildNode | undefined;
 export let previousNode: ChildNode | undefined;
 export let counterX10: number;
 
-const TestComponent: forgo.ForgoComponentCtor = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   let counter: number = 0;
   component = new Component({
     render() {
@@ -55,7 +55,7 @@ function ComponentOnTextNode() {
   return component;
 }
 
-const ComponentWithRef: forgo.ForgoComponentCtor = () => {
+const ComponentWithRef: forgo.ForgoNewComponentCtor = () => {
   const ref: forgo.ForgoRef<HTMLDivElement> = {};
   const component = new forgo.Component({
     render() {
@@ -68,17 +68,18 @@ const ComponentWithRef: forgo.ForgoComponentCtor = () => {
   return component;
 };
 
-const ComponentWithDangerouslySetInnerHTML: forgo.ForgoComponentCtor = () => {
-  const component = new forgo.Component({
-    render() {
-      return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
-    },
-  });
-  component.afterRender((_props, _previousNode, component) => {
-    currentNode = component.__internal.element.node;
-  });
-  return component;
-};
+const ComponentWithDangerouslySetInnerHTML: forgo.ForgoNewComponentCtor =
+  () => {
+    const component = new forgo.Component({
+      render() {
+        return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
+      },
+    });
+    component.afterRender((_props, _previousNode, component) => {
+      currentNode = component.__internal.element.node;
+    });
+    return component;
+  };
 
 export function run(dom: JSDOM) {
   window = dom.window;

@@ -27,6 +27,10 @@ export type ForgoComponentProps = ForgoElementProps;
 
 export type ForgoComponentCtor<Props extends {} = {}> = (
   props: Props & ForgoComponentProps
+) => ForgoComponent<Props>;
+
+export type ForgoNewComponentCtor<Props extends {} = {}> = (
+  props: Props & ForgoComponentProps
 ) => Component<Props>;
 
 export type ForgoElementArg = {
@@ -63,7 +67,7 @@ export type ForgoDOMElement<TProps extends ForgoDOMElementProps> =
 
 export type ForgoComponentElement<TProps extends ForgoComponentProps> =
   ForgoElementBase<TProps> & {
-    type: ForgoComponentCtor<TProps>;
+    type: ForgoNewComponentCtor<TProps>;
   };
 
 export type ForgoFragment = {
@@ -106,7 +110,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 */
 export type NodeAttachedComponentState<TProps> = {
   key?: any;
-  ctor: ForgoComponentCtor<TProps>;
+  ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>;
   component: Component<TProps>;
   props: TProps;
   nodes: ChildNode[];
@@ -376,7 +380,10 @@ export class Component<Props extends {} = {}> {
   }
 
   public update(props?: Props) {
-    rerender(this.__internal.element, props);
+    // TODO: When we do our next breaking change, there's no reason for this to
+    // return anything, but we need to leave the behavior in while we have our
+    // compatibility layer.
+    return rerender(this.__internal.element, props);
   }
 
   public mount(listener: ComponentEventListeners<Props>["mount"][number]) {
@@ -404,7 +411,7 @@ export class Component<Props extends {} = {}> {
   jsxFactory function
 */
 export function createElement<TProps extends ForgoElementProps & { key?: any }>(
-  type: string | ForgoComponentCtor<TProps>,
+  type: string | ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>,
   props: TProps
 ) {
   props = props ?? {};
@@ -916,8 +923,7 @@ export function createForgoInstance(customEnv: any) {
 
     function addComponent(): RenderResult {
       const ctor = forgoElement.type;
-      const component = ctor(forgoElement.props);
-      assertIsComponent(ctor, component);
+      const component = assertIsComponent(ctor, ctor(forgoElement.props));
       component.__internal.element.componentIndex = componentIndex;
 
       const boundary = component.__internal.registeredMethods.error
@@ -2012,13 +2018,91 @@ function clearDeletedNodes(element: Element) {
   }
 }
 
+/**
+ * We bridge the old component syntax to the new syntax until our next breaking release
+ */
+export type ForgoComponent<TProps extends ForgoComponentProps> = {
+  render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
+  afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
+  error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
+  mount?: (props: TProps, args: ForgoRenderArgs) => void;
+  unmount?: (props: TProps, args: ForgoRenderArgs) => void;
+  shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
+  __forgo?: { unmounted?: boolean };
+};
+export type ForgoRenderArgs = {
+  element: ForgoElementArg;
+  update: (props?: any) => RenderResult;
+};
+export type ForgoAfterRenderArgs = ForgoRenderArgs & {
+  previousNode?: ChildNode;
+};
+export type ForgoErrorArgs = ForgoRenderArgs & {
+  error: any;
+};
+
+const legacyComponentSyntaxCompat = <Props>(
+  legacyComponent: ForgoComponent<Props>
+): Component<Props> => {
+  const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
+    get element() {
+      return component.__internal.element;
+    },
+    update(props) {
+      return component.update(props as unknown as Props);
+    },
+  });
+
+  const componentBody: ForgoComponentMethods<Props> = {
+    render(props, component) {
+      return legacyComponent.render(props, mkRenderArgs(component));
+    },
+  };
+  if (legacyComponent.error) {
+    componentBody.error = (props, error) => {
+      return legacyComponent.error!(
+        props,
+        Object.assign(mkRenderArgs(component), { error })
+      );
+    };
+  }
+  const component = new Component<Props>({
+    ...componentBody,
+  });
+  if (legacyComponent.mount) {
+    component.mount((props) => {
+      legacyComponent.mount!(props, mkRenderArgs(component));
+    });
+  }
+  if (legacyComponent.unmount) {
+    component.unmount((props) => {
+      legacyComponent.unmount!(props, mkRenderArgs(component));
+    });
+  }
+  if (legacyComponent.afterRender) {
+    component.afterRender((props) => {
+      legacyComponent.afterRender!(props, mkRenderArgs(component));
+    });
+  }
+  if (legacyComponent.shouldUpdate) {
+    component.shouldUpdate((newProps, oldProps) => {
+      return legacyComponent.shouldUpdate!(newProps, oldProps);
+    });
+  }
+  return component;
+};
+
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<TProps>(
-  ctor: ForgoComponentCtor<TProps>,
-  component: Component<TProps>
-) {
+function assertIsComponent<Props>(
+  ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
+  component: Component<Props> | ForgoComponent<Props>
+): Component<Props> {
+  if (!(component instanceof Component) && Reflect.has(component, "render")) {
+    return legacyComponentSyntaxCompat(component);
+  }
+
   if (!(component instanceof Component)) {
     throw new Error(
       `${
@@ -2026,6 +2110,8 @@ function assertIsComponent<TProps>(
       } component constructor must return an instance of the Component class`
     );
   }
+
+  return component;
 }
 
 function isString(val: unknown): val is string {

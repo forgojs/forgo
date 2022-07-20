@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-const Parent: forgo.ForgoComponentCtor<forgo.ForgoElementProps> = () => {
+const Parent: forgo.ForgoNewComponentCtor<forgo.ForgoElementProps> = () => {
   return new forgo.Component({
     render() {
       return (
@@ -20,7 +20,7 @@ const Parent: forgo.ForgoComponentCtor<forgo.ForgoElementProps> = () => {
 interface GreetProps {
   text: string;
 }
-const Greet: forgo.ForgoComponentCtor<GreetProps> = () => {
+const Greet: forgo.ForgoNewComponentCtor<GreetProps> = () => {
   return new forgo.Component<GreetProps>({
     render(props: { text: string }) {
       return <div>{props.text}</div>;
