@@ -2080,8 +2080,11 @@ const legacyComponentSyntaxCompat = <Props>(
     });
   }
   if (legacyComponent.afterRender) {
-    component.afterRender((props) => {
-      legacyComponent.afterRender!(props, mkRenderArgs(component));
+    component.afterRender((props, previousNode) => {
+      legacyComponent.afterRender!(
+        props,
+        Object.assign(mkRenderArgs(component), { previousNode })
+      );
     });
   }
   if (legacyComponent.shouldUpdate) {
