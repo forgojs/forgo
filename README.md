@@ -107,7 +107,7 @@ const ClickCounter = (initialProps) => {
         clickCounter += 1;
         // When you're ready to rerender, just call component.update(). Manual
         // updates mean the framework only does what you tell it to, putting you
-        // in control of efficiency and logic.
+        // in control of efficiency and business logic.
         //
         // An optional package, forgo-state, can automate this for simple scenarios.
         component.update();
@@ -490,7 +490,7 @@ element the component was attached to, if it changed in the latest render.
 ```jsx
 const Greeter = (_initialProps) => {
   const component = new forgo.Component({
-    render(props, args) {
+    render(props, component) {
       return <div id="hello">Hello {props.firstName}</div>;
     }
   });
@@ -526,7 +526,7 @@ need it.
 ```jsx
 const Greeter = (_initialProps) => {
   const component = new forgo.Component({
-    render(props, args) {
+    render(props, component) {
       return <div>Hello {props.firstName}</div>;
     }
   });

@@ -1,3 +1,7 @@
+# Unreleased
+The legacy component syntax has been deprecated, and will be removed in v4.0.
+For more details, please see the deprecation notice on https://forgojs.org.
+
 # 3.1.1
 - Fix: components that changed their root HTML tag were erroneously unmounted
 
