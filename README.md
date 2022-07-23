@@ -9,6 +9,7 @@ Unlike React, there are very few framework specific patterns and lingo to learn.
 - Use closures and ordinary variables for maintaining component state
 - There's no vDOM or DOM diffing
 - Renders are manually triggered
+- Declarative DOM updates
 
 ## We'll be tiny. Always.
 
@@ -81,7 +82,7 @@ Forgo will show on the page.
 
 After the component's first render, the Constructor won't be called again, but
 the `render()` method will be called each time the component (or one of its
-parents) rerender.
+ancestors) rerenders.
 
 Forgo will pass any props (i.e., HTML attributes from your JSX) to both the
 Constructor and the `render()` method.
@@ -104,6 +105,9 @@ const ClickCounter = (initialProps) => {
       // You can declare any DOM event handlers you need inside the render()
       // method.
       const onclick = (_event: Event) => {
+        // Forgo doesn't know or care how you manage your state. This frees you
+        // to use any library or code pattern that suits your situation, not
+        // only tools designed to integrate with the framework.
         clickCounter += 1;
         // When you're ready to rerender, just call component.update(). Manual
         // updates mean the framework only does what you tell it to, putting you
@@ -120,8 +124,7 @@ const ClickCounter = (initialProps) => {
         <div>
           <p>Hello, {firstName}!</p>
           <button type="button" onclick={onclick}>
-            The button has been clicked {clickCounter} times in {seconds}{" "}
-            seconds
+            The button has been clicked {clickCounter} times in {seconds} seconds
           </button>
         </div>
       );
@@ -131,10 +134,11 @@ const ClickCounter = (initialProps) => {
   // You can add callbacks to react to lifecycle events,
   // like mounting and unmounting
   component.mount(() => {
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       seconds++;
       component.update();
     }, 1000);
+    component.unmount(() => clearTimeout(timeout));
   });
 
   return component;
@@ -147,6 +151,7 @@ Here's how the API looks when using TypeScript (which is optional):
 import * as forgo from "forgo";
 import type { ForgoNewComponentCtor } from "forgo";
 
+// The constructor generic type accepts the shape of your component's props
 const HelloWorld: ForgoNewComponentCtor<{ name: string }> = () => {
   return new forgo.Component({
     render({ name }) {
@@ -163,7 +168,7 @@ Use the mount() function once your document has loaded.
 ```js
 import { mount } from "forgo";
 
-// Wait for the page to be ready
+// Wait for the page DOM to be ready for changes
 function ready(fn) {
   if (document.readyState !== "loading") {
     fn();
@@ -294,7 +299,7 @@ const MyComponent = (_initialProps) => {
       return (
         <div>
           <input type="text" ref={myInputRef} />
-          <button onclick={onClick}>Click me!</button>
+          <button type="button" onclick={onClick}>Click me!</button>
         </div>
       );
     }
@@ -303,8 +308,8 @@ const MyComponent = (_initialProps) => {
 ```
 
 If you want, you can bypass Forgo entirely when reading form field values. If
-you set the `id` field on the form field, then go ahead and ask the browser for
-that element directly:
+you set the `id` field on the form field, then you could use the vanilla DOM API
+to access that element directly:
 
 ```jsx
 const onClick = () => {
@@ -321,7 +326,6 @@ const Component = (_initialProps) => {
   return new forgo.Component({
     render(_props, _component) {
       const onInput = (event) => {
-        event.preventDefault();
         alert(event.target.value);
       };
 
@@ -347,13 +351,12 @@ efficient by only mounting or unmounting components that actually need it.
 
 You can use any data type for a key strings, numbers or even objects. The key
 values only need to be unique. Forgo compares keys using `===` (reference
-equality), so be careful when using objects as keys.
+equality), so be careful when using mutable objects as keys.
 
-When looping over an array, don't use the array index as the key - the key
-should be something tied to the specific item being rendered (like a permanent
-ID field). The same array index might be associated with different items if you
-reorder the array, and so using the array index as a key will cause unexpected
-behavior.
+When looping over an array, don't use the array index as a key - keys should be
+something tied to the specific value being rendered (like a permanent ID field).
+The same array index might be associated with different values if you reorder
+the array, and so using the array index as a key will cause unexpected behavior.
 
 ```jsx
 const Parent = () => {
@@ -390,7 +393,7 @@ request). Here's how to do that:
 
 ```jsx
 export const InboxComponent = (_initialProps) => {
-  // This will be empty at first, but will get filled in sometime after the
+  // This will be empty at first, and will get filled in sometime after the
   // component first mounts.
   let messages = undefined;
 
@@ -427,8 +430,9 @@ export const InboxComponent = (_initialProps) => {
 
 ## The Mount Event
 
-The mount event is fired just once per component, when a component has just been created. This is useful
-for set-up logic like starting a timer, fetching data, or opening a WebSocket.
+The mount event is fired just once per component, when the component has just
+been created. This is useful for set-up logic like starting a timer, fetching
+data, or opening a WebSocket.
 
 You can register multiple mount callbacks, which is useful if you want to have
 reusable logic that you apply to a number of components.
@@ -460,7 +464,7 @@ timer or closing a WebSocket. To do this, you can register unmount callbacks
 on your component, which will be called when the component is unmounted.
 
 The callbacks are passed the current props and the component instance, just like
-the `render()` method. This can be used for any tear down you might want to do.
+the `render()` method.
 
 ```jsx
 const Greeter = (_initialProps) => {
@@ -478,50 +482,23 @@ const Greeter = (_initialProps) => {
 };
 ```
 
-## The AfterRender Event
-
-If you're an application developer you'll rarely need to use this - it's useful
-for building libraries that wrap Forgo.
-
-The `afterRender` event runs after `render()` has been called and the rendered
-elements have been created in the DOM. The callback is passed the previous DOM
-element the component was attached to, if it changed in the latest render.
-
-```jsx
-const Greeter = (_initialProps) => {
-  const component = new forgo.Component({
-    render(props, component) {
-      return <div id="hello">Hello {props.firstName}</div>;
-    }
-  });
-
-  component.afterRender((_props, previousNode, _component) => {
-    console.log(
-      `This component is mounted on ${component.__internal.element.node.id}, and was previously mounted on ${previousNode.id}`
-    );
-  });
-
-  return component;
-};
-```
-
 ## Skipping renders
 
-Sometimes you have some reason why a component shouldn't be rendered right now.
-For example, if you're using immutable data structures, you may want to only
+Sometimes you have a reason why a component shouldn't be rendered right now. For
+example, if you're using immutable data structures, you may want to only
 rerender if the data structure has changed.
 
 Forgo components accept `shouldUpdate` callbacks, which return true/false to
-signal whether the component should / should not be rerendered. If any of them
-return true, the component will be rerendered. If they all return false, the
-component's `render()` method won't be called, skipping all DOM operations for
-the component and its decendants.
+signal whether the component should / should not be rerendered. If any
+`shouldUpdate` callbacks return true, the component will be rerendered. If they
+all return false (or if none are registered), the component's `render()` method
+won't be called, skipping all DOM operations for the component and its
+decendants.
 
 The callbacks receive the new props for the proposed render, and the old props
 used in the last render.
 
-Using `shouldUpdate` is completely optional, and most of the time you won't
-need it.
+Using `shouldUpdate` is completely optional, and typically isn't necessary.
 
 ```jsx
 const Greeter = (_initialProps) => {
@@ -546,6 +523,9 @@ component (or any of its decendants) throws an exception while running the
 component's `render()` method. The error method can return JSX that is rendered
 in place of the render output, to display an error message to the user.
 
+If no ancestors have an `error()` method registered, the render will abort and
+Forgo will print an error to the console.
+
 ```jsx
 // Here's a component which throws an error.
 const BadComponent = () => {
@@ -556,7 +536,7 @@ const BadComponent = () => {
   });
 }
 
-// Parent can catch the error by defining the error() function.
+// The first ancestor with an error() method defined will catch the error
 const Parent = (initialProps) => {
   return new forgo.Component({
     render() {
@@ -575,6 +555,33 @@ const Parent = (initialProps) => {
     }
   });
 }
+```
+
+## The AfterRender Event
+
+If you're an application developer you'll rarely need to use this - it's
+provided for building libraries that wrap Forgo.
+
+The `afterRender` event runs after `render()` has been called and the rendered
+elements have been created in the DOM. The callback is passed the previous DOM
+element the component was attached to, if it changed in the latest render.
+
+```jsx
+const Greeter = (_initialProps) => {
+  const component = new forgo.Component({
+    render(props, component) {
+      return <div id="hello">Hello {props.firstName}</div>;
+    }
+  });
+
+  component.afterRender((_props, previousNode, _component) => {
+    console.log(
+      `This component is mounted on ${component.__internal.element.node.id}, and was previously mounted on ${previousNode.id}`
+    );
+  });
+
+  return component;
+};
 ```
 
 ## Passing new props when rerendering
@@ -601,8 +608,8 @@ const TodoList = (initialProps) => {
 }
 ```
 
-`component.update()` may optionally receive new props. Omitting the props
-parameter will rerender leave the props unchanged.
+`component.update()` may optionally receive new props to use in the render.
+Omitting the props parameter will rerender leave the props unchanged.
 
 ```js
 const newProps = { name: "Kai" };
