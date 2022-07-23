@@ -923,7 +923,11 @@ export function createForgoInstance(customEnv: any) {
 
     function addComponent(): RenderResult {
       const ctor = forgoElement.type;
-      const component = assertIsComponent(ctor, ctor(forgoElement.props));
+      const component = assertIsComponent(
+        ctor,
+        ctor(forgoElement.props),
+        (env.window as any).FORGO_NO_LEGACY_WARN !== true
+      );
       component.__internal.element.componentIndex = componentIndex;
 
       const boundary = component.__internal.registeredMethods.error
@@ -2100,9 +2104,18 @@ const legacyComponentSyntaxCompat = <Props>(
 */
 function assertIsComponent<Props>(
   ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
-  component: Component<Props> | ForgoComponent<Props>
+  component: Component<Props> | ForgoComponent<Props>,
+  warnOnLegacySyntax: boolean
 ): Component<Props> {
   if (!(component instanceof Component) && Reflect.has(component, "render")) {
+    if (warnOnLegacySyntax) {
+      console.warn(
+        "Legacy component syntax is deprecated in v3.2.0 and will be removed in v4.0. The affected component was found here:"
+      );
+      // Minification mangles component names so we have to settle for a
+      // stacktrace.
+      console.warn(new Error().stack);
+    }
     return legacyComponentSyntaxCompat(component);
   }
 
