@@ -24,7 +24,6 @@ export default function () {
     should.exist(greetingDiv.__forgo);
     should.equal(greetingDiv.__forgo.components.length, 2);
     should.equal(greetingDiv.__forgo.key, "mydiv");
-    console.log("cows", greetingDiv.__forgo);
     should.equal(
       greetingDiv.__forgo.components[0].component.__internal.element
         .componentIndex,
