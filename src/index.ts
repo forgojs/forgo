@@ -2045,7 +2045,9 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
   error: any;
 };
 
-const legacyComponentSyntaxCompat = <Props>(
+// We export this so forgo-state & friends can publish non-breaking
+// compatibility releases
+export const legacyComponentSyntaxCompat = <Props>(
   legacyComponent: ForgoComponent<Props>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
