@@ -6,7 +6,7 @@ Unlike React, there are very few framework specific patterns and lingo to learn.
 
 - Use HTML DOM APIs for accessing elements
 - There are no synthetic events
-- Use closures for maintaining component state
+- Use closures and ordinary variables for maintaining component state
 - There's no vDOM or DOM diffing
 - Renders are manually triggered
 
@@ -17,7 +17,7 @@ All of Forgo's code is in one single TypeScript file. It is a goal of the projec
 ## Installation
 
 ```
-npm i forgo
+npm install forgo
 ```
 
 ## Starting a Forgo project
@@ -37,10 +37,10 @@ npx create-forgo-app my-project --template typescript
 And then to run it:
 
 ```sh
-# switch to the project directory
+# Switch to the project directory
 cd my-project
 
-# run!
+# Run!
 npm start
 
 # To make a production build
@@ -49,42 +49,121 @@ npm run build
 
 ## A Forgo Component
 
-A Forgo Component must have a function (called Component Constructor) that returns an object with a render() function (called Component).
+Forgo components are functions that return a Component instance, which has a
+`render()` method that returns JSX. Components hold their state using ordinary
+variables held in the closure scope of the function (called a Component Constructor).
 
-Here's an Example.
+Forgo likes to keep things simple and explicit. It avoids automatic behavior,
+prefers basic functions and variables instead of implicit constructs, and tries
+not to come between you and the DOM.
+
+Here's the smallest Forgo component you can make:
 
 ```jsx
-import { rerender } from "forgo";
+import * as forgo from "forgo";
 
-function SimpleTimer(initialProps) {
-  let seconds = 0; // Just a regular variable, no hooks!
-
-  return {
-    render(props, args) {
-      setTimeout(() => {
-        seconds++;
-        rerender(args.element); // rerender
-      }, 1000);
-
-      return (
-        <div>
-          {seconds} seconds have elapsed... {props.firstName}!
-        </div>
-      );
-    },
-  };
-}
+const HelloWorld = () => {
+  return new forgo.Component({
+    render() {
+      return <p>Hello, world!</p>;
+    }
+  });
+};
 ```
 
-The Component Constructor function and the Component's render() method are both called during the first render with the initial set of props. But for subsequent rerenders of the same component, only the render() gets called (with new props). So if you're using props, remember to get it from the render() method.
+When a component is created (either by being mounted onto the DOM when the page
+loads, or because it was rendered by a component higher up in your app), Forgo
+calls the Component Constructor to generate the component instance. This is
+where you can put closure variables to hold the component's state.
 
-## Mounting the Component
+Then Forgo calls the component's `render()` method to generate the HTML that
+Forgo will show on the page.
+
+After the component's first render, the Constructor won't be called again, but
+the `render()` method will be called each time the component (or one of its
+parents) rerender.
+
+Forgo will pass any props (i.e., HTML attributes from your JSX) to both the
+Constructor and the `render()` method.
+
+Here's a bigger example - the component below increments a counter when a button is
+pressed, and counts how many seconds the component has been alive.
+
+```jsx
+import * as forgo from "forgo";
+
+const ClickCounter = (initialProps) => {
+  let seconds = 0; // Just a regular variable, no hooks!
+  let clickCounter = 0;
+
+  const component = new forgo.Component({
+    // Every component has a render() method, which declares what HTML Forgo
+    // needs to generate.
+    render(props) {
+      const { firstName } = props;
+      // You can declare any DOM event handlers you need inside the render()
+      // method.
+      const onclick = (_event: Event) => {
+        clickCounter += 1;
+        // When you're ready to rerender, just call component.update(). Manual
+        // updates mean the framework only does what you tell it to, putting you
+        // in control of efficiency and logic.
+        //
+        // An optional package, forgo-state, can automate this for simple scenarios.
+        component.update();
+      };
+
+      // Forgo uses JSX, like React or Solid, to generate HTML declaratively.
+      // JSX is a special syntax for JavaScript, which means you can treat it
+      // like ordinary code (assign it to variables, type check it, etc.).
+      return (
+        <div>
+          <p>Hello, {firstName}!</p>
+          <button type="button" onclick={onclick}>
+            The button has been clicked {clickCounter} times in {seconds}{" "}
+            seconds
+          </button>
+        </div>
+      );
+    }
+  });
+
+  // You can add callbacks to react to lifecycle events,
+  // like mounting and unmounting
+  component.mount(() => {
+    setTimeout(() => {
+      seconds++;
+      component.update();
+    }, 1000);
+  });
+
+  return component;
+};
+```
+
+Here's how the API looks when using TypeScript (which is optional):
+
+```tsx
+import * as forgo from "forgo";
+import type { ForgoNewComponentCtor } from "forgo";
+
+const HelloWorld: ForgoNewComponentCtor<{ name: string }> = () => {
+  return new forgo.Component({
+    render({ name }) {
+      return <p>Hello, {name}!</p>;
+    }
+  });
+};
+```
+
+## Launching your components when the page loads
 
 Use the mount() function once your document has loaded.
 
 ```js
 import { mount } from "forgo";
 
+// Wait for the page to be ready
 function ready(fn) {
   if (document.readyState !== "loading") {
     fn();
@@ -94,11 +173,13 @@ function ready(fn) {
 }
 
 ready(() => {
+  // Attach your app's root component to a specific DOM element
   mount(<App />, document.getElementById("root"));
 });
 ```
 
-You could also pass a selector instead of an element to the mount() function.
+Instead of retrieving the DOM element yoursely, you could pass a CSS selector
+and Forgo will find the element for you:
 
 ```js
 ready(() => {
@@ -108,47 +189,107 @@ ready(() => {
 
 ## Child Components and Passing Props
 
-That works just as you'd have seen in React.
+Props and children work just like in React and similar frameworks:
 
 ```jsx
-function Parent(initialProps) {
-  return {
-    render(props, args) {
+// Component Constructors will receive the props passed the *first* time the
+// component renders. But beware! This value won't be updated on later renders.
+// Props passod to the Constructor are useful for one-time setup, but to read
+// the latest props you'll need to use the value passed to render().
+const Parent = (_initialProps) => {
+  return new forgo.Component({
+    // The props passed here will always be up-to-date.
+    //
+    // All lifecycle methods (render, mount, etc.) receive a reference to the
+    // component. This makes it easy to create reusable logic that works for
+    // many different components.
+    render(_props, _component) {
       return (
         <div>
           <Greeter firstName="Jeswin" />
           <Greeter firstName="Kai" />
         </div>
       );
-    },
-  };
+    }
+  });
+};
+
+const Greeter = (_initialProps) => {
+  return new forgo.Component({
+    render(props, _component) {
+      return <div>Hello {props.firstName}</div>;
+    }
+  });
+};
+```
+
+You can pass any kind of value as a prop - not just strings! You just have to
+use curly braces instead of quotes:
+
+```jsx
+const MyComponent = () => {
+  return new forgo.Component({
+    render(_props) {
+      return <NumberComponent myNumber={2} />;
+    }
+  });
+};
+```
+
+You can have one component wrap JSX provided by another. To do this, just render `props.children`.
+
+```jsx
+const Parent = () => {
+  return new forgo.Component({
+    render(_props) {
+      return
+        <Child>
+          <p>Hello, world!</p>
+        </Child>
+      )
+    }
+  });
 }
 
-function Greeter(initialProps) {
-  return {
-    render(props, args) {
-      return <div>Hello {props.firstName}</div>;
-    },
-  };
+const Child = () => {
+  return new forgo.Component({
+    render(props) {
+      return (
+        <div>
+          <p>Here's what the parent told us to render:</p>
+          {props.children}
+        </div>
+      )
+    }
+  });
 }
 ```
 
 ## Reading Form Input Elements
 
-To access the actual DOM elements corresponding to your markup (and the values contained within them), you need to use the ref attribute in the markup. An object referenced by the ref attribute in an element's markup will have its 'value' property set to the actual DOM element when it gets created.
+Forgo encourages you to use the vanilla DOM API when you need to read form field
+values, by directly accessing the DOM elements in the form.
+
+To access the actual DOM elements corresponding to your markup (and the values
+contained within them), you need to use the `ref` attribute in the JSX markup of
+the element you want to reference. An element referenced by the `ref` attribute
+will have its 'value' property set to the actual DOM element when it gets
+created.
 
 Here's an example:
 
 ```jsx
-function Component(initialProps) {
+const MyComponent = (_initialProps) => {
+  // This starts as an empty object. After the element is created, this object
+  // will have a `value` field holding the element.
   const myInputRef = {};
 
-  return {
-    render(props, args) {
-      function onClick() {
+  return new forgo.Component({
+    render(_props, _component) {
+      const onClick = () => {
         const inputElement = myInputRef.value;
         alert(inputElement.value); // Read the text input.
-      }
+      };
 
       return (
         <div>
@@ -156,54 +297,71 @@ function Component(initialProps) {
           <button onclick={onClick}>Click me!</button>
         </div>
       );
-    },
-  };
-}
+    }
+  });
+};
 ```
 
-You can access and read form input elements using regular DOM APIs as well. For example, the following code will work just fine if you assign an id to the input element.
+If you want, you can bypass Forgo entirely when reading form field values. If
+you set the `id` field on the form field, then go ahead and ask the browser for
+that element directly:
 
 ```jsx
-function onClick() {
-  const inputElement = document.getElementById("myinput");
+const onClick = () => {
+  const inputElement = document.getElementById("my-input");
   alert(inputElement.value);
-}
+};
 ```
 
-Lastly, you can pass an event handler to an input and extract the current value from the input event:
+Lastly, DOM events like key presses and clicks pass the affected element to the
+event handler as `event.target`:
 
 ```jsx
-function Component(initialProps) {
-  return {
-    render(props, args) {
-      function onInput(e) {
-        e.preventDefault();
-        alert(e.target.value);
-      }
+const Component = (_initialProps) => {
+  return new forgo.Component({
+    render(_props, _component) {
+      const onInput = (event) => {
+        event.preventDefault();
+        alert(event.target.value);
+      };
 
       return (
         <div>
           <input type="text" oninput={onInput} />
         </div>
       );
-    },
-  };
-}
+    }
+  });
+};
 ```
 
-## Lists and Keys
+## Rendering Lists and using Keys
 
-Keys help Forgo identify which items in a list have changed, are added, or are removed. While Forgo works well without keys, it is a good idea to add them since it avoids unnecessary component mounting and unmounting in some cases.
+Forgo will render any arrays it sees in the JSX. To create a list of elements,
+just use the array's `myArray.map()` method to generate JSX for each item in the array.
 
-As long as they are unique, there is no restriction on what data type you may use for the key; keys could be strings, numbers or even objects. For string keys and numeric keys, Forgo compares them by value; while for object keys, a reference equality check is used.
+Each item in the array may be given a `key` attribute. Keys help Forgo identify
+which items in a list have changed, are added, or are removed. While Forgo works
+well without keys, it is a good idea to add them since it lets Forgo be more
+efficient by only mounting or unmounting components that actually need it.
+
+You can use any data type for a key strings, numbers or even objects. The key
+values only need to be unique. Forgo compares keys using `===` (reference
+equality), so be careful when using objects as keys.
+
+When looping over an array, don't use the array index as the key - the key
+should be something tied to the specific item being rendered (like a permanent
+ID field). The same array index might be associated with different items if you
+reorder the array, and so using the array index as a key will cause unexpected
+behavior.
 
 ```jsx
-function Parent() {
-  return {
-    render(props, args) {
+const Parent = () => {
+  return new forgo.Component({
+    render(_props, _component) {
       const people = [
-        { firstName: "jeswin", id: 1 },
-        { firstName: "kai", id: 2 },
+        { firstName: "jeswin", id: 123 },
+        { firstName: "kai", id: 456 },
       ];
       return (
         <div>
@@ -212,47 +370,39 @@ function Parent() {
           ))}
         </div>
       );
-    },
-  };
-}
+    }
+  });
+};
 
-function Child(initialProps) {
-  return {
+const Child = (initialProps) => {
+  return new forgo.Component({
     render(props) {
       return <div>Hello {props.firstName}</div>;
     },
-  };
-}
+  });
+};
 ```
 
 ## Fetching data asynchronously
 
-Parts of your application might need to fetch data asynchronously, and refresh your component accordingly.
-
-Here's an example of how to do this:
+Your component might need to load data asynchronously (such as making a network
+request). Here's how to do that:
 
 ```jsx
-async function getMessages() {
-  const data = await fetchMessagesFromServer();
-  return data;
-}
-
-export function InboxComponent(initialProps) {
-  // This will be empty initially.
+export const InboxComponent = (_initialProps) => {
+  // This will be empty at first, but will get filled in sometime after the
+  // component first mounts.
   let messages = undefined;
 
-  return {
-    render(props, args) {
+  const component = new forgo.Component({
+    render(_props, _component) {
       // Messages are empty. Let's fetch them.
       if (!messages) {
-        getMessages().then((data) => {
-          messages = data.messages;
-          rerender(args.element);
-        });
         return <p>Loading data...</p>;
       }
 
-      // We have messages to show.
+      // After messages are fetched, the component will rerender and now we can
+      // show the data.
       return (
         <div>
           <header>Your Inbox</header>
@@ -263,130 +413,152 @@ export function InboxComponent(initialProps) {
           </ul>
         </div>
       );
-    },
-  };
-}
-```
+    }
+  });
 
-## The Unmount Event
+  component.mount(async () => {
+    messages = await fetchMessagesFromServer();
+    component.update();
+  });
 
-When a component is unmounted, Forgo will invoke the unmount() function if defined for a component. It receives the current props and args as arguments, just as in the render() function. This can be used for any tear down you might want to do.
-
-```jsx
-function Greeter(initialProps) {
-  return {
-    render(props, args) {
-      return <div>Hello {props.firstName}</div>;
-    },
-    unmount(props, args) {
-      console.log("Got unloaded.");
-    },
-  };
-}
+  return component;
+};
 ```
 
 ## The Mount Event
 
-If you're an application developer, you'd rarely have to use this. It might however be useful if you're developing libraries or frameworks which use Forgo. mount() gets called with the same arguments as render(), but after getting mounted on a real DOM node. It gets called only once.
+The mount event is fired just once per component, when a component has just been created. This is useful
+for set-up logic like starting a timer, fetching data, or opening a WebSocket.
+
+You can register multiple mount callbacks, which is useful if you want to have
+reusable logic that you apply to a number of components.
 
 ```jsx
-function Greeter(initialProps) {
-  return {
-    render(props, args) {
+const Greeter = (_initialProps) => {
+  const component = new forgo.Component({
+    render(_props, _component) {
       return <div id="hello">Hello {props.firstName}</div>;
-    },
-    mount(props, args) {
-      console.log(`Mounted on node with id ${args.element.node.id}`);
-    },
-  };
-}
+    }
+  });
+
+  component.mount((_props, _component) => {
+    console.log("The component has been mounted.");
+  });
+
+  return component;
+};
+```
+
+## The Unmount Event
+
+A component is unmounted when your app no longer renders it (such as when a
+parent component chooses to display something different, or when an item is
+removed from a list you're rendering).
+
+When a component is unmounted, you might want to do tear-down, like canceling a
+timer or closing a WebSocket. To do this, you can register unmount callbacks
+on your component, which will be called when the component is unmounted.
+
+The callbacks are passed the current props and the component instance, just like
+the `render()` method. This can be used for any tear down you might want to do.
+
+```jsx
+const Greeter = (_initialProps) => {
+  const component = new forgo.Component({
+    render(props, _component) {
+      return <div>Hello {props.firstName}</div>;
+    }
+  });
+
+  component.unmount((props, _component) => {
+    console.log("The component has been unloaded.");
+  });
+
+  return component;
+};
 ```
 
 ## The AfterRender Event
 
-Again, if you're an application developer you'd rarely need to use this. The afterRender() event runs every time after the render() runs, but after the rendered elements have been attached to actual DOM nodes. The 'previousNode' property of args will give you the node to which the component was previously attached, if it has changed due to the render().
+If you're an application developer you'll rarely need to use this - it's useful
+for building libraries that wrap Forgo.
+
+The `afterRender` event runs after `render()` has been called and the rendered
+elements have been created in the DOM. The callback is passed the previous DOM
+element the component was attached to, if it changed in the latest render.
 
 ```jsx
-function Greeter(initialProps) {
-  return {
+const Greeter = (_initialProps) => {
+  const component = new forgo.Component({
     render(props, args) {
       return <div id="hello">Hello {props.firstName}</div>;
-    },
-    afterRender(props, args) {
-      console.log(
-        `This component is mounted on ${args.element.node.id}, and previously to ${args.previousNode.id}`
-      );
-    },
-  };
-}
+    }
+  });
+
+  component.afterRender((_props, previousNode, _component) => {
+    console.log(
+      `This component is mounted on ${component.__internal.element.node.id}, and was previously mounted on ${previousNode.id}`
+    );
+  });
+
+  return component;
+};
 ```
 
-## Bailing out of a render
+## Skipping renders
 
-When the shouldUpdate() function is defined for a component, Forgo will call it with newProps and oldProps and check if the return value is true before rendering the component. Returning false will skip rendering the component.
+Sometimes you have some reason why a component shouldn't be rendered right now.
+For example, if you're using immutable data structures, you may want to only
+rerender if the data structure has changed.
+
+Forgo components accept `shouldUpdate` callbacks, which return true/false to
+signal whether the component should / should not be rerendered. If any of them
+return true, the component will be rerendered. If they all return false, the
+component's `render()` method won't be called, skipping all DOM operations for
+the component and its decendants.
+
+The callbacks receive the new props for the proposed render, and the old props
+used in the last render.
+
+Using `shouldUpdate` is completely optional, and most of the time you won't
+need it.
 
 ```jsx
-function Greeter(initialProps) {
-  return {
+const Greeter = (_initialProps) => {
+  const component = new forgo.Component({
     render(props, args) {
       return <div>Hello {props.firstName}</div>;
-    },
-    shouldUpdate(newProps, oldProps) {
-      return newProps.firstName !== oldProps.firstName;
-    },
-  };
-}
-```
-
-### Rendering nothing
-
-A stateless component may elect to render nothing by returning `null` from the `render()` method:
-
-```jsx
-function EmptyComponent(initialProps) {
-  return {
-    render(props, args) {
-      return null;
     }
-  };
-}
-```
+  });
 
-This does not work for stateful components. Forgo tracks component state by attaching it to the component's DOM element. This allows Forgo to operate without a virtual DOM (like React has), but means that if your component render returns `null` Forgo will unmount your component. If the component unmounts itself, there is not a way to request it remount itself, although it will be recreated if the parent rerenders.
+  component.shouldUpdate((newProps, oldProps) => {
+    return newProps.firstName !== oldProps.firstName;
+  });
 
-If you want a component to skip rendering its usual output, return an empty element, like so:
-
-```jsx
-function EmptyComponent(initialProps) {
-  // This will be discarded if the render returns null.
-  // To keep it, always return an element.
-  const myState = Math.random();
-  
-  return {
-    render(props, args) {
-      return <div></div>;
-    }
-  };
+  return component;
 }
 ```
 
 ## Error handling
 
-By defining the error() function, Forgo lets you catch errors in child components (at any level, and not necessarily immediate children).
+Forgo lets components define an `error()` method, which is run any time the
+component (or any of its decendants) throws an exception while running the
+component's `render()` method. The error method can return JSX that is rendered
+in place of the render output, to display an error message to the user.
 
 ```jsx
 // Here's a component which throws an error.
-function BadComponent() {
-  return {
+const BadComponent = () => {
+  return new forgo.Component({
     render() {
       throw new Error("Some error occurred :(");
-    },
-  };
+    }
+  });
 }
 
 // Parent can catch the error by defining the error() function.
-function Parent(initialProps) {
-  return {
+const Parent = (initialProps) => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -394,42 +566,47 @@ function Parent(initialProps) {
         </div>
       );
     },
-    error(props, args) {
+    error(props, error, _component) {
       return (
         <p>
-          Error in {props.name}: {args.error.message}
+          Error in {props.name}: {error.message}
         </p>
       );
-    },
-  };
+    }
+  });
 }
 ```
 
-## Additional Rerender options
+## Passing new props when rerendering
 
-The most straight forward way to do rerender is by invoking it with `args.element` as the only argument - as follows.
+The most straight forward way to do rerender is by invoking it with `component.update()`, as follows:
 
 ```jsx
-function TodoList(initialProps) {
+const TodoList = (initialProps) => {
   let todos = [];
 
-  return {
-    render(props, args) {
-      function addTodos(text) {
+  return new forgo.Component({
+    render(props, component) {
+      const addTodos = (text) => {
         todos.push(text);
-        rerender(args.element);
-      }
-      return <div>markup goes here...</div>;
-    },
-  };
+        component.update();
+      };
+      return (
+        <button type="button" onclick={addTodos}>
+          Add a Todo
+        </button>
+      );
+    }
+  });
 }
 ```
 
-But you could pass newProps as well while rerendering. If you'd like previous props to be used, pass undefined here.
+`component.update()` may optionally receive new props. Omitting the props
+parameter will rerender leave the props unchanged.
 
 ```js
 const newProps = { name: "Kai" };
-rerender(args.element, newProps);
+component.update(newProps);
 ```
 
 ## Rendering without mounting
@@ -442,21 +619,23 @@ import { render } from "forgo";
 const { node } = render(<Component />);
 
 window.addEventListener("load", () => {
-  document.getElementById("root")!.firstElementChild!.replaceWith(node);
+  document.getElementById("root").firstElementChild.replaceWith(node);
 });
 ```
 
 ## Routing
 
-Forgo Router (forgo-router) is a tiny router for Forgo, and is just around 1KB gzipped. Read more at https://github.com/forgojs/forgo-router
+Forgo offers an optional package (`forgo-router`) for handling client-side
+navigation. Forgo Router is just around 1KB gzipped. Read more at
+https://github.com/forgojs/forgo-router
 
 Here's an example:
 
-```js
+```jsx
 import { Router, Link, matchExactUrl, matchUrl } from "forgo-router";
 
-function App() {
-  return {
+const App = () => {
+  return new forgo.Component({
     render() {
       return (
         <Router>
@@ -466,45 +645,59 @@ function App() {
             matchUrl("/about", () => <AboutPage />)}
         </Router>
       );
-    },
-  };
+    }
+  });
 }
 ```
 
 ## Application State Management
 
-Forgo State (forgo-state) is an easy-to-use application state management solution for Forgo (like Redux or MobX), and is less than 1KB gzipped. Read more at https://github.com/forgojs/forgo-state
+Forgo offers an optional package (`forgo-state`) with an easy-to-use application
+state management solution for Forgo. This solves a similar problem to Redux or
+MobX. It's than 1KB gzipped. Read more at https://github.com/forgojs/forgo-state
 
 Here's an example:
 
-```js
+```jsx
 import { bindToStates, defineState } from "forgo-state";
 
 // Define one (or more) application state containers.
 const mailboxState = defineState({
+  username: "Bender B. Rodriguez",
   messages: [],
   drafts: [],
   spam: [],
-  unread: 0,
+  unread: 0
 });
 
-// A Forgo component
-function MailboxView() {
-  const component = {
-    render(props: any, args: ForgoRenderArgs) {
+// A Forgo component that should react to state changes
+const MailboxView = () => {
+  const component = new forgo.Component({
+    render() {
+      if (mailboxState.messages.length > 0) {
+        return (
+          <div>
+            {mailboxState.messages.map((m) => <p>{m}</p>)}
+          </div>
+        );
+      }
+
       return (
         <div>
-          {mailboxState.messages.length ? (
-            mailboxState.messages.map((m) => <p>{m}</p>)
-          ) : (
-            <p>There are no messages for {signinState.username}.</p>
-          )}
+          <p>There are no messages for {mailboxState.username}.</p>
         </div>
       );
-    },
-  };
+    }
+  });
+
+  component.mount(() => updateInbox());
+
   // MailboxView must change whenever mailboxState changes.
-  return bindToStates([mailboxState], component);
+  //
+  // Under the hood, this registers component.mount() and component.unmount()
+  // even handlers
+  bindToStates([mailboxState], component);
+  return component;
 }
 
 async function updateInbox() {
@@ -516,69 +709,86 @@ async function updateInbox() {
 
 ## Lazy Loading
 
-You can achieve lazy loading with the forgo-lazy package. Read more at https://github.com/jacob-ebey/forgo-lazy
+If you want to lazy load a component, you can use the community-provided
+`forgo-lazy` package. This is useful for code splitting, where you want the
+initial page load to be quick (loading the smallest JS possible), and then load
+in more components only when the user needs them. Read more at
+https://github.com/jacob-ebey/forgo-lazy
 
-It's as simple as this:
+It's works like this:
 
 ```jsx
 import lazy, { Suspense } from "forgo-lazy";
 
 const LazyComponent = lazy(() => import("./lazy-component"));
 
-const App = () => ({
-  render: () => (
-    <Suspense fallback={() => "Loading..."}>
-      <LazyComponent title="It's that easy :D" />
-    </Suspense>
-  ),
-});
+const App = () => {
+  return new forgo.Component({
+    render() {
+      return (
+        <Suspense fallback={() => "Loading..."}>
+          <LazyComponent title="It's that easy :D" />
+        </Suspense>
+      );
+    }
+  });
+}
 ```
 
 ## Integrating Forgo into an existing app
 
-Forgo is quite easy to integrate into an existing web app written with other frameworks or with older libraries like jQuery.
+Forgo can be integrated into an existing web app written with other frameworks
+(React, Vue, etc.), or with lower-level libraries like jQuery.
 
-To help with that, the forgo-powertoys library (less than 1KB in size) exposes a rerenderElement() function which can rerender a mounted Forgo component with just a CSS selector (from outside the Forgo app). Read more at https://github.com/forgojs/forgo-powertoys
+To help with that, the `forgo-powertoys` package (less than 1KB in size) exposes
+a `rerenderElement()` function which can receive a CSS selector and rerender the
+Forgo component associated with that element. This works from outside the Forgo
+app, so you can drive Forgo components using your framework/library of choice.
+Read more at https://github.com/forgojs/forgo-powertoys
 
 Here's an example:
 
-```js
+```jsx
 import { rerenderElement } from "forgo-powertoys";
 
 // A forgo component.
-function LiveScores() {
-  return {
+const LiveScores = () => {
+  return new forgo.Component({
     render(props) {
       return <p id="live-scores">Top score is {props.topscore}</p>;
-    },
-  };
+    }
+  });
 }
 
-//mount it on a DOM node as usual
+// Mount it on a DOM node usual
 window.addEventListener("load", () => {
   mount(<SimpleTimer />, document.getElementById("root"));
 });
 
-// Now you can rerender the component from anywhere, anytime!
+// Now you can rerender the component from anywhere, anytime! Pass in the ID of
+// the root element the component returns, as well as new props.
 rerenderElement("#live-scores", { topscore: 244 });
 ```
 
 ## Server-side Rendering (SSR)
 
-You can render components to an html (string) with the forgo-ssr package. This allows you to prerender components on the server and will work with Node.JS servers like Koa, Express etc. Read more at https://github.com/forgojs/forgo-ssr
+From Node.js you can render components to an HTML string with the `forgo-ssr`
+package. This allows you to prerender components on the server, from server-side
+frameworks like Koa, Express etc. Read more at
+https://github.com/forgojs/forgo-ssr
 
 Here's an example:
 
-```js
+```jsx
 import render from "forgo-ssr";
 
 // A forgo component.
-function MyComponent() {
-  return {
+const MyComponent = () => {
+  return new forgo.Component({
     render() {
       return <div>Hello world</div>;
-    },
-  };
+    }
+  });
 }
 
 // Get the html (string) and serve it via koa, express etc.
@@ -587,14 +797,14 @@ const html = render(<MyComponent />);
 
 ## Manually adding elements to the DOM
 
-Forgo allows you to insert elements into the DOM, inside a Forgo component,
-using the vanilla JS DOM API. These elements will be completely unmanaged and
-ignored by Forgo. This is useful for enabling charting libraries, such as D3.
+Forgo allows you to use the built-in browser DOM API to insert elements into the
+DOM tree rendered by a Forgo component. Forgo will ignore these elements. This
+is useful for working with charting libraries, such as D3.
 
-If you add unmanaged elements as siblings to managed nodes, Forgo pushes the
-unmanaged nodes towards the bottom of the sibling list as managed nodes are
-added and removed. If you don't add/remove managed nodes, the unmanaged nodes
-will stay in their original positions.
+If you add unmanaged nodes as siblings to nodes which Forgo manages, Forgo
+pushes the unmanaged nodes towards the bottom of the sibling list when managed
+nodes are added and removed. If you don't add/remove managed nodes, the
+unmanaged nodes will stay in their original positions.
 
 ### ApexCharts example
 
@@ -603,35 +813,9 @@ will stay in their original positions.
 ```jsx
 const App = () => {
   const chartElement = {};
-  let interval;
 
-  return {
-    mount(_props, args) {
-      const chartOptions = {
-        chart: {
-          type: "line"
-        },
-        series: [
-          {
-            name: "sales",
-            data: [30, 40, 35, 50, 49, 60, 70, 91, 125]
-          }
-        ],
-        xaxis: {
-          categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999]
-        }
-      };
-
-      const chart = new ApexCharts(chartElement.value, chartOptions);
-
-      chart.render();
-
-      interval = setInterval(() => args.update(), 1_000);
-    },
-    unmount() {
-      if (interval) clearInterval(interval);
-    },
-    render(_props, args) {
+  const component = new forgo.Component({
+    render(_props, component) {
       const now = new Date();
       return (
         <div>
@@ -647,7 +831,33 @@ const App = () => {
         </div>
       );
     }
-  };
+  });
+
+  component.mount(() => {
+    const chartOptions = {
+      chart: {
+        type: "line",
+      },
+      series: [
+        {
+          name: "sales",
+          data: [30, 40, 35, 50, 49, 60, 70, 91, 125],
+        },
+      ],
+      xaxis: {
+        categories: [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999],
+      },
+    };
+
+    const chart = new ApexCharts(chartElement.value, chartOptions);
+
+    chart.render();
+
+    const interval = setInterval(() => component.update(), 1_000);
+    component.unmount(() => clearInterval(interval));
+  });
+
+  return component;
 };
 ```
 
@@ -655,15 +865,18 @@ const App = () => {
 
 You can try the [Todo List app with Forgo](https://codesandbox.io/s/forgo-todos-javascript-1oi9b) on CodeSandbox.
 
-Or if you prefer Typescript, try [Forgo TodoList in TypeScript](https://codesandbox.io/s/forgo-todos-typescript-9v0iy).
+Or if you prefer TypeScript, try [Forgo TodoList in TypeScript](https://codesandbox.io/s/forgo-todos-typescript-9v0iy).
 
 There is also an example for using [Forgo with forgo-router](https://codesandbox.io/s/forgo-router-typescript-px4sg).
 
 ## Building
 
-Most users are better off just using create-forgo-app to create the project skeleton - in which case all of this is already set up for you. We strongly recommend doing it this way.
+Most users should use create-forgo-app to create the project skeleton - in which
+case all of this is already set up for you. This is the easiest way to get
+started.
 
-But for people who are doing it manually, we'll cover webpack-specific configuration here. Other bundlers would need similar configuration.
+If you want to stand up a project manually, we'll cover webpack-specific
+configuration here. Other bundlers would need similar configuration.
 
 ### esbuild-loader with JavaScript/JSX
 
@@ -756,10 +969,7 @@ Add these lines to babel.config.json:
 {
   "presets": ["@babel/preset-env", "@babel/preset-react"],
   "plugins": [
-    [
-      "@babel/plugin-transform-react-jsx",
-      { "pragma": "forgo.createElement" }
-    ]
+    ["@babel/plugin-transform-react-jsx", { "pragma": "forgo.createElement" }]
   ]
 }
 ```
@@ -795,12 +1005,6 @@ Add these lines to tsconfig.json:
 }
 ```
 
-### Breaking changes in 2.0
-
-Forgo 2.0 drops support for the new JSX transform introduced via "jsx-runtime".
-This never worked with esbuild loader, and more importantly doesn't play well with ES modules.
-If you were using this previously, switch to the configurations discussed above.
-
 ## Core Team
 
 - [github/jeswin](https://github.com/jeswin)
@@ -808,6 +1012,71 @@ If you were using this previously, switch to the configurations discussed above.
 
 ## Getting Help
 
-If you find issues, please file a bug on [Github](https://github.com/forgojs/forgo/issues). You can also reach out to us via Twitter (@forgojs). 
+If you find issues, please file a bug on
+[Github](https://github.com/forgojs/forgo/issues). You can also reach out to us
+via Twitter (@forgojs).
 
+## Deprecation of legacy component syntax is 3.2.0
+In version 3.2.0, Forgo introduced a new syntax for components. This change
+makes Forgo easier to extend with reusable libraries, and makes it
+straightforward to colocate logic that spans mounts & unmounts.
 
+The legacy component syntax will be removed in v4.0. Until then, Forgo will
+print a warning to the console whenever it sees a legacy component. You can
+suppress these warnings by setting `window.FORGO_NO_LEGACY_WARN = true;`.
+
+### Migrating
+Forgo components are now instances of the `Component` class, rather than
+freestanding object values. The `new Component` constructor accepts an object
+holding a `render()` an optional `error()` method. All other methods have been
+converted to lifecycle methods on the component instance. You may register
+multiple handlers for each lifecycle event, and you may register new handlers
+from inside a handler (e.g., a mount handler that registers its own unmount
+logic).
+
+`args` has been replaced by a reference to the component instance, in all
+lifecycle event handlers. This simplifies writing reusable component logic.
+
+The `error()` method now receives the error object as a function parameter,
+rather than as a property on `args`.
+
+The `afterRender` lifecycle event now receives the `previousNode` as a function
+parameter, instead of a property on `args`.
+
+Before:
+```jsx
+const MyComponent = () => {
+  return {
+    render() {},
+    error() {},
+    mount() {},
+    unmount() {},
+    shouldUpdate() {},
+    afterRender() {},
+  };
+}
+```
+
+After:
+```jsx
+const MyComponent = () => {
+  const component = new Component({
+    render() {},
+    error() {}
+  });
+
+  component.mount(() => {});
+  component.unmount(() => {});
+  component.shouldUpdate(() => {});
+  component.afterRender(() => {});
+
+  return component;
+}
+```
+
+## Breaking changes in 2.0
+
+Forgo 2.0 drops support for the new JSX transform introduced via "jsx-runtime".
+This never worked with esbuild loader, and more importantly doesn't play well
+with ES modules. If you were using this previously, switch to the configurations
+discussed above.
