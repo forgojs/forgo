@@ -1,5 +1,5 @@
 # Unreleased
-- The legacy component syntax has been deprecated, and will be removed in v4.0.
+- #59: The legacy component syntax has been deprecated, and will be removed in v4.0.
 For more details, please see the deprecation notice on https://forgojs.org.
 - Fix #62: ensure that a child component's `mount()` lifecycle method is only
   called after its parent has completely finished rendering
