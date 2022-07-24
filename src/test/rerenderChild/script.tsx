@@ -1,6 +1,6 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { mount, ForgoRenderArgs, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
@@ -8,16 +8,16 @@ let document: Document;
 export let parentCounter = 0;
 export let childCounter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component;
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Parent() {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   parentCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+  return new forgo.Component({
+    render() {
       parentCounter++;
       return (
         <div>
@@ -26,26 +26,25 @@ function Parent() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
-function ParentWithSharedNode() {
+const ParentWithSharedNode: forgo.ForgoNewComponentCtor = () => {
   parentCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+  return new forgo.Component({
+    render() {
       parentCounter++;
       return <Child />;
     },
-  };
-}
+  });
+};
 
-function Child() {
+const Child: forgo.ForgoNewComponentCtor = () => {
   childCounter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       childCounter++;
       return (
         <div>
@@ -53,8 +52,9 @@ function Child() {
         </div>
       );
     },
-  };
-}
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

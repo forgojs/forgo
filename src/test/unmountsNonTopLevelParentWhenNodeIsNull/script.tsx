@@ -4,42 +4,43 @@ import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
-let counter = 0;
 
-export let numUnmounts = 0;
+let isFirstRender = true;
+
+export let hasUnmounted = false;
 
 let component: forgo.Component;
-
 export function renderAgain() {
   component.update();
 }
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
-      counter++;
-      return counter === 1 ? <Child /> : <p>1</p>;
+      if (isFirstRender) {
+        isFirstRender = false;
+        return <div>Hello, world</div>;
+      } else {
+        return null;
+      }
     },
+  });
+  component.unmount(() => {
+    hasUnmounted = true;
   });
   return component;
 };
 
-const Child: forgo.ForgoNewComponentCtor = () => {
-  const component = new forgo.Component({
+const Parent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
     render() {
       return (
-        <>
-          <div>1</div>
-          <div>2</div>
-          <div>3</div>
-        </>
+        <div>
+          <Child />
+        </div>
       );
     },
   });
-  component.unmount(() => {
-    numUnmounts++;
-  });
-  return component;
 };
 
 export function run(dom: JSDOM) {
@@ -48,6 +49,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<TestComponent />, window.document.getElementById("root"));
+    mount(<Parent />, window.document.getElementById("root"));
   });
 }

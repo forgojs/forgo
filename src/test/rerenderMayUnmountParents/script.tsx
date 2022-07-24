@@ -1,6 +1,6 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
@@ -9,48 +9,50 @@ export let parent1Unmounted = false;
 export let parent2Unmounted = false;
 export let childUnmounted = false;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Parent1() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const Parent1: forgo.ForgoNewComponentCtor = () => {
+  const component = new forgo.Component({
+    render() {
       return <Parent2 />;
     },
-    unmount() {
-      parent1Unmounted = true;
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    parent1Unmounted = true;
+  });
+  return component;
+};
 
-function Parent2() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const Parent2: forgo.ForgoNewComponentCtor = () => {
+  const component = new forgo.Component({
+    render() {
       return <Child />;
     },
-    unmount() {
-      parent2Unmounted = true;
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    parent2Unmounted = true;
+  });
+  return component;
+};
 
 let counter = 0;
 
-function Child() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const Child: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       counter++;
       return counter === 1 ? <div>This is a child node.</div> : <></>;
     },
-    unmount() {
-      childUnmounted = true;
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    childUnmounted = true;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

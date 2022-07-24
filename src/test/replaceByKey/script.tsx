@@ -1,6 +1,6 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
@@ -14,18 +14,16 @@ type ParentProps = {
 
 export let unmountedElements: string[] = [];
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component<ParentProps>;
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Parent(initialProps: ParentProps) {
+const Parent: forgo.ForgoNewComponentCtor<ParentProps> = () => {
   unmountedElements = [];
   let firstRender = true;
-  return {
-    render(props: ParentProps, args: ForgoRenderArgs) {
-      renderArgs = args;
-
+  component = new forgo.Component<ParentProps>({
+    render(props: ParentProps) {
       if (firstRender) {
         firstRender = false;
         return (
@@ -43,22 +41,28 @@ function Parent(initialProps: ParentProps) {
         );
       }
     },
-  };
-}
+  });
+  return component;
+};
 
-function Child(props: { key: any; id: string }) {
+interface ChildProps {
+  key: any;
+  id: string;
+}
+const Child: forgo.ForgoNewComponentCtor<ChildProps> = () => {
   let myId = "NA";
 
-  return {
+  const component = new forgo.Component<ChildProps>({
     render(props: { key: any; id: string }) {
       myId = props.id;
       return <div>Hello {props.id}</div>;
     },
-    unmount() {
-      unmountedElements.push(myId);
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    unmountedElements.push(myId);
+  });
+  return component;
+};
 
 export function runStringKey(dom: JSDOM) {
   window = dom.window;

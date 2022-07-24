@@ -1,16 +1,20 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+export function renderAgain() {
+  elementOrder = !elementOrder;
+  component.update();
+}
+
+let component: forgo.Component;
 let elementOrder = true;
-function Parent() {
-  return {
-    render(_props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const Parent: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       const keys = elementOrder
         ? ["first-child", "second-child"]
         : ["second-child", "first-child"];
@@ -23,14 +27,18 @@ function Parent() {
         </>
       );
     },
-  };
-}
+  });
+  return component;
+};
 
-function Child() {
+interface ChildProps {
+  key?: unknown;
+}
+const Child: forgo.ForgoNewComponentCtor = () => {
   const state = Math.random().toString();
 
-  return {
-    render(props: any, _args: ForgoRenderArgs) {
+  return new forgo.Component<ChildProps>({
+    render(props) {
       return (
         <>
           <p
@@ -44,13 +52,8 @@ function Child() {
         </>
       );
     },
-  };
-}
-
-export function renderAgain() {
-  elementOrder = !elementOrder;
-  renderArgs.update();
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

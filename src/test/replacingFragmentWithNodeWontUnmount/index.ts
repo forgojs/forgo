@@ -1,8 +1,7 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { run, unmountCounter } from "./script.js";
+import { run, unmountCounter, renderAgain } from "./script.js";
 import should from "should";
-import { renderAgain } from "../clearsOldProps/script.js";
 
 export default function () {
   it("runs unmount when fragment is replaced with a node", async () => {

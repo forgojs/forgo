@@ -2,7 +2,7 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type { ForgoComponentCtor, ForgoComponentProps } from "../index";
+import type { ForgoNewComponentCtor } from "../index";
 
 const componentFactory = () => {
   const state: {
@@ -20,30 +20,30 @@ const componentFactory = () => {
     update: () => undefined,
   };
 
-  const Component: ForgoComponentCtor<ForgoComponentProps> = () => {
+  const Component: ForgoNewComponentCtor = () => {
     // We want to reassign this inside the component ctor closure to test that
     // the component doesn't get recreated when it stops rendering null
     state.internalState = Math.random().toString();
 
-    return {
-      mount() {
-        state.hasMounted = true;
-      },
-      render(_props, args) {
-        state.update = args.update;
+    const component = new forgo.Component({
+      render() {
         if (state.shouldRenderNull) {
           return null;
         } else {
           return <div>Internal state is {state.internalState}</div>;
         }
       },
-      afterRender(_props, args) {
-        state.renderedElement = args.element.node!;
-      },
-      unmount() {
-        state.hasUnmounted = true;
-      },
-    };
+    });
+    state.update = component.update.bind(component);
+    component.mount(() => {
+      state.hasMounted = true;
+      component.unmount(() => (state.hasUnmounted = true));
+    });
+    component.afterRender((_props, _previousNode, component) => {
+      state.renderedElement = component.__internal.element.node!;
+    });
+
+    return component;
   };
   return { state, Component };
 };

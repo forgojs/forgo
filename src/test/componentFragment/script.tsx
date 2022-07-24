@@ -1,13 +1,13 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-function Component() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
+    render() {
       return (
         <>
           <div>1</div>
@@ -16,12 +16,12 @@ function Component() {
         </>
       );
     },
-  };
-}
+  });
+};
 
-function NestedFragmentComponent() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const NestedFragmentComponent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
+    render() {
       return (
         <>
           <>
@@ -35,8 +35,8 @@ function NestedFragmentComponent() {
         </>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -44,7 +44,7 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }
 

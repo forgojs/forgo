@@ -1,19 +1,17 @@
-import should from "should";
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type { ForgoRenderArgs } from "../index.js";
 
 function componentFactory() {
   const state = {
     unmountCount: 0,
     renderCount: 0,
-    renderArgs: undefined as ForgoRenderArgs | undefined,
+    component: null as forgo.Component | null,
   };
 
-  function Component() {
-    function Child() {
-      return {
-        render(props: any, args: ForgoRenderArgs) {
+  const TestComponent: forgo.ForgoNewComponentCtor = () => {
+    const Child: forgo.ForgoNewComponentCtor = () => {
+      const component = new forgo.Component({
+        render() {
           state.renderCount++;
           if (state.renderCount % 2 === 0) {
             return <div>This is a div</div>;
@@ -21,26 +19,28 @@ function componentFactory() {
             return <p>But this is a paragraph</p>;
           }
         },
-        unmount() {
-          state.unmountCount++;
-        },
-      };
-    }
+      });
+      component.unmount(() => {
+        state.unmountCount++;
+      });
+      return component;
+    };
 
-    return {
-      render(props: any, args: ForgoRenderArgs) {
-        state.renderArgs = args;
+    const component = new forgo.Component({
+      render() {
         return (
           <section>
             <Child />
           </section>
         );
       },
-    };
-  }
+    });
+    state.component = component;
+    return component;
+  };
 
   return {
-    Component,
+    TestComponent,
     state,
   };
 }
@@ -48,14 +48,14 @@ function componentFactory() {
 export default function () {
   describe("root element changes", () => {
     it("does not unmount", async () => {
-      const { Component, state } = componentFactory();
-      await run(() => <Component />);
+      const { TestComponent, state } = componentFactory();
+      await run(() => <TestComponent />);
 
-      state.renderArgs!.update();
-      state.renderArgs!.update();
-      state.renderArgs!.update();
-      state.renderArgs!.update();
-      state.renderArgs!.update();
+      state.component!.update();
+      state.component!.update();
+      state.component!.update();
+      state.component!.update();
+      state.component!.update();
 
       state.renderCount.should.equal(6);
       state.unmountCount.should.equal(0);

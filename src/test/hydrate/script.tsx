@@ -1,20 +1,20 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { render, ForgoRenderArgs, setCustomEnv } from "../../index.js";
+import { render, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
 export let buttonRef: any = {};
 
-function Component() {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   let counter = 0;
 
-  return {
-    render(props: any, { update }: ForgoRenderArgs) {
+  return new forgo.Component({
+    render(_props: any, component) {
       function updateCounter() {
         counter++;
-        update();
+        component.update();
       }
 
       return (
@@ -26,15 +26,15 @@ function Component() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
 
-  const { node } = render(<Component />);
+  const { node } = render(<TestComponent />);
   window.addEventListener("load", () => {
     document.getElementById("root")!.firstElementChild!.replaceWith(node);
   });

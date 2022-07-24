@@ -5,31 +5,28 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component;
+let isFirstRender = true;
 
+export let hasUnmounted = false;
+
+let component: forgo.Component;
 export function renderAgain() {
   component.update();
 }
 
-const BasicComponent: forgo.ForgoNewComponentCtor = () => {
-  let firstRender = true;
+const Parent: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
-      if (firstRender) {
-        firstRender = false;
-        return (
-          <div id="mydiv" prop1="hello">
-            Hello world
-          </div>
-        );
+      if (isFirstRender) {
+        isFirstRender = false;
+        return <div>Hello, world</div>;
       } else {
-        return (
-          <div id="mydiv" prop2="world">
-            Hello world
-          </div>
-        );
+        return null;
       }
     },
+  });
+  component.unmount(() => {
+    hasUnmounted = true;
   });
   return component;
 };
@@ -40,6 +37,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<BasicComponent />, document.getElementById("root"));
+    mount(<Parent />, window.document.getElementById("root"));
   });
 }

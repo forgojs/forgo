@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
-import { ForgoRef } from "../../index.js";
 import { buttonRef, run } from "./script.js";
 
 export default function () {
