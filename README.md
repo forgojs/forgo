@@ -161,6 +161,32 @@ const HelloWorld: ForgoNewComponentCtor<{ name: string }> = () => {
 };
 ```
 
+If you assign the component to a variable (such as when adding lifecycle event
+handlers), you'll need to annotate the generic types on both the constructor and
+the component. 
+
+_If you're handy with TypeScript, [we'd love a PR to infer the types!](https://github.com/forgojs/forgo/issues/68)_
+
+```tsx
+import * as forgo from "forgo";
+import type { ForgoNewComponentCtor } from "forgo";
+
+interface HelloWorldProps {
+  name: string;
+}
+const HelloWorld: ForgoNewComponentCtor<HelloWorldProps> = () => {
+  const component = new forgo.Component<HelloWorldProps>({
+    render({ name }) {
+      return <p>Hello, {name}!</p>;
+    }
+  });
+
+  component.mount(() => console.log("Mounted!"));
+
+  return component;
+};
+```
+
 ## Launching your components when the page loads
 
 Use the mount() function once your document has loaded.
