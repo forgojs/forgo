@@ -1,23 +1,22 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
 export let mountCounter = 0;
 
-function Component() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       counter++;
       return counter === 1 ? (
         <>
@@ -33,11 +32,12 @@ function Component() {
         </>
       );
     },
-    mount() {
-      mountCounter++;
-    },
-  };
-}
+  });
+  component.mount(() => {
+    mountCounter++;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -45,6 +45,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }

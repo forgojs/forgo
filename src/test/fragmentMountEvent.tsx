@@ -2,11 +2,7 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type {
-  ForgoRef,
-  ForgoComponentCtor,
-  ForgoComponentProps,
-} from "../index.js";
+import type { ForgoRef, ForgoNewComponentCtor } from "../index.js";
 
 // We should only call those pendingMounts after a component renders, not after
 // elements render. I guess? Or maybe, only after component || array renders?
@@ -18,14 +14,10 @@ function componentFactory() {
     elementBoundAtMountTime: null,
   };
 
-  const TestComponent: ForgoComponentCtor<ForgoComponentProps> = () => {
+  const TestComponent: ForgoNewComponentCtor = () => {
     const el: ForgoRef<HTMLDivElement> = {};
 
-    return {
-      mount(_props) {
-        state.elementBoundAtMountTime = Boolean(el.value);
-      },
-
+    const component = new forgo.Component({
       render(_props) {
         return (
           <>
@@ -34,7 +26,11 @@ function componentFactory() {
           </>
         );
       },
-    };
+    });
+    component.mount(() => {
+      state.elementBoundAtMountTime = Boolean(el.value);
+    });
+    return component;
   };
 
   return {

@@ -1,6 +1,6 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
@@ -8,25 +8,25 @@ let counter = 0;
 
 export let numUnmounts = 0;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Component() {
-  return {
-    render(props: any, componentRenderArgs: ForgoRenderArgs) {
-      renderArgs = componentRenderArgs;
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       counter++;
       return counter === 1 ? <Child /> : <p>1</p>;
     },
-  };
-}
+  });
+  return component;
+};
 
-function Child() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const Child: forgo.ForgoNewComponentCtor = () => {
+  const component = new forgo.Component({
+    render() {
       return (
         <>
           <div>1</div>
@@ -35,11 +35,12 @@ function Child() {
         </>
       );
     },
-    unmount() {
-      numUnmounts++;
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    numUnmounts++;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -47,6 +48,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, window.document.getElementById("root"));
+    mount(<TestComponent />, window.document.getElementById("root"));
   });
 }

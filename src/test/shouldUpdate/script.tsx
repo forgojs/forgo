@@ -1,29 +1,29 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { mount, ForgoRenderArgs, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-let renderArgs: ForgoRenderArgs;
+let component: forgo.Component;
 
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
 export function Parent() {
   let counter = 0;
 
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+  component = new forgo.Component({
+    render() {
       counter++;
       return <div>Counter is {counter}</div>;
     },
-    shouldUpdate() {
-      return false;
-    },
-  };
+  });
+  component.shouldUpdate(() => {
+    return false;
+  });
+  return component;
 }
 
 export function run(dom: JSDOM) {

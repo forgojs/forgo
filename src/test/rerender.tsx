@@ -2,7 +2,7 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type { ForgoRef, ForgoRenderArgs } from "../index.js";
+import type { ForgoRef } from "../index.js";
 import { DOMWindow } from "jsdom";
 
 const unmanagedNodeTagName = "article";
@@ -22,11 +22,14 @@ function componentFactory() {
     remove: () => {},
   };
 
-  function Component(props: {
+  interface TestComponentProps {
     insertionPosition?: "first" | "last" | number;
     window: DOMWindow;
     document: Document;
-  }) {
+  }
+  const TestComponent: forgo.ForgoNewComponentCtor<TestComponentProps> = (
+    props
+  ) => {
     let counter = 0;
     let insertAfterRender = true;
     const { insertionPosition, document } = props;
@@ -53,18 +56,11 @@ function componentFactory() {
       }
     };
 
-    return {
-      afterRender() {
-        if (!insertAfterRender) return;
-        addChild(state.rootElement.value!, "child-of-root");
-        if (insertionPosition === "first") {
-          addChild(state.subrootElement.value!, "child-of-subroot");
-        }
-      },
-      render(_props: any, { update }: ForgoRenderArgs) {
+    const component = new forgo.Component<TestComponentProps>({
+      render(_props, component) {
         function updateCounter() {
           counter++;
-          update();
+          component.update();
         }
         state.remove = () => {
           state.rootElement
@@ -74,7 +70,7 @@ function componentFactory() {
           // don't add one after we call update(). We have to call update() to
           // know that Forgo doesn't misbehave when nodes it saw before disappear.
           insertAfterRender = false;
-          update();
+          component.update();
         };
 
         return (
@@ -93,10 +89,19 @@ function componentFactory() {
           </div>
         );
       },
-    };
-  }
+    });
+    component.afterRender(() => {
+      if (!insertAfterRender) return;
+      addChild(state.rootElement.value!, "child-of-root");
+      if (insertionPosition === "first") {
+        addChild(state.subrootElement.value!, "child-of-subroot");
+      }
+    });
+    return component;
+  };
+
   return {
-    Component,
+    Component: TestComponent,
     state,
   };
 }
@@ -158,8 +163,9 @@ export default function () {
       ));
 
       should.equal(
-        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         1,
         "Root element should have the appended element"
       );
@@ -167,8 +173,9 @@ export default function () {
       state.buttonElement.value!.click();
 
       should.equal(
-        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         2,
         "Root element should have both appended elements"
       );
@@ -180,8 +187,9 @@ export default function () {
       await run((env) => <Component insertionPosition={2} {...env} />);
 
       should.equal(
-        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         1,
         "Root element should have the appended element"
       );
@@ -189,8 +197,9 @@ export default function () {
       state.buttonElement.value!.click();
 
       should.equal(
-        state.rootElement.value!.querySelectorAll('[data-forgo="child-of-root"]')
-          .length,
+        state.rootElement.value!.querySelectorAll(
+          '[data-forgo="child-of-root"]'
+        ).length,
         2,
         "Root element should have both appended elements"
       );
@@ -232,8 +241,8 @@ export default function () {
       // we added after the first render
       state.buttonElement.value!.click();
 
-      [state.buttonElement, state.pElement, state.subrootElement].forEach((el) =>
-        should.notEqual(el.value!.tagName, unmanagedNodeTagName)
+      [state.buttonElement, state.pElement, state.subrootElement].forEach(
+        (el) => should.notEqual(el.value!.tagName, unmanagedNodeTagName)
       );
 
       // Same test as above, but pull the elements out of the live DOM. This

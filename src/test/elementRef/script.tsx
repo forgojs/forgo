@@ -7,18 +7,17 @@ let document: Document;
 
 export let inputRef: ForgoRef<HTMLInputElement> = {};
 
-function Parent() {
-  return {
+const Parent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
     render() {
-
       return (
         <div>
           <input type="text" ref={inputRef} />
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

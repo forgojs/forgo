@@ -2,31 +2,23 @@ import * as forgo from "../../index.js";
 import { JSDOM } from "jsdom";
 import { mount, setCustomEnv } from "../../index.js";
 
-function getRandomString() {
-  return (
-    Math.random().toString(36).substring(2, 10) +
-    Math.random().toString(36).substring(2, 10)
-  );
-}
-
 let sortOrder = 1;
-let renderArgs: forgo.ForgoRenderArgs;
+let component: forgo.Component;
 
 export function reorderElements() {
   sortOrder = 2;
-  renderArgs.update({});
+  component.update({});
 }
 
-export let inputRef1: forgo.ForgoRef<HTMLInputElement> = {}
-export let inputRef2: forgo.ForgoRef<HTMLInputElement> = {}
-export let inputRef3: forgo.ForgoRef<HTMLInputElement> = {}
-export let inputRef4: forgo.ForgoRef<HTMLInputElement> = {}
-export let inputRef5: forgo.ForgoRef<HTMLInputElement> = {}
+export let inputRef1: forgo.ForgoRef<HTMLInputElement> = {};
+export let inputRef2: forgo.ForgoRef<HTMLInputElement> = {};
+export let inputRef3: forgo.ForgoRef<HTMLInputElement> = {};
+export let inputRef4: forgo.ForgoRef<HTMLInputElement> = {};
+export let inputRef5: forgo.ForgoRef<HTMLInputElement> = {};
 
-function ContainerComponent() {
-  return {
-    render(props: {}, args: forgo.ForgoRenderArgs) {
-      renderArgs = args;
+const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       return (
         <div>
           {sortOrder === 1 ? (
@@ -49,8 +41,9 @@ function ContainerComponent() {
         </div>
       );
     },
-  };
-}
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   const window = dom.window;

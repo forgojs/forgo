@@ -3,8 +3,7 @@ import should from "should";
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
 
-import type { ForgoComponentCtor, ForgoComponentProps } from "../index.js";
-import type { ComponentEnvironment } from "./componentRunner.js";
+import type { ForgoNewComponentCtor } from "../index.js";
 
 const componentFactory = () => {
   const state: {
@@ -12,22 +11,20 @@ const componentFactory = () => {
     idAttr: string | null;
     parentChildrenCount: number;
   } = { parentEl: {}, parentChildrenCount: 0, idAttr: null };
-  const TestComponent: ForgoComponentCtor<ForgoComponentProps> = () => {
-    const Child: ForgoComponentCtor<ForgoComponentProps> = () => {
-      return {
-        mount() {
-          state.idAttr = state.parentEl.value!.getAttribute("id");
-        },
+  const TestComponent: ForgoNewComponentCtor = () => {
+    const Child: ForgoNewComponentCtor = () => {
+      const component = new forgo.Component({
         render() {
           return <div>Hello world</div>;
         },
-      };
+      });
+      component.mount(() => {
+        state.idAttr = state.parentEl.value!.getAttribute("id");
+      });
+      return component;
     };
 
-    return {
-      mount() {
-        state.parentChildrenCount = state.parentEl.value!.childNodes.length;
-      },
+    const component = new forgo.Component({
       render() {
         return (
           <div ref={state.parentEl} id="hello">
@@ -35,7 +32,12 @@ const componentFactory = () => {
           </div>
         );
       },
-    };
+    });
+    component.mount(() => {
+      state.parentChildrenCount = state.parentEl.value!.childNodes.length;
+    });
+
+    return component;
   };
 
   return { state, TestComponent };

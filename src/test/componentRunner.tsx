@@ -43,12 +43,16 @@ export async function run<TProps>(
 
   const node = componentBuilder({ window, document });
 
-  window.addEventListener("load", () => {
-    forgo.mount(node, document.getElementById("root"));
-  });
-
   // Wait for the component to actually render
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
+    window.addEventListener("load", () => {
+      try {
+        forgo.mount(node, document.getElementById("root"));
+      } catch (ex) {
+        reject(ex);
+      }
+    });
+
     window.addEventListener("load", () => {
       resolve();
     });

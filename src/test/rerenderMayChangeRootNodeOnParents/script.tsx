@@ -1,36 +1,31 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
 
-export let parentArgs: ForgoRenderArgs;
+export let parentComponent: forgo.Component;
+export function renderAgain() {
+  parentComponent.update();
+}
 
-function Parent() {
-  return {
-    mount(props: any, args: ForgoRenderArgs) {
-      parentArgs = args;
-    },
+let childComponent: forgo.Component;
 
-    render(props: any, args: ForgoRenderArgs) {
+const Parent: forgo.ForgoNewComponentCtor = () => {
+  parentComponent = new forgo.Component({
+    render() {
       return <Child />;
     },
-  };
-}
+  });
+  return parentComponent;
+};
 
 let counter = 0;
 
-let renderArgs: ForgoRenderArgs;
-
-export function renderAgain() {
-  renderArgs.update();
-}
-
-function Child() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const Child: forgo.ForgoNewComponentCtor = () => {
+  childComponent = new forgo.Component({
+    render() {
       counter++;
       return counter === 1 ? (
         <div id="node1">This is a child node.</div>
@@ -38,8 +33,9 @@ function Child() {
         <p id="node2">This is a child node.</p>
       );
     },
-  };
-}
+  });
+  return childComponent;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

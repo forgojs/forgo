@@ -5,8 +5,8 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-function Component() {
-  return {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -31,8 +31,8 @@ function Component() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
@@ -40,6 +40,6 @@ export function run(dom: JSDOM) {
   setCustomEnv({ window, document });
 
   window.addEventListener("load", () => {
-    mount(<Component />, document.getElementById("root"));
+    mount(<TestComponent />, document.getElementById("root"));
   });
 }

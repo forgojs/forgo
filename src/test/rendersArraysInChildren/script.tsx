@@ -7,8 +7,8 @@ let document: Document;
 
 const someIntegers = [1, 2, 3, 4];
 
-function BasicComponent() {
-  return {
+const BasicComponent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -19,8 +19,8 @@ function BasicComponent() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function runArrays(dom: JSDOM) {
   window = dom.window;
@@ -32,8 +32,8 @@ export function runArrays(dom: JSDOM) {
   });
 }
 
-function BasicComponentNested() {
-  return {
+const BasicComponentNested: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
     render() {
       return (
         <div>
@@ -42,8 +42,8 @@ function BasicComponentNested() {
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function runNestedArrays(dom: JSDOM) {
   window = dom.window;

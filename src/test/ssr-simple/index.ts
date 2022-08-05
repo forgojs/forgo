@@ -4,7 +4,7 @@ import should from "should";
 import { run } from "./script.js";
 
 export default function () {
-  it("Simple server side rendering", async () => {
+  it("simple server side rendering", async () => {
     const dom = new JSDOM(htmlFile("<div><p>Hello1</p><p>World1</p></div>"), {
       runScripts: "outside-only",
       resources: "usable",

@@ -1,24 +1,22 @@
 import * as forgo from "../../index.js";
 import { DOMWindow, JSDOM } from "jsdom";
-import { ForgoRenderArgs, mount, setCustomEnv } from "../../index.js";
+import { mount, setCustomEnv } from "../../index.js";
 
 let window: DOMWindow;
 let document: Document;
-
-let renderArgs: ForgoRenderArgs;
 
 let isFirstRender = true;
 
 export let hasUnmounted = false;
 
+let component: forgo.Component;
 export function renderAgain() {
-  renderArgs.update();
+  component.update();
 }
 
-function Child() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
-      renderArgs = args;
+const Child: forgo.ForgoNewComponentCtor = () => {
+  component = new forgo.Component({
+    render() {
       if (isFirstRender) {
         isFirstRender = false;
         return <div>Hello, world</div>;
@@ -26,23 +24,24 @@ function Child() {
         return null;
       }
     },
-    unmount() {
-      hasUnmounted = true;
-    },
-  };
-}
+  });
+  component.unmount(() => {
+    hasUnmounted = true;
+  });
+  return component;
+};
 
-function Parent() {
-  return {
-    render(props: any, args: ForgoRenderArgs) {
+const Parent: forgo.ForgoNewComponentCtor = () => {
+  return new forgo.Component({
+    render() {
       return (
         <div>
           <Child />
         </div>
       );
     },
-  };
-}
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

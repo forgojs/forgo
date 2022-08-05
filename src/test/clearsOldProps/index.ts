@@ -13,7 +13,7 @@ export default function () {
 
     run(dom);
 
-    const innerHtml = await new Promise<string>((resolve) => {
+    await new Promise<string>((resolve) => {
       window.addEventListener("load", () => {
         renderAgain();
         resolve(window.document.body.innerHTML);

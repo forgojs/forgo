@@ -9,42 +9,43 @@ function getRandomString() {
   );
 }
 
-const savedState = new Map<unknown, string>();
+export const componentStates = new Map<unknown, string>();
 
-export function getComponentState() {
-  return savedState;
+interface StatefulComponentProps {
+  key: unknown;
 }
-
-function StatefulComponent() {
+const StatefulComponent: forgo.ForgoNewComponentCtor<
+  StatefulComponentProps
+> = () => {
   let state = getRandomString();
-  return {
-    render({ key }: { key: string }) {
-      savedState.set(key, state);
+  const component = new forgo.Component<StatefulComponentProps>({
+    render({ key }) {
+      componentStates.set(key, state);
       return (
         <p state={state} key={key}>
           Component #{key}
         </p>
       );
     },
-    unmount({ key }: { key: string }) {
-      savedState.delete(key);
-    },
-  };
-}
+  });
+  component.unmount(({ key }) => {
+    componentStates.delete(key);
+  });
+  return component;
+};
 
 let sortOrder = 1;
-let containerArgs: forgo.ForgoRenderArgs;
+let containerComponent: forgo.Component;
 
 export function reorderComponents() {
   sortOrder = 2;
-  containerArgs.update({});
+  containerComponent.update({});
 }
 
-function ContainerComponent() {
-  return {
-    render(_props: {}, args: forgo.ForgoRenderArgs) {
-      savedState.clear();
-      containerArgs = args;
+const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
+  containerComponent = new forgo.Component({
+    render() {
+      componentStates.clear();
       return (
         <div>
           {sortOrder === 1 ? (
@@ -69,8 +70,9 @@ function ContainerComponent() {
         </div>
       );
     },
-  };
-}
+  });
+  return containerComponent;
+};
 
 export function run(dom: JSDOM) {
   const window = dom.window;

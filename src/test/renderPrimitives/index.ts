@@ -21,7 +21,8 @@ export default function () {
           ? " wrapped in DIV"
           : wrapping === "FRAGMENT"
           ? " wrapped in FRAGMENT"
-          : "";
+          : " without wrapping";
+
       it("renders undefined" + wrappedText, async () => {
         const dom = new JSDOM(htmlFile(), {
           runScripts: "outside-only",
@@ -45,7 +46,11 @@ export default function () {
         } else {
           should.equal(
             window.document.getElementById("root")?.childNodes.length,
-            0
+            1
+          );
+          should.equal(
+            window.document.getElementById("root")?.childNodes[0].nodeType,
+            8
           );
         }
       });
@@ -73,7 +78,11 @@ export default function () {
         } else {
           should.equal(
             window.document.getElementById("root")?.childNodes.length,
-            0
+            1
+          );
+          should.equal(
+            window.document.getElementById("root")?.childNodes[0].nodeType,
+            8
           );
         }
       });

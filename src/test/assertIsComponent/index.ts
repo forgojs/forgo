@@ -20,7 +20,7 @@ export default function () {
     });
 
     (componentError as Error).message.should.equal(
-      "BasicComponent component constructor must return an object having a render() function."
+      "BasicComponent component constructor must return an instance of the Component class"
     );
   });
 }
