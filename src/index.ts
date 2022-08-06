@@ -1319,9 +1319,9 @@ export function createForgoInstance(customEnv: any) {
       // the calls will be for already-mounted components. Only fire the mount
       // lifecycle events when appropriate.
       if (!state.isMounted) {
+        state.isMounted = true;
         lifecycleEmitters.mount(state.component, state.props);
       }
-      state.isMounted = true;
     }
   }
 
