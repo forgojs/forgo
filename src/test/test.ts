@@ -7,7 +7,7 @@ import passProps from "./passProps/index.js";
 import elementRef from "./elementRef/index.js";
 import rerender from "./rerender.js";
 import hydrate from "./hydrate/index.js";
-import componentUnmount from "./componentUnmount/index.js";
+import componentUnmount from "./componentUnmount.js";
 import componentMount from "./componentMount.js";
 import nodeState from "./nodeState/index.js";
 import replaceByKey from "./replaceByKey/index.js";

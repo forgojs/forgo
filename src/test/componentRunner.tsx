@@ -27,7 +27,7 @@ function defaultDom() {
  * because we want tests to be able to set their own per-test props on a
  * component, which only works if the test declares the props as JSX
  */
-export async function run<TProps>(
+export async function run(
   componentBuilder: (env: ComponentEnvironment) => {
     node: forgo.ForgoNode;
   },
@@ -48,13 +48,10 @@ export async function run<TProps>(
     window.addEventListener("load", () => {
       try {
         forgo.mount(node, document.getElementById("root"));
+        resolve();
       } catch (ex) {
         reject(ex);
       }
-    });
-
-    window.addEventListener("load", () => {
-      resolve();
     });
   });
 
