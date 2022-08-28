@@ -76,7 +76,7 @@ export type ForgoFragment = {
   __is_forgo_element__: true;
 };
 
-export type ForgoElement<TProps> =
+export type ForgoElement<TProps extends ForgoDOMElementProps> =
   | ForgoDOMElement<TProps>
   | ForgoComponentElement<TProps>;
 
@@ -110,7 +110,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
   In addition it holds a bunch of other things. 
   Like for example, a key which uniquely identifies a child element when rendering a list.
 */
-export type NodeAttachedComponentState<TProps> = {
+export type NodeAttachedComponentState<TProps extends {}> = {
   key?: any;
   ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>;
   component: Component<TProps>;
@@ -289,7 +289,8 @@ type ComponentEventListenerBase = {
 // TODO: figure out if TS gets angry if the user passes an async function as an
 // event listener. Maybe we need to default to unknown instead of void for the
 // return type?
-interface ComponentEventListeners<Props> extends ComponentEventListenerBase {
+interface ComponentEventListeners<Props extends {}>
+  extends ComponentEventListenerBase {
   mount: Array<
     (props: Props & ForgoComponentProps, component: Component<Props>) => void
   >;
@@ -312,7 +313,7 @@ interface ComponentEventListeners<Props> extends ComponentEventListenerBase {
   >;
 }
 
-interface ComponentInternal<Props> {
+interface ComponentInternal<Props extends {}> {
   unmounted: boolean;
   registeredMethods: ForgoComponentMethods<Props>;
   eventListeners: ComponentEventListeners<Props>;
@@ -320,17 +321,17 @@ interface ComponentInternal<Props> {
 }
 
 const lifecycleEmitters = {
-  mount<Props>(component: Component<Props>, props: Props): void {
+  mount<Props extends {}>(component: Component<Props>, props: Props): void {
     component.__internal.eventListeners.mount.forEach((cb) =>
       cb(props, component)
     );
   },
-  unmount<Props>(component: Component<Props>, props: Props) {
+  unmount<Props extends {}>(component: Component<Props>, props: Props) {
     component.__internal.eventListeners.unmount.forEach((cb) =>
       cb(props, component)
     );
   },
-  shouldUpdate<Props>(
+  shouldUpdate<Props extends {}>(
     component: Component<Props>,
     newProps: Props,
     oldProps: Props
@@ -343,7 +344,7 @@ const lifecycleEmitters = {
       .map((cb) => cb(newProps, oldProps, component))
       .some(Boolean);
   },
-  afterRender<Props>(
+  afterRender<Props extends {}>(
     component: Component<Props>,
     props: Props,
     previousNode: ChildNode | undefined
@@ -1022,7 +1023,7 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  function renderComponentAndRemoveStaleNodes<TProps>(
+  function renderComponentAndRemoveStaleNodes<TProps extends {}>(
     forgoNode: ForgoNode,
     insertionOptions: SearchableNodeInsertionOptions,
     statesToAttach: NodeAttachedComponentState<any>[],
@@ -1343,7 +1344,9 @@ export function createForgoInstance(customEnv: any) {
    *   a) match by the key
    *   b) match by the tagname
    */
-  function findReplacementCandidateForElement<TProps>(
+  function findReplacementCandidateForElement<
+    TProps extends ForgoDOMElementProps
+  >(
     forgoElement: ForgoDOMElement<TProps>,
     parentElement: Element,
     searchFrom: number,
@@ -1405,7 +1408,9 @@ export function createForgoInstance(customEnv: any) {
    *   a) match by the key
    *   b) match by the component constructor
    */
-  function findReplacementCandidateForComponent<TProps>(
+  function findReplacementCandidateForComponent<
+    TProps extends ForgoDOMElementProps
+  >(
     forgoElement: ForgoComponentElement<TProps>,
     parentElement: Element,
     searchFrom: number,
@@ -2071,7 +2076,7 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <Props>(
+export const legacyComponentSyntaxCompat = <Props extends {}>(
   legacyComponent: ForgoComponent<Props>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
@@ -2128,7 +2133,7 @@ export const legacyComponentSyntaxCompat = <Props>(
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<Props>(
+function assertIsComponent<Props extends {}>(
   ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
