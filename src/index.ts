@@ -216,6 +216,7 @@ export type UnloadableChildNode = {
 */
 export type RenderResult = {
   nodes: ChildNode[];
+  pendingMounts: (() => void)[];
 };
 
 export type DeletedNode = {
@@ -470,10 +471,10 @@ export function createForgoInstance(customEnv: any) {
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
-    // Array of Nodes
-    if (Array.isArray(forgoNode)) {
+    // Array of Nodes, or Fragment
+    if (Array.isArray(forgoNode) || isForgoFragment(forgoNode)) {
       return renderArray(
-        forgoNode,
+        flatten(forgoNode),
         insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
@@ -491,28 +492,32 @@ export function createForgoInstance(customEnv: any) {
         pendingAttachStates,
         mountOnPreExistingDOM
       );
-    } else if (isForgoFragment(forgoNode)) {
-      return renderFragment(
-        forgoNode,
-        insertionOptions,
-        pendingAttachStates,
-        mountOnPreExistingDOM
-      );
     }
     // Component
     else {
-      return renderComponent(
+      const result = renderComponent(
         forgoNode,
         insertionOptions,
         pendingAttachStates,
         mountOnPreExistingDOM
       );
+      // In order to prevent issue #50 (Fragments having mount() called before
+      // *all* child elements have finished rendering), we delay calling mount
+      // until a subtree's render has completed
+      //
+      // Ideally this would encompass both mounts and unmounts, but an unmounted
+      // component doesn't get `renderComponent()` called on it, so we need to
+      // continue unmounting inside each of the type-specific render functions.
+      // That's fine since the problem is elements not existing at mount time,
+      // whereas unmount timing isn't sensitive to that.
+      result.pendingMounts.forEach((fn) => fn());
+      result.pendingMounts.length = 0;
+      return result;
     }
   }
 
   /*
     Render a string.
-<<<<<<< HEAD
    * Such as in the render function below:
    * function MyComponent() {
    *   return new forgo.Component({
@@ -568,8 +573,13 @@ export function createForgoInstance(customEnv: any) {
     }
 
     syncAttrsAndState(forgoNode, node, true, pendingAttachStates);
-    remountComponents(pendingAttachStates, oldComponentState);
-    return { nodes: [node] };
+    unmountComponents(pendingAttachStates, oldComponentState);
+    return {
+      nodes: [node],
+      pendingMounts: [
+        () => mountComponents(pendingAttachStates, oldComponentState),
+      ],
+    };
   }
 
   /*
@@ -735,10 +745,14 @@ export function createForgoInstance(customEnv: any) {
 
       renderChildNodes(targetElement);
       unloadMarkedNodes(targetElement, pendingAttachStates);
+      unmountComponents(pendingAttachStates, oldComponentState);
 
-      remountComponents(pendingAttachStates, oldComponentState);
-
-      return { nodes: [targetElement] };
+      return {
+        nodes: [targetElement],
+        pendingMounts: [
+          () => mountComponents(pendingAttachStates, oldComponentState),
+        ],
+      };
     }
 
     function addElement(
@@ -758,10 +772,12 @@ export function createForgoInstance(customEnv: any) {
       syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
 
       renderChildNodes(newElement);
+      unmountComponents(pendingAttachStates, undefined);
 
-      remountComponents(pendingAttachStates, undefined);
-
-      return { nodes: [newElement] };
+      return {
+        nodes: [newElement],
+        pendingMounts: [() => mountComponents(pendingAttachStates, undefined)],
+      };
     }
   }
 
@@ -898,6 +914,7 @@ export function createForgoInstance(customEnv: any) {
             indexOfNode,
             indexOfNode + componentState.nodes.length
           ),
+          pendingMounts: [],
         };
       }
     }
@@ -1093,7 +1110,7 @@ export function createForgoInstance(customEnv: any) {
         "Arrays and fragments cannot be rendered at the top level."
       );
     } else {
-      let allNodes: ChildNode[] = [];
+      const renderResults: RenderResult = { nodes: [], pendingMounts: [] };
 
       let currentNodeIndex = insertionOptions.currentNodeIndex;
       let numNodes = insertionOptions.length;
@@ -1108,62 +1125,30 @@ export function createForgoInstance(customEnv: any) {
           length: numNodes,
         };
 
-        const { nodes } = internalRender(
+        const renderResult = internalRender(
           forgoNode,
           newInsertionOptions,
           pendingAttachStates,
           mountOnPreExistingDOM
         );
 
-        allNodes = allNodes.concat(nodes);
+        renderResults.nodes.push(...renderResult.nodes);
+        renderResults.pendingMounts.push(...renderResult.pendingMounts);
 
         const totalNodesAfterRender =
           insertionOptions.parentElement.childNodes.length;
 
         const numNodesRemoved =
-          totalNodesBeforeRender + nodes.length - totalNodesAfterRender;
+          totalNodesBeforeRender +
+          renderResult.nodes.length -
+          totalNodesAfterRender;
 
-        currentNodeIndex += nodes.length;
+        currentNodeIndex += renderResult.nodes.length;
         numNodes -= numNodesRemoved;
       }
 
-      return { nodes: allNodes };
+      return renderResults;
     }
-  }
-
-  /*
-    Render a Fragment
-  */
-  function renderFragment(
-    fragment: ForgoFragment,
-    insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    mountOnPreExistingDOM: boolean
-  ): RenderResult {
-    return renderArray(
-      flatten(fragment),
-      insertionOptions,
-      pendingAttachStates,
-      mountOnPreExistingDOM
-    );
-  }
-
-  /**
-   * Attach component states to DOM nodes and call unmount/mount lifecycle
-   * methods
-   */
-  function remountComponents(
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
-  ) {
-    if (oldComponentStates) {
-      const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
-        pendingAttachStates,
-        oldComponentStates
-      );
-      unmountComponents(oldComponentStates, indexOfFirstIncompatibleState);
-    }
-    mountComponents(pendingAttachStates, 0);
   }
 
   /**
@@ -1223,11 +1208,7 @@ export function createForgoInstance(customEnv: any) {
       if (state) {
         state.deleted = true;
         const oldComponentStates = state.components;
-        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
-          pendingAttachStates,
-          oldComponentStates
-        );
-        unmountComponents(state.components, indexOfFirstIncompatibleState);
+        unmountComponents(pendingAttachStates, oldComponentStates);
       }
     }
     clearDeletedNodes(parentElement);
@@ -1263,19 +1244,32 @@ export function createForgoInstance(customEnv: any) {
     return i;
   }
 
-  /*
-    Unmount components above an index. This is going to be passed a stale state[].
-    The from param is the index at which stale state[] differs from new state[]
-  */
+  /**
+   * Unmount components above an index. This is going to be passed a stale
+   * state[].
+   *
+   * The `unmount` lifecycle event will be called.
+   */
   function unmountComponents(
-    states: NodeAttachedComponentState<any>[],
-    from: number
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
+    if (!oldComponentStates) return;
+
     // If the parent has already unmounted, we can skip checks on children.
     let parentHasUnmounted = false;
 
-    for (let i = from; i < states.length; i++) {
-      const state = states[i];
+    const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+      pendingAttachStates,
+      oldComponentStates
+    );
+
+    for (
+      let i = indexOfFirstIncompatibleState;
+      i < oldComponentStates.length;
+      i++
+    ) {
+      const state = oldComponentStates[i];
       const component = state.component;
       // Render if:
       //  - parent has already unmounted
@@ -1305,20 +1299,32 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  /*
-    Mount components above an index. This is going to be passed the new state[].
-    The from param is the index at which stale state[] differs from new state[]
-  */
+  /**
+   * Mount components above an index. This is going to be passed the new
+   * state[].
+   */
   function mountComponents(
-    states: NodeAttachedComponentState<any>[],
-    from: number
+    pendingAttachStates: NodeAttachedComponentState<any>[],
+    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
-    for (let i = from; i < states.length; i++) {
-      const state = states[i];
+    const indexOfFirstIncompatibleState = oldComponentStates
+      ? findIndexOfFirstIncompatibleState(
+          pendingAttachStates,
+          oldComponentStates
+        )
+      : 0;
+
+    for (
+      let i = indexOfFirstIncompatibleState;
+      i < pendingAttachStates.length;
+      i++
+    ) {
+      const state = pendingAttachStates[i];
       // This function is called in every syncStateAndProps() call, so many of
       // the calls will be for already-mounted components. Only fire the mount
       // lifecycle events when appropriate.
       if (!state.isMounted) {
+        state.isMounted = true;
         lifecycleEmitters.mount(state.component, state.props);
       }
       state.isMounted = true;
@@ -1832,10 +1838,11 @@ export function createForgoInstance(customEnv: any) {
               indexOfNode,
               indexOfNode + originalComponentState.nodes.length
             ),
+            pendingMounts: [],
           };
         }
       } else {
-        return { nodes: [] };
+        return { nodes: [], pendingMounts: [] };
       }
     } else {
       throw new Error(`Missing node information in rerender() argument.`);

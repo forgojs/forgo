@@ -1,3 +1,9 @@
+# 3.2.1
+
+- Fix #50: Components that returned a fragment saw their `mount` lifecycle
+  method called after the first child element had been created instead of after
+  the render had completed. 
+
 # 3.2.0
 
 - #59: Forgo's legacy component syntax (component syntax used through v3.1.1)
@@ -7,6 +13,7 @@
   called after its parent has completely finished rendering
 - Feature: Allow components to return `null` or `undefined` from their
   `render()` method (#39)
+>>>>>>> main
 
 # 3.1.1
 

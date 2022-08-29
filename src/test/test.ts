@@ -38,6 +38,7 @@ import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull.js";
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents/index.js";
 import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
 import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.js";
+import fragmentMountTiming from "./fragmentMountEvent.js";
 import componentApi from "./componentApi.js";
 
 mount();
@@ -77,4 +78,5 @@ elementKeepsStateWhenReordered();
 unmountsParentWhenNodeIsNull();
 keyedFragmentsPreserveChildStates();
 rootElementChangeDoesNotUnmount();
+fragmentMountTiming();
 componentApi();
