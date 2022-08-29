@@ -1291,8 +1291,8 @@ export function createForgoInstance(customEnv: any) {
         })
       ) {
         if (!component.__internal.unmounted) {
-          lifecycleEmitters.unmount(component, state.props);
           component.__internal.unmounted = true;
+          lifecycleEmitters.unmount(component, state.props);
         }
         parentHasUnmounted = true;
       }
@@ -1637,47 +1637,72 @@ export function createForgoInstance(customEnv: any) {
       isString(container) ? env.document.querySelector(container) : container
     ) as Element;
 
-    if (parentElement) {
-      if (parentElement.nodeType === ELEMENT_NODE_TYPE) {
-        const mountOnPreExistingDOM = parentElement.childNodes.length > 0;
-        const result = internalRender(
-          forgoNode,
-          {
-            type: "search",
-            currentNodeIndex: 0,
-            length: parentElement.childNodes.length,
-            parentElement,
-          },
-          [],
-          mountOnPreExistingDOM
-        );
-
-        // Remove excess nodes.
-        // This happens when there are pre-existing nodes.
-        if (result.nodes.length < parentElement.childNodes.length) {
-          const nodesToRemove = sliceNodes(
-            parentElement.childNodes,
-            result.nodes.length,
-            parentElement.childNodes.length
-          );
-          for (const node of nodesToRemove) {
-            node.remove();
-          }
-        }
-
-        return result;
-      } else {
-        throw new Error(
-          "The container argument to the mount() function should be an HTML element."
-        );
-      }
-    } else {
+    if (!parentElement) {
       throw new Error(
         `The mount() function was called on a non-element (${
           typeof container === "string" ? container : container?.tagName
         }).`
       );
     }
+    if (parentElement.nodeType !== ELEMENT_NODE_TYPE) {
+      throw new Error(
+        "The container argument to the mount() function should be an HTML element."
+      );
+    }
+
+    const mountOnPreExistingDOM = parentElement.childNodes.length > 0;
+    const result = internalRender(
+      forgoNode,
+      {
+        type: "search",
+        currentNodeIndex: 0,
+        length: parentElement.childNodes.length,
+        parentElement,
+      },
+      [],
+      mountOnPreExistingDOM
+    );
+
+    // Remove excess nodes.
+    // This happens when there are pre-existing nodes.
+    if (result.nodes.length < parentElement.childNodes.length) {
+      const nodesToRemove = sliceNodes(
+        parentElement.childNodes,
+        result.nodes.length,
+        parentElement.childNodes.length
+      );
+      for (const node of nodesToRemove) {
+        node.remove();
+      }
+    }
+
+    return result;
+  }
+
+  function unmount(container: Element | string | null) {
+    let parentElement = (
+      isString(container) ? env.document.querySelector(container) : container
+    ) as Element;
+
+    if (!parentElement) {
+      throw new Error(
+        `The unmount() function was called on a non-element (${
+          typeof container === "string" ? container : container?.tagName
+        }).`
+      );
+    }
+    if (parentElement.nodeType !== ELEMENT_NODE_TYPE) {
+      throw new Error(
+        "The container argument to the unmount() function should be an HTML element."
+      );
+    }
+
+    markNodesForUnloading(
+      parentElement.childNodes,
+      0,
+      parentElement.childNodes.length
+    );
+    unloadMarkedNodes(parentElement, []);
   }
 
   /*
@@ -1699,153 +1724,148 @@ export function createForgoInstance(customEnv: any) {
     return { node: renderResult.nodes[0], nodes: renderResult.nodes };
   }
 
-  /*
-    Code inside a component will call rerender whenever it wants to rerender.
-    The following function is what they'll need to call.
+  /**
+   * Code inside a component will call rerender whenever it wants to rerender.
+   * The following function is what they'll need to call.
 
-    Given only a DOM element, how do we know what component to render?
-    We'll fetch all that information from the state information stored on the element.
+   * Given only a DOM element, how do we know what component to render? We'll
+   * fetch all that information from the state information stored on the
+   * element.
 
-    This is attached to a node inside a NodeAttachedState structure.
-  */
+   * This is attached to a node inside a NodeAttachedState structure.
+
+   * @param forceUnmount Allows a user to explicitly tear down a Forgo app from
+      outside the framework
+   */
   function rerender(
     element: ForgoElementArg | undefined,
     props?: any
   ): RenderResult {
-    if (element && element.node) {
-      const parentElement = element.node.parentElement;
-      if (parentElement !== null) {
-        const state = getExistingForgoState(element.node);
-
-        const originalComponentState = state.components[element.componentIndex];
-
-        const effectiveProps = props ?? originalComponentState.props;
-
-        if (
-          lifecycleEmitters.shouldUpdate(
-            originalComponentState.component,
-            effectiveProps,
-            originalComponentState.props
-          )
-        ) {
-          const componentStateWithUpdatedProps = {
-            ...originalComponentState,
-            props: effectiveProps,
-          };
-
-          const parentStates = state.components.slice(
-            0,
-            element.componentIndex
-          );
-
-          const statesToAttach = parentStates.concat(
-            componentStateWithUpdatedProps
-          );
-
-          const previousNode =
-            originalComponentState.component.__internal.element.node;
-
-          const forgoNode =
-            originalComponentState.component.__internal.registeredMethods.render(
-              effectiveProps,
-              originalComponentState.component
-            );
-
-          let nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
-
-          const insertionOptions: SearchableNodeInsertionOptions = {
-            type: "search",
-            currentNodeIndex: nodeIndex,
-            length: originalComponentState.nodes.length,
-            parentElement,
-          };
-
-          const renderResult = renderComponentAndRemoveStaleNodes(
-            forgoNode,
-            insertionOptions,
-            statesToAttach,
-            componentStateWithUpdatedProps,
-            false
-          );
-
-          // We have to propagate node changes up the component Tree.
-          // Reason 1:
-          //  Imaging Parent rendering Child1 & Child2
-          //  Child1 renders [div1, div2], and Child2 renders [div3, div4].
-          //  When Child1's rerender is called, it might return [p1] instead of [div1, div2]
-          //  Now, Parent's node list (ie state.nodes) must be refreshed to [p1, div3, div4] from [div1, div2, div3, div4]
-          // Reason 2:
-          //  If Child2 was rerendered (instead of Child1), attachProps() will incorrectly fixup parentState.element.node to div3, then to div4.
-          //  That's just how attachProps() works. We need to ressign parentState.element.node to p1.
-          for (let i = 0; i < parentStates.length; i++) {
-            const parentState = parentStates[i];
-
-            const indexOfOriginalRootNode = parentState.nodes.findIndex(
-              (x) => x === originalComponentState.nodes[0]
-            );
-
-            // Let's recreate the node list.
-            parentState.nodes = parentState.nodes
-              // 1. all the nodes before first node associated with rendered component.
-              .slice(0, indexOfOriginalRootNode)
-              // 2. newly created nodes.
-              .concat(renderResult.nodes)
-              // 3. nodes after last node associated with rendered component.
-              .concat(
-                parentState.nodes.slice(
-                  indexOfOriginalRootNode + originalComponentState.nodes.length
-                )
-              );
-
-            // Fix up the root node for parent.
-            if (parentState.nodes.length > 0) {
-              // The root node might have changed, so fix it up just in case.
-              parentState.component.__internal.element.node =
-                parentState.nodes[0];
-            }
-          }
-
-          // Unload marked nodes.
-          unloadMarkedNodes(
-            parentElement,
-            renderResult.nodes.length > 0 ? statesToAttach : []
-          );
-
-          // Unmount rendered component itself if all nodes are gone.
-          // if (renderResult.nodes.length === 0) {
-          //   unmountComponents([newComponentState], 0);
-          // }
-
-          // Run afterRender() if defined.
-          lifecycleEmitters.afterRender(
-            originalComponentState.component,
-            effectiveProps,
-            previousNode
-          );
-
-          return renderResult;
-        }
-        // shouldUpdate() returned false
-        else {
-          let indexOfNode = findNodeIndex(
-            parentElement.childNodes,
-            element.node
-          );
-
-          return {
-            nodes: sliceNodes(
-              parentElement.childNodes,
-              indexOfNode,
-              indexOfNode + originalComponentState.nodes.length
-            ),
-            pendingMounts: [],
-          };
-        }
-      } else {
-        return { nodes: [], pendingMounts: [] };
-      }
-    } else {
+    if (!element?.node) {
       throw new Error(`Missing node information in rerender() argument.`);
+    }
+
+    const parentElement = element.node.parentElement;
+    if (parentElement !== null) {
+      const state = getExistingForgoState(element.node);
+
+      const originalComponentState = state.components[element.componentIndex];
+
+      const effectiveProps = props ?? originalComponentState.props;
+
+      if (
+        !lifecycleEmitters.shouldUpdate(
+          originalComponentState.component,
+          effectiveProps,
+          originalComponentState.props
+        )
+      ) {
+        let indexOfNode = findNodeIndex(parentElement.childNodes, element.node);
+
+        return {
+          nodes: sliceNodes(
+            parentElement.childNodes,
+            indexOfNode,
+            indexOfNode + originalComponentState.nodes.length
+          ),
+          pendingMounts: [],
+        };
+      }
+
+      const componentStateWithUpdatedProps = {
+        ...originalComponentState,
+        props: effectiveProps,
+      };
+
+      const parentStates = state.components.slice(0, element.componentIndex);
+
+      const statesToAttach = parentStates.concat(
+        componentStateWithUpdatedProps
+      );
+
+      const previousNode =
+        originalComponentState.component.__internal.element.node;
+
+      const forgoNode =
+        originalComponentState.component.__internal.registeredMethods.render(
+          effectiveProps,
+          originalComponentState.component
+        );
+
+      let nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
+
+      const insertionOptions: SearchableNodeInsertionOptions = {
+        type: "search",
+        currentNodeIndex: nodeIndex,
+        length: originalComponentState.nodes.length,
+        parentElement,
+      };
+
+      const renderResult = renderComponentAndRemoveStaleNodes(
+        forgoNode,
+        insertionOptions,
+        statesToAttach,
+        componentStateWithUpdatedProps,
+        false
+      );
+
+      // We have to propagate node changes up the component Tree.
+      // Reason 1:
+      //  Imaging Parent rendering Child1 & Child2
+      //  Child1 renders [div1, div2], and Child2 renders [div3, div4].
+      //  When Child1's rerender is called, it might return [p1] instead of [div1, div2]
+      //  Now, Parent's node list (ie state.nodes) must be refreshed to [p1, div3, div4] from [div1, div2, div3, div4]
+      // Reason 2:
+      //  If Child2 was rerendered (instead of Child1), attachProps() will incorrectly fixup parentState.element.node to div3, then to div4.
+      //  That's just how attachProps() works. We need to ressign parentState.element.node to p1.
+      for (let i = 0; i < parentStates.length; i++) {
+        const parentState = parentStates[i];
+
+        const indexOfOriginalRootNode = parentState.nodes.findIndex(
+          (x) => x === originalComponentState.nodes[0]
+        );
+
+        // Let's recreate the node list.
+        parentState.nodes = parentState.nodes
+          // 1. all the nodes before first node associated with rendered component.
+          .slice(0, indexOfOriginalRootNode)
+          // 2. newly created nodes.
+          .concat(renderResult.nodes)
+          // 3. nodes after last node associated with rendered component.
+          .concat(
+            parentState.nodes.slice(
+              indexOfOriginalRootNode + originalComponentState.nodes.length
+            )
+          );
+
+        // Fix up the root node for parent.
+        if (parentState.nodes.length > 0) {
+          // The root node might have changed, so fix it up just in case.
+          parentState.component.__internal.element.node = parentState.nodes[0];
+        }
+      }
+
+      // Unload marked nodes.
+      unloadMarkedNodes(
+        parentElement,
+        renderResult.nodes.length > 0 ? statesToAttach : []
+      );
+
+      // Unmount rendered component itself if all nodes are gone.
+      // if (renderResult.nodes.length === 0) {
+      //   unmountComponents([newComponentState], 0);
+      // }
+
+      // Run afterRender() if defined.
+      lifecycleEmitters.afterRender(
+        originalComponentState.component,
+        effectiveProps,
+        previousNode
+      );
+
+      return renderResult;
+    } else {
+      return { nodes: [], pendingMounts: [] };
     }
   }
 
@@ -1874,6 +1894,7 @@ export function createForgoInstance(customEnv: any) {
 
   return {
     mount,
+    unmount,
     render,
     rerender,
   };
@@ -1890,11 +1911,22 @@ export function setCustomEnv(customEnv: any) {
   forgoInstance = createForgoInstance(customEnv);
 }
 
+/**
+ * Attach a new Forgo application to a DOM element
+ */
 export function mount(
   forgoNode: ForgoNode,
   container: Element | string | null
 ): RenderResult {
   return forgoInstance.mount(forgoNode, container);
+}
+
+/**
+ * Unmount a Forgo application from outside.
+ * @param container The root element that the Forgo app was mounted onto
+ */
+export function unmount(container: Element | string | null): void {
+  return forgoInstance.unmount(container);
 }
 
 export function render(forgoNode: ForgoNode): {
