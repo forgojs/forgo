@@ -43,6 +43,30 @@ const componentFactory = () => {
   return { state, TestComponent };
 };
 
+const recursiveComponentFactory = () => {
+  const state = {
+    mountCount: 0,
+    renderCount: 0,
+  };
+
+  const TestComponent: ForgoNewComponentCtor = () => {
+    const component = new forgo.Component({
+      render() {
+        state.renderCount += 1;
+        return <div id="hello"></div>;
+      },
+    });
+    component.mount(() => {
+      state.mountCount += 1;
+      component.update();
+    });
+
+    return component;
+  };
+
+  return { state, TestComponent };
+};
+
 export default function () {
   describe("Component mount event", async () => {
     it("runs mount() when a component is attached to node", async () => {
@@ -64,6 +88,14 @@ export default function () {
       await run(() => <TestComponent />);
 
       should.equal(state.parentChildrenCount, 1);
+    });
+
+    it("doesn't fire twice if the component updates during mount", async () => {
+      const { state, TestComponent } = recursiveComponentFactory();
+      await run(() => <TestComponent />);
+
+      should.equal(state.renderCount, 2);
+      should.equal(state.mountCount, 1);
     });
   });
 }

@@ -3,6 +3,8 @@
 - Fix #50: Components that returned a fragment saw their `mount` lifecycle
   method called after the first child element had been created instead of after
   the render had completed. 
+- Fix a bug where calling `component.update()` during a mount lifecycle handler
+  resulted in the component recursively mounting ad infinitum.
 
 # 3.2.0
 
@@ -13,7 +15,6 @@
   called after its parent has completely finished rendering
 - Feature: Allow components to return `null` or `undefined` from their
   `render()` method (#39)
->>>>>>> main
 
 # 3.1.1
 
