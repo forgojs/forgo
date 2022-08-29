@@ -5,6 +5,7 @@
   the render had completed. 
 - Fix a bug where calling `component.update()` during a mount lifecycle handler
   resulted in the component recursively mounting ad infinitum.
+- Fix #75: ESLint plugin `eslint-plugin-import` could not resolve imports of Forgo
 
 # 3.2.0
 
