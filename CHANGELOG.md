@@ -5,6 +5,8 @@
   the render had completed. 
 - Fix a bug where calling `component.update()` during a mount lifecycle handler
   resulted in the component recursively mounting ad infinitum.
+- Add TSX support for custom element tag names. Non-string attributes are not
+  yet supported
 
 # 3.2.0
 
