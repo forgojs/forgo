@@ -6,6 +6,8 @@
 - Fix a bug where calling `component.update()` during a mount lifecycle handler
   resulted in the component recursively mounting ad infinitum.
 - Fix #75: ESLint plugin `eslint-plugin-import` could not resolve imports of Forgo
+- Add TSX support for custom element tag names. Non-string attributes are not
+  yet supported
 
 # 3.2.0
 
