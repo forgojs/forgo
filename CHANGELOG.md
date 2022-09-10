@@ -1,9 +1,11 @@
-# 3.2.1
+# Unreleased
 
+- Feature #73: Add a function to unmount a component tree from outside the Forgo
+- Fix #76: Add support for TypeScript 4.8
 - Fix #50: Components that returned a fragment saw their `mount` lifecycle
   method called after the first child element had been created instead of after
   the render had completed. 
-- Fix a bug where calling `component.update()` during a mount lifecycle handler
+- Fix #70: Calling `component.update()` during a mount lifecycle handler
   resulted in the component recursively mounting ad infinitum.
 - Fix #75: ESLint plugin `eslint-plugin-import` could not resolve imports of Forgo
 - Add TSX support for custom element tag names. Non-string attributes are not
