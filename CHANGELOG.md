@@ -1,7 +1,9 @@
-# Unreleased
+# 3.2.2
+- Fix #76: Add support for TypeScript 4.8
+
+# 3.2.1
 
 - Feature #73: Add a function to unmount a component tree from outside the Forgo
-- Fix #76: Add support for TypeScript 4.8
 - Fix #50: Components that returned a fragment saw their `mount` lifecycle
   method called after the first child element had been created instead of after
   the render had completed. 
