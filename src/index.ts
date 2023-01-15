@@ -137,6 +137,7 @@ export type NodeAttachedState = {
   deletedUnkeyedNodes: DeletedNode[];
   deletedKeyedNodes: Map<string | number, ChildNode>;
   activeKeyedNodes: Map<string | number, number>;
+  initialChildNodeCount: number;
 };
 
 // CSS types lifted from preact.
@@ -653,70 +654,27 @@ export function createForgoInstance(customEnv: any) {
           (x) => x !== undefined && x !== null
         );
 
-        // Make sure that if the user prepends non-Forgo DOM children under this
-        // parent that we start with the correct offset, otherwise we'll do DOM
-        // transformations that don't make any sense for the given input.
-        const firstForgoChildIndex = Array.from(
-          parentElement.childNodes
-        ).findIndex((child) => getForgoState(child));
-        // Each node we render will push any leftover children further down the
-        // parent's list of children. After rendering everything, we can clean
-        // up anything extra. We'll know what's extra because all nodes we want
-        // to preserve come before this index.
-        let lastRenderedNodeIndex =
-          firstForgoChildIndex === -1 ? 0 : firstForgoChildIndex;
+        let currentNodeIndex = 0;
+
         for (const forgoChild of forgoChildren) {
-          const { nodes: nodesAfterRender } = internalRender(
+          const { nodes: nodesJustRendered } = internalRender(
             forgoChild,
             {
               type: "search",
               parentElement,
-              currentNodeIndex: lastRenderedNodeIndex,
-              length: parentElement.childNodes.length - lastRenderedNodeIndex,
+              currentNodeIndex,
+              length: parentElement.childNodes.length - currentNodeIndex,
             },
             [],
             mountOnPreExistingDOM
           );
-          // Continue down the children list to wherever's right after the stuff
-          // we just added. Because users are allowed to add arbitrary stuff to
-          // the DOM manually, we can't just jump by the count of rendered
-          // elements, since that's the count of *managed* elements, which might
-          // be interspersed with unmanaged elements that we also need to skip
-          // past.
-          if (nodesAfterRender.length) {
-            while (
-              parentElement.childNodes[lastRenderedNodeIndex] !==
-              nodesAfterRender[nodesAfterRender.length - 1]
-            ) {
-              lastRenderedNodeIndex += 1;
-            }
-            // Move the counter *past* the last node we inserted. E.g., if we just
-            // inserted our first node, we need to increment from 0 -> 1, where
-            // we'll start searching for the next thing we insert
-            lastRenderedNodeIndex += 1;
-            // If we're updating an existing DOM element, it's possible that the
-            // user manually added some DOM nodes somewhere in the middle of our
-            // managed nodes. If that happened, we need to scan forward until we
-            // pass them and find the next managed node, which we'll use as the
-            // starting point for whatever we render next. We still need the +1
-            // above to make sure we always progress the index, in case this is
-            // our first render pass and there's nothing to scan forward to.
-            while (lastRenderedNodeIndex < parentElement.childNodes.length) {
-              if (
-                getForgoState(parentElement.childNodes[lastRenderedNodeIndex])
-              ) {
-                break;
-              }
-              lastRenderedNodeIndex += 1;
-            }
-          }
+
+          currentNodeIndex += nodesJustRendered.length;
         }
 
-        // Remove all nodes that don't correspond to the rendered output of a
-        // live component
         markNodesForUnloading(
           parentElement.childNodes,
-          lastRenderedNodeIndex,
+          currentNodeIndex,
           parentElement.childNodes.length
         );
       }
@@ -1187,10 +1145,7 @@ export function createForgoInstance(customEnv: any) {
       const parentState = getExistingForgoState(parentElement);
 
       for (const node of nodesToRemove) {
-        // If the consuming application has manually mucked with the DOM don't
-        // remove things it added
-        const state = getForgoState(node);
-        if (!state) continue;
+        const state = getExistingForgoState(node);
 
         node.remove();
 
@@ -1368,8 +1323,7 @@ export function createForgoInstance(customEnv: any) {
   >(
     forgoElement: WithRequiredProperty<ForgoDOMElement<TProps>, "key">,
     parentElement: Element,
-    searchFrom: number,
-    nodeCountDelta: number
+    searchFrom: number
   ): CandidateSearchResult {
     function isCompatibleNode(
       node: ChildNode,
@@ -1384,14 +1338,24 @@ export function createForgoInstance(customEnv: any) {
     const parentState = getExistingForgoState(parentElement);
 
     // Check active nodes first
-    const indexInActiveNodes = parentState.activeKeyedNodes.get(
-      forgoElement.key
-    );
-    if (indexInActiveNodes) {
-      const matchingNode =
-        parentElement.childNodes[indexInActiveNodes + nodeCountDelta];
+    const indexInMap = parentState.activeKeyedNodes.get(forgoElement.key);
+
+    if (indexInMap) {
+      // The index in the map is the index before rendering began.
+      // Rendering can add/remove nodes, so it needs to be adjusted.
+      const indexInDOM =
+        indexInMap +
+        parentElement.childNodes.length -
+        parentState.initialChildNodeCount;
+
+      const matchingNode = parentElement.childNodes[indexInDOM];
+
       if (isCompatibleNode(matchingNode, forgoElement)) {
-        return { found: true, index: indexInActiveNodes };
+        // Let's correct the position of the node as well.
+        if (indexInDOM !== indexInMap) {
+          parentState.activeKeyedNodes.set(forgoElement.key, indexInDOM);
+        }
+        return { found: true, index: indexInMap };
       } else {
         parentState.activeKeyedNodes.delete(forgoElement.key);
         return { found: false };
@@ -1442,19 +1406,11 @@ export function createForgoInstance(customEnv: any) {
     for (let i = searchFrom; i < searchFrom + length; i++) {
       const node = nodes[i] as ChildNode;
       if (nodeIsElement(node)) {
-        const stateOnNode = getForgoState(node);
-
-        // If the user stuffs random elements into the DOM manually, we don't
-        // want to treat them as replacement candidates - they should be left
-        // alone.
-        if (!stateOnNode) continue;
+        const state = getExistingForgoState(node);
 
         // If the candidate has a key defined, we don't match it with
         // an unkeyed forgo element
-        if (
-          node.tagName.toLowerCase() === forgoElement.type &&
-          !stateOnNode?.key
-        ) {
+        if (node.tagName.toLowerCase() === forgoElement.type && !state?.key) {
           return { found: true, index: i };
         }
       }
@@ -1475,15 +1431,13 @@ export function createForgoInstance(customEnv: any) {
     forgoElement: ForgoDOMElement<TProps>,
     parentElement: Element,
     searchFrom: number,
-    length: number,
-    nodeCountDelta: number
+    length: number
   ): CandidateSearchResult {
     if (isKeyedElement(forgoElement)) {
       return findReplacementCandidateForKeyedElement(
         forgoElement,
         parentElement,
-        searchFrom,
-        nodeCountDelta
+        searchFrom
       );
     } else {
       return findReplacementCandidateForUnKeyedElement(
@@ -1501,8 +1455,7 @@ export function createForgoInstance(customEnv: any) {
     forgoComponent: WithRequiredProperty<ForgoComponentElement<TProps>, "key">,
     parentElement: Element,
     searchFrom: number,
-    componentIndex: number,
-    nodeCountDelta: number
+    componentIndex: number
   ): CandidateSearchResult {
     // We check childNodeMap only if componentIndex === 0
     // If componentIndex > 0, we fall back to looping over childNodes.
@@ -1511,12 +1464,20 @@ export function createForgoInstance(customEnv: any) {
       const parentState = getExistingForgoState(parentElement);
 
       // Check active nodes first
-      const indexInDOM = parentState.activeKeyedNodes.get(forgoComponent.key);
-      if (indexInDOM) {
-        const matchingNode =
-          parentElement.childNodes[indexInDOM + nodeCountDelta];
+      const indexInMap = parentState.activeKeyedNodes.get(forgoComponent.key);
+
+      if (indexInMap) {
+        // The index in the map is the index before rendering began.
+        // Rendering can add/remove nodes, so it needs to be adjusted.
+        const indexInDOM =
+          indexInMap +
+          parentElement.childNodes.length -
+          parentState.initialChildNodeCount;
+
+        const matchingNode = parentElement.childNodes[indexInDOM];
+
         if (nodeBelongsToKeyedComponent(matchingNode, forgoComponent, 0)) {
-          return { found: true, index: indexInDOM };
+          return { found: true, index: indexInMap };
         } else {
           parentState.activeKeyedNodes.delete(forgoComponent.key);
           return { found: false };
@@ -1561,8 +1522,7 @@ export function createForgoInstance(customEnv: any) {
     parentElement: Element,
     searchFrom: number,
     length: number,
-    componentIndex: number,
-    nodeCountDelta: number
+    componentIndex: number
   ): CandidateSearchResult {
     const nodes = parentElement.childNodes;
 
@@ -1617,6 +1577,8 @@ export function createForgoInstance(customEnv: any) {
         // Append resurrected nodes to the beginning of the node list.
         let insertBeforeNode = nodes[searchFrom];
 
+        // Since we're inserting a node, gotta update
+
         if (insertBeforeNode) {
           for (const node of nodesToResurrect) {
             parentElement.insertBefore(node, insertBeforeNode);
@@ -1664,16 +1626,14 @@ export function createForgoInstance(customEnv: any) {
     parentElement: Element,
     searchFrom: number,
     length: number,
-    componentIndex: number,
-    nodeCountDelta: number
+    componentIndex: number
   ): CandidateSearchResult {
     if (isKeyedElement(forgoComponent)) {
       return findReplacementCandidateForKeyedComponent(
         forgoComponent,
         parentElement,
         searchFrom,
-        componentIndex,
-        nodeCountDelta
+        componentIndex
       );
     } else {
       return findReplacementCandidateForUnkeyedComponent(
@@ -1681,8 +1641,7 @@ export function createForgoInstance(customEnv: any) {
         parentElement,
         searchFrom,
         length,
-        componentIndex,
-        nodeCountDelta
+        componentIndex
       );
     }
   }
@@ -1805,6 +1764,7 @@ export function createForgoInstance(customEnv: any) {
         deletedKeyedNodes: new Map(),
         deletedUnkeyedNodes: [],
         activeKeyedNodes: new Map<string, number>(),
+        initialChildNodeCount: 0,
       };
 
       setForgoState(node, state);
@@ -1815,6 +1775,7 @@ export function createForgoInstance(customEnv: any) {
         deletedKeyedNodes: new Map(),
         deletedUnkeyedNodes: [],
         activeKeyedNodes: new Map<string, number>(),
+        initialChildNodeCount: 0,
       };
 
       setForgoState(node, state);
@@ -2302,6 +2263,8 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
   }
   return component;
 };
+
+function removeChildElement(parentElement: Element);
 
 /*
   Throw if component is a non-component
