@@ -136,7 +136,8 @@ export type NodeAttachedState = {
   deleted?: boolean;
   deletedUnkeyedNodes: DeletedNode[];
   deletedKeyedNodes: Map<string | number, ChildNode>;
-  activeKeyedNodes: Map<string | number, number>;
+  keyedNodes: Map<string | number, number>;
+  newlyAddedKeyedNodes: Map<string | number, number>;
   initialChildNodeCount: number;
 };
 
@@ -612,7 +613,7 @@ export function createForgoInstance(customEnv: any) {
   ): RenderResult {
     // We need to create a detached node
     if (insertionOptions.type === "detached") {
-      return addElement(undefined, null);
+      return addElement(undefined, undefined);
     }
     // We have to find a node to replace.
     else {
@@ -627,6 +628,15 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
+          if (forgoElement.key) {
+            const parentState = getExistingForgoState(
+              insertionOptions.parentElement
+            );
+            parentState.newlyAddedKeyedNodes.set(
+              forgoElement.key,
+              searchResult.index
+            );
+          }
           return renderExistingElement(
             searchResult.index,
             childNodes,
@@ -637,11 +647,16 @@ export function createForgoInstance(customEnv: any) {
 
       return addElement(
         insertionOptions.parentElement,
-        childNodes[insertionOptions.currentNodeIndex]
+        insertionOptions.currentNodeIndex
       );
     }
 
     function renderChildNodes(parentElement: Element) {
+      const parentState = getExistingForgoState(parentElement);
+
+      // Clear newKeyedNodes
+      parentState.newlyAddedKeyedNodes = new Map<string, number>();
+
       // If the user gave us exact HTML to stuff into this parent, we can
       // skip/ignore the usual rendering logic
       if (forgoElement.props.dangerouslySetInnerHTML) {
@@ -672,6 +687,11 @@ export function createForgoInstance(customEnv: any) {
           currentNodeIndex += nodesJustRendered.length;
         }
 
+        // Now that all childNodes have been rendered, we can switch
+        parentState.keyedNodes = parentState.newlyAddedKeyedNodes;
+
+        // Clear nodes remaining after currentNodeIndex
+        // eg: if currentNodeIndex = 10 (and length = 20), remove everything > 10
         markNodesForUnloading(
           parentElement.childNodes,
           currentNodeIndex,
@@ -723,9 +743,22 @@ export function createForgoInstance(customEnv: any) {
 
     function addElement(
       parentElement: Element | undefined,
-      oldNode: ChildNode | null
+      position: number | undefined
     ): RenderResult {
       const newElement = createElement(forgoElement, parentElement);
+
+      const oldNode =
+        position !== undefined
+          ? (parentElement as Element).childNodes[position]
+          : null;
+
+      if (parentElement && forgoElement.key) {
+        const parentState = getExistingForgoState(parentElement);
+        parentState.newlyAddedKeyedNodes.set(
+          forgoElement.key,
+          position !== undefined ? position : parentElement.childNodes.length
+        );
+      }
 
       if (parentElement) {
         parentElement.insertBefore(newElement, oldNode);
@@ -777,6 +810,16 @@ export function createForgoInstance(customEnv: any) {
       );
 
       if (searchResult.found) {
+        if (forgoElement.key) {
+          const parentState = getExistingForgoState(
+            insertionOptions.parentElement
+          );
+          parentState.newlyAddedKeyedNodes.set(
+            forgoElement.key,
+            searchResult.index
+          );
+        }
+
         return renderExistingComponent(
           searchResult.index,
           childNodes,
@@ -1145,11 +1188,11 @@ export function createForgoInstance(customEnv: any) {
       const parentState = getExistingForgoState(parentElement);
 
       for (const node of nodesToRemove) {
-        const state = getExistingForgoState(node);
+        const state = getForgoState(node);
 
         node.remove();
 
-        if (state.key) {
+        if (state && state.key) {
           parentState.deletedKeyedNodes.set(state.key, node);
         } else {
           parentState.deletedUnkeyedNodes.push({ node });
@@ -1318,107 +1361,6 @@ export function createForgoInstance(customEnv: any) {
       }
     | { found: true; index: number };
 
-  function findReplacementCandidateForKeyedElement<
-    TProps extends ForgoDOMElementProps
-  >(
-    forgoElement: WithRequiredProperty<ForgoDOMElement<TProps>, "key">,
-    parentElement: Element,
-    searchFrom: number
-  ): CandidateSearchResult {
-    function isCompatibleNode(
-      node: ChildNode,
-      forgoElement: ForgoDOMElement<any>
-    ) {
-      return (
-        nodeIsElement(node) && node.tagName.toLowerCase() === forgoElement.type
-      );
-    }
-
-    // If forgo element has a key, we gotta find it in the childNodeMap (under active and deleted).
-    const parentState = getExistingForgoState(parentElement);
-
-    // Check active nodes first
-    const indexInMap = parentState.activeKeyedNodes.get(forgoElement.key);
-
-    if (indexInMap) {
-      // The index in the map is the index before rendering began.
-      // Rendering can add/remove nodes, so it needs to be adjusted.
-      const indexInDOM =
-        indexInMap +
-        parentElement.childNodes.length -
-        parentState.initialChildNodeCount;
-
-      const matchingNode = parentElement.childNodes[indexInDOM];
-
-      if (isCompatibleNode(matchingNode, forgoElement)) {
-        // Let's correct the position of the node as well.
-        if (indexInDOM !== indexInMap) {
-          parentState.activeKeyedNodes.set(forgoElement.key, indexInDOM);
-        }
-        return { found: true, index: indexInMap };
-      } else {
-        parentState.activeKeyedNodes.delete(forgoElement.key);
-        return { found: false };
-      }
-    }
-    // Not found in active nodes. Check deleted nodes.
-    else {
-      const matchingNode = parentState.deletedKeyedNodes.get(forgoElement.key);
-      if (matchingNode) {
-        const nodes = parentElement.childNodes;
-
-        if (isCompatibleNode(matchingNode, forgoElement)) {
-          // Remove it from deletedNodes.
-          parentState.deletedKeyedNodes.delete(forgoElement.key);
-
-          // Add it to active node map
-          parentState.activeKeyedNodes.set(forgoElement.key, searchFrom);
-
-          // Append it to the beginning of the node list.
-          const firstNodeInSearchList = nodes[searchFrom];
-          if (firstNodeInSearchList) {
-            parentElement.insertBefore(matchingNode, firstNodeInSearchList);
-          } else {
-            parentElement.appendChild(matchingNode);
-          }
-
-          return { found: true, index: searchFrom };
-        } else {
-          parentState.deletedKeyedNodes.delete(forgoElement.key);
-          return { found: false };
-        }
-      } else {
-        return { found: false };
-      }
-    }
-  }
-
-  function findReplacementCandidateForUnKeyedElement<
-    TProps extends ForgoDOMElementProps
-  >(
-    forgoElement: Omit<ForgoDOMElement<TProps>, "key">,
-    parentElement: Element,
-    searchFrom: number,
-    length: number
-  ): CandidateSearchResult {
-    const nodes = parentElement.childNodes;
-
-    for (let i = searchFrom; i < searchFrom + length; i++) {
-      const node = nodes[i] as ChildNode;
-      if (nodeIsElement(node)) {
-        const state = getExistingForgoState(node);
-
-        // If the candidate has a key defined, we don't match it with
-        // an unkeyed forgo element
-        if (node.tagName.toLowerCase() === forgoElement.type && !state?.key) {
-          return { found: true, index: i };
-        }
-      }
-    }
-
-    return { found: false };
-  }
-
   /**
    * When we try to find replacement candidates for DOM nodes,
    * we try to:
@@ -1449,6 +1391,133 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
+  function findReplacementCandidateForKeyedElement<
+    TProps extends ForgoDOMElementProps
+  >(
+    forgoElement: WithRequiredProperty<ForgoDOMElement<TProps>, "key">,
+    parentElement: Element,
+    searchFrom: number
+  ): CandidateSearchResult {
+    function isCompatibleNode(
+      node: ChildNode,
+      forgoElement: ForgoDOMElement<any>
+    ) {
+      return (
+        nodeIsElement(node) && node.tagName.toLowerCase() === forgoElement.type
+      );
+    }
+
+    // If forgo element has a key, we gotta find it in the childNodeMap (under active and deleted).
+    const parentState = getExistingForgoState(parentElement);
+
+    // Check active nodes first
+    const indexInMap = parentState.keyedNodes.get(forgoElement.key);
+
+    if (indexInMap) {
+      // The index in the map is the index before rendering began.
+      // Rendering can add/remove nodes, so it needs to be adjusted.
+      const indexInDOM =
+        indexInMap +
+        parentElement.childNodes.length -
+        parentState.initialChildNodeCount;
+
+      const matchingNode = parentElement.childNodes[indexInDOM];
+
+      if (isCompatibleNode(matchingNode, forgoElement)) {
+        return { found: true, index: indexInMap };
+      } else {
+        return { found: false };
+      }
+    }
+    // Not found in active nodes. Check deleted nodes.
+    else {
+      const matchingNode = parentState.deletedKeyedNodes.get(forgoElement.key);
+      if (matchingNode) {
+        const nodes = parentElement.childNodes;
+
+        if (isCompatibleNode(matchingNode, forgoElement)) {
+          // Since we're resurrecting this node, remove it from deletedKeyedNodes.
+          parentState.deletedKeyedNodes.delete(forgoElement.key);
+
+          // Append it to the beginning of the node list.
+          const firstNodeInSearchList = nodes[searchFrom];
+          if (firstNodeInSearchList) {
+            parentElement.insertBefore(matchingNode, firstNodeInSearchList);
+          } else {
+            parentElement.appendChild(matchingNode);
+          }
+
+          return { found: true, index: searchFrom };
+        } else {
+          // Since we're resurrecting this node, remove it from deletedKeyedNodes.
+          parentState.deletedKeyedNodes.delete(forgoElement.key);
+          return { found: false };
+        }
+      } else {
+        return { found: false };
+      }
+    }
+  }
+
+  function findReplacementCandidateForUnKeyedElement<
+    TProps extends ForgoDOMElementProps
+  >(
+    forgoElement: Omit<ForgoDOMElement<TProps>, "key">,
+    parentElement: Element,
+    searchFrom: number,
+    length: number
+  ): CandidateSearchResult {
+    const nodes = parentElement.childNodes;
+
+    for (let i = searchFrom; i < searchFrom + length; i++) {
+      const node = nodes[i] as ChildNode;
+      if (nodeIsElement(node)) {
+        const state = getForgoState(node);
+
+        // If the candidate has a key defined, we don't match it with
+        // an unkeyed forgo element
+        if (node.tagName.toLowerCase() === forgoElement.type && !state?.key) {
+          return { found: true, index: i };
+        }
+      }
+    }
+
+    return { found: false };
+  }
+
+  /**
+   * When we try to find replacement candidates for Components,
+   * we try to:
+   *   a) match by the key
+   *   b) match by the component constructor
+   */
+  function findReplacementCandidateForComponent<
+    TProps extends ForgoDOMElementProps
+  >(
+    forgoComponent: ForgoComponentElement<TProps>,
+    parentElement: Element,
+    searchFrom: number,
+    length: number,
+    componentIndex: number
+  ): CandidateSearchResult {
+    if (isKeyedElement(forgoComponent)) {
+      return findReplacementCandidateForKeyedComponent(
+        forgoComponent,
+        parentElement,
+        searchFrom,
+        componentIndex
+      );
+    } else {
+      return findReplacementCandidateForUnkeyedComponent(
+        forgoComponent,
+        parentElement,
+        searchFrom,
+        length,
+        componentIndex
+      );
+    }
+  }
+
   function findReplacementCandidateForKeyedComponent<
     TProps extends ForgoDOMElementProps
   >(
@@ -1464,7 +1533,7 @@ export function createForgoInstance(customEnv: any) {
       const parentState = getExistingForgoState(parentElement);
 
       // Check active nodes first
-      const indexInMap = parentState.activeKeyedNodes.get(forgoComponent.key);
+      const indexInMap = parentState.keyedNodes.get(forgoComponent.key);
 
       if (indexInMap) {
         // The index in the map is the index before rendering began.
@@ -1479,7 +1548,6 @@ export function createForgoInstance(customEnv: any) {
         if (nodeBelongsToKeyedComponent(matchingNode, forgoComponent, 0)) {
           return { found: true, index: indexInMap };
         } else {
-          parentState.activeKeyedNodes.delete(forgoComponent.key);
           return { found: false };
         }
       }
@@ -1490,10 +1558,8 @@ export function createForgoInstance(customEnv: any) {
         );
         if (matchingNode) {
           if (nodeBelongsToKeyedComponent(matchingNode, forgoComponent, 0)) {
-            // Remove it from deletedNodes.
+            // Since we're resurrecting this node, remove it from deletedKeyedNodes.
             parentState.deletedKeyedNodes.delete(forgoComponent.key);
-            // Add it to active node map
-            parentState.activeKeyedNodes.set(forgoComponent.key, searchFrom);
 
             // Append it to the beginning of the node list.
             const firstNodeInSearchList = parentElement.childNodes[searchFrom];
@@ -1505,7 +1571,6 @@ export function createForgoInstance(customEnv: any) {
 
             return { found: true, index: searchFrom };
           } else {
-            parentState.activeKeyedNodes.delete(forgoComponent.key);
             return { found: false };
           }
         }
@@ -1611,39 +1676,6 @@ export function createForgoInstance(customEnv: any) {
       }
     }
     return false;
-  }
-
-  /**
-   * When we try to find replacement candidates for Components,
-   * we try to:
-   *   a) match by the key
-   *   b) match by the component constructor
-   */
-  function findReplacementCandidateForComponent<
-    TProps extends ForgoDOMElementProps
-  >(
-    forgoComponent: ForgoComponentElement<TProps>,
-    parentElement: Element,
-    searchFrom: number,
-    length: number,
-    componentIndex: number
-  ): CandidateSearchResult {
-    if (isKeyedElement(forgoComponent)) {
-      return findReplacementCandidateForKeyedComponent(
-        forgoComponent,
-        parentElement,
-        searchFrom,
-        componentIndex
-      );
-    } else {
-      return findReplacementCandidateForUnkeyedComponent(
-        forgoComponent,
-        parentElement,
-        searchFrom,
-        length,
-        componentIndex
-      );
-    }
   }
 
   /**
@@ -1763,7 +1795,8 @@ export function createForgoInstance(customEnv: any) {
         components: pendingAttachStates,
         deletedKeyedNodes: new Map(),
         deletedUnkeyedNodes: [],
-        activeKeyedNodes: new Map<string, number>(),
+        keyedNodes: new Map<string, number>(),
+        newlyAddedKeyedNodes: new Map<string, number>(),
         initialChildNodeCount: 0,
       };
 
@@ -1774,7 +1807,8 @@ export function createForgoInstance(customEnv: any) {
         components: pendingAttachStates,
         deletedKeyedNodes: new Map(),
         deletedUnkeyedNodes: [],
-        activeKeyedNodes: new Map<string, number>(),
+        keyedNodes: new Map<string, number>(),
+        newlyAddedKeyedNodes: new Map<string, number>(),
         initialChildNodeCount: 0,
       };
 
@@ -2264,7 +2298,7 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
   return component;
 };
 
-function removeChildElement(parentElement: Element);
+function removeChildElement(parentElement: Element) {}
 
 /*
   Throw if component is a non-component
