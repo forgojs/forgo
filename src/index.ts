@@ -43,6 +43,8 @@ export type ForgoElementArg = {
   componentIndex: number;
 };
 
+export type ForgoKeyType = string | number;
+
 /*
   A ForgoNode is the output of the render() function.
   It can represent:
@@ -60,7 +62,7 @@ export type ForgoElementArg = {
   eg: The type will be MyComponent for <MyComponent />
 */
 export type ForgoElementBase<TProps extends ForgoElementProps> = {
-  key?: string | number;
+  key?: ForgoKeyType;
   props: TProps;
   __is_forgo_element__: true;
 };
@@ -628,14 +630,6 @@ export function createForgoInstance(customEnv: any) {
         );
 
         if (searchResult.found) {
-          const key = pendingAttachStates.length
-            ? pendingAttachStates[0].key
-            : forgoElement.key;
-
-          if (key) {
-            const parentState = getForgoState(insertionOptions.parentElement);
-            parentState.newlyAddedKeyedNodes.set(key, searchResult.index);
-          }
           return renderExistingElement(
             searchResult.index,
             childNodes,
@@ -708,6 +702,15 @@ export function createForgoInstance(customEnv: any) {
       childNodes: NodeListOf<ChildNode>,
       insertionOptions: SearchableNodeInsertionOptions
     ): RenderResult {
+      const parentState = getForgoState(insertionOptions.parentElement);
+
+      pendingAttachStates.forEach((pendingAttachState, i) => {
+        if (pendingAttachState.key) {
+          const key = deriveComponentKey(pendingAttachState.key, i);
+          parentState.newlyAddedKeyedNodes.set(key, insertAt);
+        }
+      });
+
       // Get rid of unwanted nodes.
       markNodesForUnloading(
         childNodes,
@@ -751,16 +754,19 @@ export function createForgoInstance(customEnv: any) {
           ? (parentElement as Element).childNodes[position]
           : null;
 
-      const key = pendingAttachStates.length
-        ? pendingAttachStates[0].key
-        : forgoElement.key;
-
-      if (parentElement && key) {
+      if (parentElement) {
         const parentState = getForgoState(parentElement);
-        parentState.newlyAddedKeyedNodes.set(
-          key,
-          position !== undefined ? position : parentElement.childNodes.length
-        );
+        pendingAttachStates.forEach((pendingAttachState, i) => {
+          if (pendingAttachState.key) {
+            const key = deriveComponentKey(pendingAttachState.key, i);
+            parentState.newlyAddedKeyedNodes.set(
+              key,
+              position !== undefined
+                ? position
+                : parentElement.childNodes.length
+            );
+          }
+        });
       }
 
       if (parentElement) {
@@ -1185,8 +1191,17 @@ export function createForgoInstance(customEnv: any) {
 
         node.remove();
 
-        if (state && state.key) {
+        state.components.forEach((component, i) => {
+          if (component.key) {
+            parentState.deletedKeyedNodes.set(component.key, node);
+          }
+        });
+
+        if (state.key) {
           parentState.deletedKeyedNodes.set(state.key, node);
+        }
+
+        if (state && state.key) {
         } else {
           parentState.deletedUnkeyedNodes.push({ node });
         }
@@ -1519,14 +1534,16 @@ export function createForgoInstance(customEnv: any) {
     searchFrom: number,
     componentIndex: number
   ): CandidateSearchResult {
+    const key = `$Component${componentIndex}_${forgoComponent.key}`;
+
     // We check childNodeMap only if componentIndex === 0
     // If componentIndex > 0, we fall back to looping over childNodes.
-    if (forgoComponent.key && componentIndex === 0) {
+    if (componentIndex === 0) {
       // If forgo element has a key, we gotta find it in the childNodeMap (under active and deleted).
       const parentState = getForgoState(parentElement);
 
       // Check active nodes first
-      const indexInMap = parentState.keyedNodes.get(forgoComponent.key);
+      const indexInMap = parentState.keyedNodes.get(key);
 
       if (indexInMap) {
         // The index in the map is the index before rendering began.
@@ -1546,13 +1563,11 @@ export function createForgoInstance(customEnv: any) {
       }
       // Not found in active nodes. Check deleted nodes.
       else {
-        const matchingNode = parentState.deletedKeyedNodes.get(
-          forgoComponent.key
-        );
+        const matchingNode = parentState.deletedKeyedNodes.get(key);
         if (matchingNode) {
           if (nodeBelongsToKeyedComponent(matchingNode, forgoComponent, 0)) {
             // Since we're resurrecting this node, remove it from deletedKeyedNodes.
-            parentState.deletedKeyedNodes.delete(forgoComponent.key);
+            parentState.deletedKeyedNodes.delete(key);
 
             // Append it to the beginning of the node list.
             const firstNodeInSearchList = parentElement.childNodes[searchFrom];
@@ -1576,7 +1591,7 @@ export function createForgoInstance(customEnv: any) {
   function findReplacementCandidateForUnkeyedComponent<
     TProps extends ForgoDOMElementProps
   >(
-    forgoComponent: ForgoComponentElement<TProps>,
+    forgoComponent: Omit<ForgoComponentElement<TProps>, "key">,
     parentElement: Element,
     searchFrom: number,
     length: number,
@@ -1589,17 +1604,8 @@ export function createForgoInstance(customEnv: any) {
       const state = getForgoState(node);
 
       if (state && state.components.length > componentIndex) {
-        if (forgoComponent.key !== undefined) {
-          if (
-            state.components[componentIndex].ctor === forgoComponent.type &&
-            state.components[componentIndex].key === forgoComponent.key
-          ) {
-            return { found: true, index: i };
-          }
-        } else {
-          if (state.components[componentIndex].ctor === forgoComponent.type) {
-            return { found: true, index: i };
-          }
+        if (state.components[componentIndex].ctor === forgoComponent.type) {
+          return { found: true, index: i };
         }
       }
     }
@@ -2288,6 +2294,10 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
   }
   return component;
 };
+
+function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
+  return `$Component${componentIndex}_${key}`;
+}
 
 /*
   Throw if component is a non-component
