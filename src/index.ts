@@ -1197,6 +1197,7 @@ export function createForgoInstance(customEnv: any) {
         state.components.forEach((component, i) => {
           if (component.key !== undefined) {
             const key = deriveComponentKey(component.key, i);
+            parentState.keyedNodes.delete(key);
             const deletedNodesForKey =
               parentState.deletedKeyedNodes.get(key) ?? [];
             deletedNodesForKey.push(node);
