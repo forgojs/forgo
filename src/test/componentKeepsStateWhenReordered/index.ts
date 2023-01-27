@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import { run } from "./script.js";
 import { componentStates, reorderComponents } from "./script.js";
+import "should";
 
 export default function () {
   it("components maintain state when reordered", async () => {

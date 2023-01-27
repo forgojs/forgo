@@ -754,30 +754,30 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function addElement(
-      element: Element | undefined,
+      parentElement: Element | undefined,
       position: number | undefined
     ): RenderResult {
-      const newElement = createElement(forgoElement, element);
+      const newElement = createElement(forgoElement, parentElement);
 
       const oldNode =
         position !== undefined
-          ? (element as Element).childNodes[position]
+          ? (parentElement as Element).childNodes[position]
           : null;
 
-      if (element) {
-        const state = getForgoState(element);
+      if (parentElement) {
+        const state = getForgoState(parentElement);
         pendingAttachStates.forEach((pendingAttachState, i) => {
           if (pendingAttachState.key !== undefined) {
             const key = deriveComponentKey(pendingAttachState.key, i);
             state.newlyAddedKeyedNodes.set(key, [
-              position !== undefined ? position : element.childNodes.length,
+              position !== undefined ? position : parentElement.childNodes.length,
             ]);
           }
         });
       }
 
-      if (element) {
-        element.insertBefore(newElement, oldNode);
+      if (parentElement) {
+        parentElement.insertBefore(newElement, oldNode);
       }
 
       if (forgoElement.props.ref) {
@@ -785,7 +785,6 @@ export function createForgoInstance(customEnv: any) {
       }
 
       syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
-
       renderChildNodes(newElement);
       unmountComponents(pendingAttachStates, undefined);
 
@@ -1749,6 +1748,7 @@ export function createForgoInstance(customEnv: any) {
       // Now attach the internal forgo state.
       const state: NodeAttachedState = {
         ...existingState,
+        key: forgoNode.key,
         props: forgoNode.props,
         components: pendingAttachStates,
       };
