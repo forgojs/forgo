@@ -30,11 +30,11 @@ export type ForgoDOMElementProps = {
 
 export type ForgoComponentProps = ForgoElementProps;
 
-export type ForgoComponentCtor<Props extends {} = {}> = (
+export type ForgoComponentCtor<Props extends object = object> = (
   props: Props & ForgoComponentProps
 ) => ForgoComponent<Props>;
 
-export type ForgoNewComponentCtor<Props extends {} = {}> = (
+export type ForgoNewComponentCtor<Props extends object = object> = (
   props: Props & ForgoComponentProps
 ) => Component<Props>;
 
@@ -92,7 +92,7 @@ export type ForgoNonEmptyPrimitiveNode =
   | number
   | boolean
   | object
-  | BigInt
+  | bigint
   | null
   | undefined;
 
@@ -117,7 +117,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
   In addition it holds a bunch of other things. 
   Like for example, a key which uniquely identifies a child element when rendering a list.
 */
-export type NodeAttachedComponentState<TProps extends {}> = {
+export type NodeAttachedComponentState<TProps extends object> = {
   key?: string | number;
   ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>;
   component: Component<TProps>;
@@ -250,9 +250,11 @@ export const Fragment: unique symbol = Symbol.for("FORGO_FRAGMENT");
 /*
   HTML Namespaces
 */
-const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
-const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const MATH_NAMESPACE = "http://www.w3.org/1998/Math/MathML";
 
 /*
   These come from the browser's Node interface, which defines an enum of node
@@ -290,6 +292,7 @@ export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
  * information will fail to typecheck until they handle the new event.
  */
 type ComponentEventListenerBase = {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   [event in keyof typeof lifecycleEmitters]: Array<Function>;
 };
 /**
@@ -300,7 +303,7 @@ type ComponentEventListenerBase = {
 // TODO: figure out if TS gets angry if the user passes an async function as an
 // event listener. Maybe we need to default to unknown instead of void for the
 // return type?
-interface ComponentEventListeners<Props extends {}>
+interface ComponentEventListeners<Props extends object>
   extends ComponentEventListenerBase {
   mount: Array<
     (props: Props & ForgoComponentProps, component: Component<Props>) => void
@@ -324,7 +327,7 @@ interface ComponentEventListeners<Props extends {}>
   >;
 }
 
-interface ComponentInternal<Props extends {}> {
+interface ComponentInternal<Props extends object> {
   unmounted: boolean;
   registeredMethods: ForgoComponentMethods<Props>;
   eventListeners: ComponentEventListeners<Props>;
@@ -332,17 +335,17 @@ interface ComponentInternal<Props extends {}> {
 }
 
 const lifecycleEmitters = {
-  mount<Props extends {}>(component: Component<Props>, props: Props): void {
+  mount<Props extends object>(component: Component<Props>, props: Props): void {
     component.__internal.eventListeners.mount.forEach((cb) =>
       cb(props, component)
     );
   },
-  unmount<Props extends {}>(component: Component<Props>, props: Props) {
+  unmount<Props extends object>(component: Component<Props>, props: Props) {
     component.__internal.eventListeners.unmount.forEach((cb) =>
       cb(props, component)
     );
   },
-  shouldUpdate<Props extends {}>(
+  shouldUpdate<Props extends object>(
     component: Component<Props>,
     newProps: Props,
     oldProps: Props
@@ -355,7 +358,7 @@ const lifecycleEmitters = {
       .map((cb) => cb(newProps, oldProps, component))
       .some(Boolean);
   },
-  afterRender<Props extends {}>(
+  afterRender<Props extends object>(
     component: Component<Props>,
     props: Props,
     previousNode: ChildNode | undefined
@@ -371,7 +374,7 @@ const lifecycleEmitters = {
  * listeners. You may pass it around your application and to 3rd-party libraries
  * to build reusable logic.
  */
-export class Component<Props extends {} = {}> {
+export class Component<Props extends object = object> {
   /** @internal */
   public __internal: ComponentInternal<Props>;
 
@@ -427,14 +430,15 @@ export class Component<Props extends {} = {}> {
  */
 export function createElement<TProps extends ForgoElementProps & { key?: any }>(
   type: string | ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>,
-  props: TProps
+  props: TProps,
+  ...args: any[]
 ) {
   props = props ?? {};
   props.children =
-    arguments.length > 3
-      ? flatten(Array.from(arguments).slice(2))
-      : arguments.length === 3
-      ? flatten(arguments[2])
+    args.length > 1
+      ? flatten(Array.from(args))
+      : args.length === 1
+      ? flatten(args[0])
       : undefined;
   const key = props.key ?? undefined;
   return { type, props, key, __is_forgo_element__: true };
@@ -449,7 +453,7 @@ export const h = createElement;
 */
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
-    if (!node.__forgo?.deleted) {
+    if (node.__forgo === undefined || node.__forgo.deleted === false) {
       return value(e);
     }
   };
@@ -705,7 +709,7 @@ export function createForgoInstance(customEnv: any) {
       const parentState = getForgoState(insertionOptions.parentElement);
 
       pendingAttachStates.forEach((pendingAttachState, i) => {
-        if (pendingAttachState.key) {
+        if (pendingAttachState.key !== undefined) {
           const key = deriveComponentKey(pendingAttachState.key, i);
           parentState.newlyAddedKeyedNodes.set(key, insertAt);
         }
@@ -757,7 +761,7 @@ export function createForgoInstance(customEnv: any) {
       if (parentElement) {
         const parentState = getForgoState(parentElement);
         pendingAttachStates.forEach((pendingAttachState, i) => {
-          if (pendingAttachState.key) {
+          if (pendingAttachState.key !== undefined) {
             const key = deriveComponentKey(pendingAttachState.key, i);
             parentState.newlyAddedKeyedNodes.set(
               key,
@@ -911,7 +915,7 @@ export function createForgoInstance(customEnv: any) {
       }
       // shouldUpdate() returned false
       else {
-        let indexOfNode = findNodeIndex(
+        const indexOfNode = findNodeIndex(
           insertionOptions.parentElement.childNodes,
           componentState.component.__internal.element.node
         );
@@ -1012,7 +1016,7 @@ export function createForgoInstance(customEnv: any) {
         return exec();
       } catch (error) {
         if (boundary?.__internal.registeredMethods.error) {
-          const newForgoElement = boundary.__internal.registeredMethods.error!(
+          const newForgoElement = boundary.__internal.registeredMethods.error(
             props,
             error,
             boundary
@@ -1030,7 +1034,7 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  function renderComponentAndRemoveStaleNodes<TProps extends {}>(
+  function renderComponentAndRemoveStaleNodes<TProps extends object>(
     forgoNode: ForgoNode,
     insertionOptions: SearchableNodeInsertionOptions,
     statesToAttach: NodeAttachedComponentState<any>[],
@@ -1082,15 +1086,11 @@ export function createForgoInstance(customEnv: any) {
     // Patch state in deletedNodes to exclude what's been already transferred.
     for (const deletedNode of deletedNodes) {
       const state = getForgoState(deletedNode);
-      if (state) {
-        const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
-          transferredState,
-          state.components
-        );
-        state.components = state.components.slice(
-          indexOfFirstIncompatibleState
-        );
-      }
+      const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
+        transferredState,
+        state.components
+      );
+      state.components = state.components.slice(indexOfFirstIncompatibleState);
     }
 
     // In case we rendered an array, set the node to the first node.
@@ -1192,16 +1192,16 @@ export function createForgoInstance(customEnv: any) {
         node.remove();
 
         state.components.forEach((component, i) => {
-          if (component.key) {
-            parentState.deletedKeyedNodes.set(component.key, node);
+          if (component.key !== undefined) {
+            parentState.deletedKeyedNodes.set(
+              deriveComponentKey(component.key, i),
+              node
+            );
           }
         });
 
-        if (state.key) {
+        if (state.key !== undefined) {
           parentState.deletedKeyedNodes.set(state.key, node);
-        }
-
-        if (state && state.key) {
         } else {
           parentState.deletedUnkeyedNodes.push({ node });
         }
@@ -1224,11 +1224,9 @@ export function createForgoInstance(customEnv: any) {
   ) {
     function unloadNode(node: ChildNode) {
       const state = getForgoState(node);
-      if (state) {
-        state.deleted = true;
-        const oldComponentStates = state.components;
-        unmountComponents(pendingAttachStates, oldComponentStates);
-      }
+      state.deleted = true;
+      const oldComponentStates = state.components;
+      unmountComponents(pendingAttachStates, oldComponentStates);
     }
 
     const parentState = getForgoState(parentElement);
@@ -1316,7 +1314,7 @@ export function createForgoInstance(customEnv: any) {
           } else {
             const stateOnCurrentNode = getForgoState(x);
             return (
-              !stateOnCurrentNode.components[i] ||
+              stateOnCurrentNode.components[i] === undefined ||
               stateOnCurrentNode.components[i].component !== state.component
             );
           }
@@ -1421,7 +1419,7 @@ export function createForgoInstance(customEnv: any) {
     // Check active nodes first
     const indexInMap = parentState.keyedNodes.get(forgoElement.key);
 
-    if (indexInMap) {
+    if (indexInMap !== undefined) {
       // The index in the map is the index before rendering began.
       // Rendering can add/remove nodes, so it needs to be adjusted.
       const indexInDOM =
@@ -1448,8 +1446,8 @@ export function createForgoInstance(customEnv: any) {
           parentState.deletedKeyedNodes.delete(forgoElement.key);
 
           // Append it to the beginning of the node list.
-          const firstNodeInSearchList = nodes[searchFrom];
-          if (firstNodeInSearchList) {
+          if (searchFrom < nodes.length) {
+            const firstNodeInSearchList = nodes[searchFrom];
             parentElement.insertBefore(matchingNode, firstNodeInSearchList);
           } else {
             parentElement.appendChild(matchingNode);
@@ -1484,7 +1482,10 @@ export function createForgoInstance(customEnv: any) {
 
         // If the candidate has a key defined, we don't match it with
         // an unkeyed forgo element
-        if (node.tagName.toLowerCase() === forgoElement.type && !state.key) {
+        if (
+          node.tagName.toLowerCase() === forgoElement.type &&
+          state.key !== undefined
+        ) {
           return { found: true, index: i };
         }
       }
@@ -1534,7 +1535,7 @@ export function createForgoInstance(customEnv: any) {
     searchFrom: number,
     componentIndex: number
   ): CandidateSearchResult {
-    const key = `$Component${componentIndex}_${forgoComponent.key}`;
+    const key = deriveComponentKey(forgoComponent.key, componentIndex);
 
     // We check childNodeMap only if componentIndex === 0
     // If componentIndex > 0, we fall back to looping over childNodes.
@@ -1545,7 +1546,7 @@ export function createForgoInstance(customEnv: any) {
       // Check active nodes first
       const indexInMap = parentState.keyedNodes.get(key);
 
-      if (indexInMap) {
+      if (indexInMap !== undefined) {
         // The index in the map is the index before rendering began.
         // Rendering can add/remove nodes, so it needs to be adjusted.
         const indexInDOM =
@@ -1570,8 +1571,9 @@ export function createForgoInstance(customEnv: any) {
             parentState.deletedKeyedNodes.delete(key);
 
             // Append it to the beginning of the node list.
-            const firstNodeInSearchList = parentElement.childNodes[searchFrom];
-            if (firstNodeInSearchList) {
+            if (searchFrom < parentElement.childNodes.length) {
+              const firstNodeInSearchList =
+                parentElement.childNodes[searchFrom];
               parentElement.insertBefore(matchingNode, firstNodeInSearchList);
             } else {
               parentElement.appendChild(matchingNode);
@@ -1603,7 +1605,7 @@ export function createForgoInstance(customEnv: any) {
       const node = nodes[i] as ChildNode;
       const state = getForgoState(node);
 
-      if (state && state.components.length > componentIndex) {
+      if (state !== undefined && state.components.length > componentIndex) {
         if (state.components[componentIndex].ctor === forgoComponent.type) {
           return { found: true, index: i };
         }
@@ -1638,11 +1640,10 @@ export function createForgoInstance(customEnv: any) {
         deletedNodes.splice(i, nodesToResurrect.length);
 
         // Append resurrected nodes to the beginning of the node list.
-        let insertBeforeNode = nodes[searchFrom];
+        const insertBeforeNode = nodes[searchFrom];
 
         // Since we're inserting a node, gotta update
-
-        if (insertBeforeNode) {
+        if (insertBeforeNode !== undefined) {
           for (const node of nodesToResurrect) {
             parentElement.insertBefore(node, insertBeforeNode);
           }
@@ -1665,7 +1666,10 @@ export function createForgoInstance(customEnv: any) {
     componentIndex: number
   ) {
     const stateOnNode = getForgoState(node);
-    if (stateOnNode && stateOnNode.components.length > componentIndex) {
+    if (
+      stateOnNode !== undefined &&
+      stateOnNode.components.length > componentIndex
+    ) {
       if (
         stateOnNode.components[componentIndex].ctor === forgoElement.type &&
         stateOnNode.components[componentIndex].key === forgoElement.key
@@ -1699,7 +1703,7 @@ export function createForgoInstance(customEnv: any) {
       const currentState = getForgoState(node);
 
       // Remove props which don't exist
-      if (currentState && currentState.props) {
+      if (currentState !== undefined && currentState.props) {
         for (const key in currentState.props) {
           if (!(key in forgoNode.props)) {
             if (key !== "children" && key !== "xmlns") {
@@ -1821,11 +1825,11 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNode,
     container: Element | string | null
   ): RenderResult {
-    let parentElement = (
+    const parentElement = (
       isString(container) ? env.document.querySelector(container) : container
     ) as Element;
 
-    if (!parentElement) {
+    if (parentElement == undefined) {
       throw new Error(
         `The mount() function was called on a non-element (${
           typeof container === "string" ? container : container?.tagName
@@ -1868,17 +1872,18 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function unmount(container: Element | string | null) {
-    let parentElement = (
-      isString(container) ? env.document.querySelector(container) : container
-    ) as Element;
+    const parentElement = isString(container)
+      ? env.document.querySelector(container)
+      : container;
 
-    if (!parentElement) {
+    if (parentElement === null) {
       throw new Error(
         `The unmount() function was called on a non-element (${
           typeof container === "string" ? container : container?.tagName
         }).`
       );
     }
+
     if (parentElement.nodeType !== ELEMENT_NODE_TYPE) {
       throw new Error(
         "The container argument to the unmount() function should be an HTML element."
@@ -1948,7 +1953,10 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.props
         )
       ) {
-        let indexOfNode = findNodeIndex(parentElement.childNodes, element.node);
+        const indexOfNode = findNodeIndex(
+          parentElement.childNodes,
+          element.node
+        );
 
         return {
           nodes: sliceNodes(
@@ -1980,7 +1988,7 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.component
         );
 
-      let nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
+      const nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
 
       const insertionOptions: SearchableNodeInsertionOptions = {
         type: "search",
@@ -2059,14 +2067,19 @@ export function createForgoInstance(customEnv: any) {
 
   function createElement(
     forgoElement: ForgoDOMElement<any>,
-    parentElement: Element | undefined
+    parentElement?: Element
   ) {
     const namespaceURI =
-      forgoElement.props.xmlns ?? forgoElement.type === "svg"
+      forgoElement.props.xmlns !== undefined
+        ? (forgoElement.props.xmlns as string)
+        : forgoElement.type === "svg"
         ? SVG_NAMESPACE
-        : parentElement && parentElement.namespaceURI;
-    if (forgoElement.props.is) {
-      return namespaceURI
+        : parentElement !== undefined
+        ? parentElement.namespaceURI
+        : null;
+
+    if (forgoElement.props.is !== undefined) {
+      return namespaceURI !== null
         ? env.document.createElementNS(namespaceURI, forgoElement.type, {
             is: forgoElement.props.is,
           })
@@ -2074,7 +2087,7 @@ export function createForgoInstance(customEnv: any) {
             is: forgoElement.props.is,
           });
     } else {
-      return namespaceURI
+      return namespaceURI !== null
         ? env.document.createElementNS(namespaceURI, forgoElement.type)
         : env.document.createElement(forgoElement.type);
     }
@@ -2088,7 +2101,7 @@ export function createForgoInstance(customEnv: any) {
   };
 }
 
-const windowObject = globalThis ? globalThis : window;
+const windowObject = globalThis !== undefined ? globalThis : window;
 
 let forgoInstance = createForgoInstance({
   window: windowObject,
@@ -2228,20 +2241,23 @@ export type ForgoComponent<TProps extends ForgoComponentProps> = {
   shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
   __forgo?: { unmounted?: boolean };
 };
+
 export type ForgoRenderArgs = {
   element: ForgoElementArg;
   update: (props?: any) => RenderResult;
 };
+
 export type ForgoAfterRenderArgs = ForgoRenderArgs & {
   previousNode?: ChildNode;
 };
+
 export type ForgoErrorArgs = ForgoRenderArgs & {
   error: any;
 };
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <Props extends {}>(
+export const legacyComponentSyntaxCompat = <Props extends object>(
   legacyComponent: ForgoComponent<Props>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
@@ -2258,30 +2274,43 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
       return legacyComponent.render(props, mkRenderArgs(component));
     },
   };
+
   if (legacyComponent.error) {
     componentBody.error = (props, error) => {
-      return legacyComponent.error!(
-        props,
-        Object.assign(mkRenderArgs(component), { error })
-      );
+      return (
+        legacyComponent as WithRequiredProperty<ForgoComponent<Props>, "error">
+      ).error(props, Object.assign(mkRenderArgs(component), { error }));
     };
   }
+
   const component = new Component<Props>({
     ...componentBody,
   });
   if (legacyComponent.mount) {
     component.mount((props) => {
-      legacyComponent.mount!(props, mkRenderArgs(component));
+      (
+        legacyComponent as WithRequiredProperty<ForgoComponent<Props>, "mount">
+      ).mount(props, mkRenderArgs(component));
     });
   }
   if (legacyComponent.unmount) {
     component.unmount((props) => {
-      legacyComponent.unmount!(props, mkRenderArgs(component));
+      (
+        legacyComponent as WithRequiredProperty<
+          ForgoComponent<Props>,
+          "unmount"
+        >
+      ).unmount(props, mkRenderArgs(component));
     });
   }
   if (legacyComponent.afterRender) {
     component.afterRender((props, previousNode) => {
-      legacyComponent.afterRender!(
+      (
+        legacyComponent as WithRequiredProperty<
+          ForgoComponent<Props>,
+          "afterRender"
+        >
+      ).afterRender(
         props,
         Object.assign(mkRenderArgs(component), { previousNode })
       );
@@ -2289,7 +2318,12 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
   }
   if (legacyComponent.shouldUpdate) {
     component.shouldUpdate((newProps, oldProps) => {
-      return legacyComponent.shouldUpdate!(newProps, oldProps);
+      return (
+        legacyComponent as WithRequiredProperty<
+          ForgoComponent<Props>,
+          "shouldUpdate"
+        >
+      ).shouldUpdate(newProps, oldProps);
     });
   }
   return component;
@@ -2302,7 +2336,7 @@ function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<Props extends {}>(
+function assertIsComponent<Props extends object>(
   ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
@@ -2409,6 +2443,8 @@ function findNodeIndex(
   visible when a project attempts to consume forgo.
 */
 // This covers a consuming project using the forgo.createElement jsxFactory
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export * as JSX from "./jsxTypes.js";
 
 // If jsxTypes is imported using named imports, esbuild doesn't know how to
@@ -2419,6 +2455,9 @@ export * as JSX from "./jsxTypes.js";
 import * as JSXTypes from "./jsxTypes.js";
 // The createElement namespace exists so that users can set their TypeScript
 // jsxFactory to createElement instead of forgo.createElement.
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace createElement {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export import JSX = JSXTypes;
 }
