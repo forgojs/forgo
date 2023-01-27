@@ -220,7 +220,7 @@ export type NodeInsertionOptions =
 */
 export type UnloadableChildNode = {
   node: ChildNode;
-  pendingAttachStates: NodeAttachedComponentState<any>[];
+  pendingAttachStates: NodeAttachedComponentState<object>[];
 };
 
 /*
@@ -484,7 +484,7 @@ export function createForgoInstance(customEnv: any) {
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    pendingAttachStates: NodeAttachedComponentState<object>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // Array of Nodes, or Fragment
@@ -546,16 +546,17 @@ export function createForgoInstance(customEnv: any) {
   function renderNonElement(
     forgoNode: ForgoNonEmptyPrimitiveNode,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<object>[]
   ): RenderResult {
     // Text and comment nodes will always be recreated (why?).
     let node: ChildNode;
-    if (forgoNode === null || forgoNode === undefined) {
+
+    if (isNullOrUndefined(forgoNode)) {
       node = env.document.createComment("null component render");
     } else {
       node = env.document.createTextNode(stringOfPrimitiveNode(forgoNode));
     }
-    let oldComponentState: NodeAttachedComponentState<any>[] | undefined =
+    let oldComponentState: NodeAttachedComponentState<object>[] | undefined =
       undefined;
 
     // We have to find a node to replace.
@@ -614,7 +615,7 @@ export function createForgoInstance(customEnv: any) {
   function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoDOMElement<TProps>,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    pendingAttachStates: NodeAttachedComponentState<object>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node
@@ -663,7 +664,7 @@ export function createForgoInstance(customEnv: any) {
         // Coerce children to always be an array, for simplicity
         const forgoChildren = flatten([forgoElement.props.children]).filter(
           // Children may or may not be specified
-          (x) => x !== undefined && x !== null
+          (x) => !isNullOrUndefined(x)
         );
 
         let currentNodeIndex = 0;
@@ -802,7 +803,7 @@ export function createForgoInstance(customEnv: any) {
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
-    // boundary: ForgoComponent<any> | undefined
+    // boundary: ForgoComponent<object> | undefined
   ): RenderResult {
     const componentIndex = pendingAttachStates.length;
 
@@ -946,7 +947,7 @@ export function createForgoInstance(customEnv: any) {
 
       // Create new component state
       // ... and push it to pendingAttachStates
-      const newComponentState: NodeAttachedComponentState<any> = {
+      const newComponentState: NodeAttachedComponentState<TProps> = {
         key: forgoComponent.key,
         ctor,
         component,
@@ -1037,7 +1038,7 @@ export function createForgoInstance(customEnv: any) {
   function renderComponentAndRemoveStaleNodes<TProps extends object>(
     forgoNode: ForgoNode,
     insertionOptions: SearchableNodeInsertionOptions,
-    statesToAttach: NodeAttachedComponentState<any>[],
+    statesToAttach: NodeAttachedComponentState<object>[],
     componentState: NodeAttachedComponentState<TProps>,
     mountOnPreExistingDOM: boolean
   ): RenderResult {
@@ -1108,7 +1109,7 @@ export function createForgoInstance(customEnv: any) {
   function renderArray(
     forgoNodes: ForgoNode[],
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    pendingAttachStates: NodeAttachedComponentState<object>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
@@ -1220,7 +1221,7 @@ export function createForgoInstance(customEnv: any) {
     */
   function unloadMarkedNodes(
     parentElement: Element,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<object>[]
   ) {
     function unloadNode(node: ChildNode) {
       const state = getForgoState(node);
@@ -1254,8 +1255,8 @@ export function createForgoInstance(customEnv: any) {
     So we check the ctor type in old and new.
   */
   function findIndexOfFirstIncompatibleState(
-    newStates: NodeAttachedComponentState<any>[],
-    oldStates: NodeAttachedComponentState<any>[]
+    newStates: NodeAttachedComponentState<object>[],
+    oldStates: NodeAttachedComponentState<object>[]
   ): number {
     let i = 0;
 
@@ -1281,8 +1282,8 @@ export function createForgoInstance(customEnv: any) {
    * The `unmount` lifecycle event will be called.
    */
   function unmountComponents(
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
+    pendingAttachStates: NodeAttachedComponentState<object>[],
+    oldComponentStates: NodeAttachedComponentState<object>[] | undefined
   ) {
     if (!oldComponentStates) return;
 
@@ -1334,8 +1335,8 @@ export function createForgoInstance(customEnv: any) {
    * state[].
    */
   function mountComponents(
-    pendingAttachStates: NodeAttachedComponentState<any>[],
-    oldComponentStates: NodeAttachedComponentState<any>[] | undefined
+    pendingAttachStates: NodeAttachedComponentState<object>[],
+    oldComponentStates: NodeAttachedComponentState<object>[] | undefined
   ) {
     const indexOfFirstIncompatibleState = oldComponentStates
       ? findIndexOfFirstIncompatibleState(
@@ -1406,7 +1407,7 @@ export function createForgoInstance(customEnv: any) {
   ): CandidateSearchResult {
     function isCompatibleNode(
       node: ChildNode,
-      forgoElement: ForgoDOMElement<any>
+      forgoElement: ForgoDOMElement<TProps>
     ) {
       return (
         nodeIsElement(node) && node.tagName.toLowerCase() === forgoElement.type
@@ -1688,7 +1689,7 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNode,
     node: ChildNode,
     isNewNode: boolean,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    pendingAttachStates: NodeAttachedComponentState<object>[]
   ) {
     // We have to inject node into the args object.
     // components are already holding a reference to the args object.
@@ -1763,9 +1764,11 @@ export function createForgoInstance(customEnv: any) {
                 if (
                   currentState === undefined ||
                   currentState.style === undefined ||
-                  currentState.style !== forgoNode.props.style
+                  currentState.style !== (forgoNode.props as any).style
                 ) {
-                  const stringOfCSS = styleToString(forgoNode.props.style);
+                  const stringOfCSS = styleToString(
+                    (forgoNode.props as any).style
+                  );
                   if ((node as HTMLElement).style.cssText !== stringOfCSS) {
                     (node as HTMLElement).style.cssText = stringOfCSS;
                   }
@@ -2066,17 +2069,16 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function createElement(
-    forgoElement: ForgoDOMElement<any>,
+    forgoElement: ForgoDOMElement<{ is?: string; xmlns?: string }>,
     parentElement?: Element
   ) {
-    const namespaceURI =
-      forgoElement.props.xmlns !== undefined
-        ? (forgoElement.props.xmlns as string)
-        : forgoElement.type === "svg"
-        ? SVG_NAMESPACE
-        : parentElement !== undefined
-        ? parentElement.namespaceURI
-        : null;
+    const namespaceURI = !isNullOrUndefined(forgoElement.props.xmlns)
+      ? (forgoElement.props.xmlns as string)
+      : forgoElement.type === "svg"
+      ? SVG_NAMESPACE
+      : parentElement !== undefined
+      ? parentElement.namespaceURI
+      : null;
 
     if (forgoElement.props.is !== undefined) {
       return namespaceURI !== null
@@ -2189,7 +2191,9 @@ function stringOfPrimitiveNode(
 /**
  * Get Node Types
  */
-function isForgoElement(forgoNode: ForgoNode): forgoNode is ForgoElement<any> {
+function isForgoElement(
+  forgoNode: ForgoNode
+): forgoNode is ForgoElement<object> {
   return (
     forgoNode !== undefined &&
     forgoNode !== null &&
@@ -2197,7 +2201,7 @@ function isForgoElement(forgoNode: ForgoNode): forgoNode is ForgoElement<any> {
   );
 }
 
-function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<any> {
+function isForgoDOMElement(node: ForgoNode): node is ForgoDOMElement<object> {
   return isForgoElement(node) && typeof node.type === "string";
 }
 
@@ -2362,6 +2366,12 @@ function assertIsComponent<Props extends object>(
   }
 
   return component;
+}
+
+function isNullOrUndefined<T>(
+  value: T | null | undefined
+): value is null | undefined {
+  return value === null || value === undefined;
 }
 
 function isString(val: unknown): val is string {
