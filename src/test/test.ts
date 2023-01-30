@@ -42,16 +42,16 @@ import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.j
 import fragmentMountTiming from "./fragmentMountEvent.js";
 import componentApi from "./componentApi.js";
 
-// mount();
-// boundary();
-// passProps();
-// elementRef();
-// rerender();
-// hydrate();
-// componentMount();
-// componentUnmount();
+mount();
+boundary();
+passProps();
+elementRef();
+rerender();
+hydrate();
+componentMount();
+componentUnmount();
 // nodeState();
-replaceByKey();
+// replaceByKey();
 // clearsOldProps();
 // shouldUpdate();
 // renderPrimitives();

@@ -1,10 +1,7 @@
 import should from "should";
-import { DOMWindow, JSDOM } from "jsdom";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-
-import htmlFile from "./htmlFile.js";
 
 const componentFactory = () => {
   const state = {
