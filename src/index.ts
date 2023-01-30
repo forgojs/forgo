@@ -733,25 +733,6 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      // Let's fire the mount and remount callbacks. If __internal.element.node
-      // is not undefined, it means that the component was already mounted
-      // somewhere. In that case, we call remount() instead of mount().
-      pendingAttachStates.forEach((pendingAttachState, i) => {
-        if (
-          pendingAttachState.component.__internal.element.node === undefined
-        ) {
-          lifecycleEmitters.mount(
-            pendingAttachState.component,
-            pendingAttachState.props
-          );
-        } else {
-          lifecycleEmitters.remount(
-            pendingAttachState.component,
-            pendingAttachState.props
-          );
-        }
-      });
-
       if (parentElement) {
         parentElement.insertBefore(newElement, oldNode ?? null);
       }
@@ -760,8 +741,40 @@ export function createForgoInstance(customEnv: any) {
         forgoElement.props.ref.value = newElement;
       }
 
+      // Save unmountedAttachStates because syncAttrsAndState is going to attach
+      // component.__internal.element.node
+      const unmountedAttachStates: ComponentState<object>[] = [];
+      const mountedAttachStates: ComponentState<object>[] = [];
+
+      for (const pendingAttachState of pendingAttachStates) {
+        if (
+          pendingAttachState.component.__internal.element.node === undefined &&
+          !pendingAttachState.isMounted
+        ) {
+          unmountedAttachStates.push(pendingAttachState);
+        } else {
+          mountedAttachStates.push(pendingAttachState);
+        }
+      }
+
       syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
+
       renderChildNodes(newElement);
+
+      unmountedAttachStates.forEach((pendingAttachState) => {
+        pendingAttachState.isMounted = true;
+        lifecycleEmitters.mount(
+          pendingAttachState.component,
+          pendingAttachState.props
+        );
+      });
+
+      mountedAttachStates.forEach((pendingAttachState) => {
+        lifecycleEmitters.remount(
+          pendingAttachState.component,
+          pendingAttachState.props
+        );
+      });
 
       return { nodes: [newElement] };
     }
@@ -1341,7 +1354,11 @@ export function createForgoInstance(customEnv: any) {
       insertionOptions: DOMNodeInsertionOptions,
       pendingAttachStates: ComponentState<object>[]
     ): boolean {
-      const { parentElement, currentNodeIndex: searchFrom, length } = insertionOptions;
+      const {
+        parentElement,
+        currentNodeIndex: searchFrom,
+        length,
+      } = insertionOptions;
       const nodes = parentElement.childNodes;
 
       for (let i = searchFrom; i < searchFrom + length; i++) {
@@ -1450,7 +1467,11 @@ export function createForgoInstance(customEnv: any) {
       insertionOptions: DOMNodeInsertionOptions,
       componentIndex: number
     ): boolean {
-      const { parentElement, currentNodeIndex: searchFrom, length } = insertionOptions;
+      const {
+        parentElement,
+        currentNodeIndex: searchFrom,
+        length,
+      } = insertionOptions;
       const nodes = parentElement.childNodes;
 
       for (let i = searchFrom; i < searchFrom + length; i++) {
