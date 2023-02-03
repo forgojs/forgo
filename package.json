@@ -29,7 +29,7 @@
   "scripts": {
     "clean": "rimraf ./dist",
     "build": "npm run clean && npx tsc --emitDeclarationOnly && npx esbuild ./src/index.ts --minify --bundle --format=esm --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
-    "build-dev": "npx tsc",
+    "build-dev": "npm run clean && npx tsc",
     "test": "npx tsc && npx mocha dist/test/test.js"
   },
   "license": "MIT"
