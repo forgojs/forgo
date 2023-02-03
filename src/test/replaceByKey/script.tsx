@@ -91,35 +91,3 @@ export function runStringKey(dom: JSDOM) {
     );
   });
 }
-
-export function runObjectKey(dom: JSDOM) {
-  window = dom.window;
-  document = window.document;
-  setCustomEnv({ window, document });
-
-  const keyOne = { x: 1 };
-  const keyTwo = { x: 2 };
-  const keyThree = { x: 3 };
-
-  window.addEventListener("load", () => {
-    mount(
-      <Parent
-        keys={[
-          {
-            key: keyOne,
-            id: "1",
-          },
-          {
-            key: keyTwo,
-            id: "2",
-          },
-          {
-            key: keyThree,
-            id: "3",
-          },
-        ]}
-      />,
-      document.getElementById("root")
-    );
-  });
-}
