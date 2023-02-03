@@ -543,11 +543,6 @@ export function createForgoInstance(customEnv: any) {
     }
     let oldComponentState: ComponentState<object>[] | undefined = undefined;
 
-    // Save unmountedAttachStates because syncAttrsAndState is going to attach
-    // component.__internal.element.node
-    const { mounted, unmounted } =
-      getMountedandUnmountedComponents(pendingAttachStates);
-
     // We have to find a node to replace.
     if (insertionOptions.type === "search") {
       const childNodes = insertionOptions.parentElement.childNodes;
@@ -579,21 +574,6 @@ export function createForgoInstance(customEnv: any) {
     }
 
     syncAttrsAndState(forgoNode, node, true, pendingAttachStates);
-
-    unmounted.forEach((pendingAttachState) => {
-      pendingAttachState.isMounted = true;
-      lifecycleEmitters.mount(
-        pendingAttachState.component,
-        pendingAttachState.props
-      );
-    });
-
-    mounted.forEach((pendingAttachState) => {
-      lifecycleEmitters.remount(
-        pendingAttachState.component,
-        pendingAttachState.props
-      );
-    });
 
     return {
       nodes: [node],
@@ -762,29 +742,9 @@ export function createForgoInstance(customEnv: any) {
         parentElement.insertBefore(newElement, oldNode ?? null);
       }
 
-      // Save unmountedAttachStates because syncAttrsAndState is going to attach
-      // component.__internal.element.node
-      const { mounted, unmounted } =
-        getMountedandUnmountedComponents(pendingAttachStates);
-
       syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
 
       renderChildNodes(newElement);
-
-      unmounted.forEach((pendingAttachState) => {
-        pendingAttachState.isMounted = true;
-        lifecycleEmitters.mount(
-          pendingAttachState.component,
-          pendingAttachState.props
-        );
-      });
-
-      mounted.forEach((pendingAttachState) => {
-        lifecycleEmitters.remount(
-          pendingAttachState.component,
-          pendingAttachState.props
-        );
-      });
 
       return { nodes: [newElement] };
     }
@@ -997,6 +957,11 @@ export function createForgoInstance(customEnv: any) {
           componentStateAttached.component.__internal.element.node =
             renderResult.nodes[0];
 
+          lifecycleEmitters.mount(
+            newComponentState.component,
+            forgoComponent.props
+          );
+
           // No previousNode since new component. So just args and not
           // afterRenderArgs.
           lifecycleEmitters.afterRender(
@@ -1049,6 +1014,9 @@ export function createForgoInstance(customEnv: any) {
     const totalNodesBeforeRender =
       insertionOptions.parentElement.childNodes.length;
 
+    const componentState = statesToAttach.slice(-1)[0];
+    const previousNode = componentState.component.__internal.element.node;
+
     // Pass it on for rendering...
     const renderResult = internalRender(
       forgoNode,
@@ -1056,6 +1024,12 @@ export function createForgoInstance(customEnv: any) {
       statesToAttach,
       mountOnPreExistingDOM
     );
+
+    const newNode = componentState.component.__internal.element.node;
+
+    if (previousNode !== newNode) {
+      lifecycleEmitters.remount(componentState.component, componentState.props);
+    }
 
     const totalNodesAfterRender =
       insertionOptions.parentElement.childNodes.length;
@@ -2284,28 +2258,6 @@ function findNodeIndex(
 ): number {
   if (!element) return -1;
   return Array.from(nodes).indexOf(element);
-}
-
-function getMountedandUnmountedComponents(
-  pendingAttachStates: ComponentState<object>[]
-) {
-  // Save unmountedAttachStates because syncAttrsAndState is going to attach
-  // component.__internal.element.node
-  const unmounted: ComponentState<object>[] = [];
-  const mounted: ComponentState<object>[] = [];
-
-  for (const pendingAttachState of pendingAttachStates) {
-    if (
-      pendingAttachState.component.__internal.element.node === undefined &&
-      !pendingAttachState.isMounted
-    ) {
-      unmounted.push(pendingAttachState);
-    } else {
-      mounted.push(pendingAttachState);
-    }
-  }
-
-  return { mounted: mounted, unmounted: unmounted };
 }
 
 /* JSX Types */
