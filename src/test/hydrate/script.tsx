@@ -7,7 +7,7 @@ let document: Document;
 
 export let buttonRef: any = {};
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   let counter = 0;
 
   return new forgo.Component({

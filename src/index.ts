@@ -28,7 +28,9 @@ export type ForgoDOMElementProps = {
   dangerouslySetInnerHTML?: { __html: string };
 } & ForgoElementProps;
 
-export type ForgoComponentProps = ForgoElementProps;
+export type ForgoComponentProps = ForgoElementProps & {
+  [prop: string]: any;
+};
 
 export type ForgoComponentCtor<Props extends object = object> = (
   props: Props & ForgoComponentProps
@@ -61,20 +63,20 @@ export type ForgoKeyType = string | number;
   If the ForgoElement represents a Component, then the type points to a ForgoComponentCtor.
   eg: The type will be MyComponent for <MyComponent />
 */
-export type ForgoElementBase<TProps extends ForgoElementProps> = {
+export type ForgoElementBase<Props extends ForgoElementProps> = {
   key?: ForgoKeyType;
-  props: TProps;
+  props: Props;
   __is_forgo_element__: true;
 };
 
-export type ForgoDOMElement<TProps extends ForgoDOMElementProps> =
-  ForgoElementBase<TProps> & {
+export type ForgoDOMElement<Props extends ForgoDOMElementProps> =
+  ForgoElementBase<Props> & {
     type: string;
   };
 
-export type ForgoComponentElement<TProps extends ForgoComponentProps> =
-  ForgoElementBase<TProps> & {
-    type: ForgoNewComponentCtor<TProps>;
+export type ForgoComponentElement<Props extends object = object> =
+  ForgoElementBase<Props> & {
+    type: ForgoNewComponentCtor<Props>;
   };
 
 export type ForgoFragment = {
@@ -83,9 +85,9 @@ export type ForgoFragment = {
   __is_forgo_element__: true;
 };
 
-export type ForgoElement<TProps extends ForgoDOMElementProps> =
-  | ForgoDOMElement<TProps>
-  | ForgoComponentElement<TProps>;
+export type ForgoElement<Props extends ForgoDOMElementProps> =
+  | ForgoDOMElement<Props>
+  | ForgoComponentElement<Props>;
 
 export type ForgoNonEmptyPrimitiveNode =
   | string
@@ -119,18 +121,18 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
  * In addition it holds a bunch of other things. Like for example, a key which
  * uniquely identifies a child element when rendering a list.
  */
-export type ComponentState<TProps extends object> = {
+export type ComponentState<Props extends object = object> = {
   key?: string | number;
-  ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>;
-  component: Component<TProps>;
-  props: TProps;
+  ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>;
+  component: Component<Props>;
+  props: Props;
   nodes: ChildNode[];
   isMounted: boolean;
 };
 
 /*
  * This is the state data structure which gets stored on a node.
- * See explanation for ComponentState<TProps>
+ * See explanation for ComponentState<Props>
  */
 export type NodeAttachedState = {
   key?: string | number;
@@ -267,13 +269,13 @@ const COMMENT_NODE_TYPE = 8;
  * 2. error() is called when this component, or one of its children, throws an
  *    error.
  */
-export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
+export interface ForgoComponentMethods<Props extends object> {
   render: (
-    props: Props & ForgoComponentProps,
+    props: Props,
     component: Component<Props>
   ) => ForgoNode | ForgoNode[];
   error?: (
-    props: Props & ForgoComponentProps,
+    props: Props,
     error: unknown,
     component: Component<Props>
   ) => ForgoNode;
@@ -315,14 +317,14 @@ interface ComponentEventListeners<Props extends object>
   >;
   shouldUpdate: Array<
     (
-      newProps: Props & ForgoComponentProps,
-      oldProps: Props & ForgoComponentProps,
+      newprops: Props & ForgoComponentProps,
+      oldprops: Props & ForgoComponentProps,
       component: Component<Props>
     ) => boolean
   >;
 }
 
-interface ComponentInternal<Props extends object> {
+interface ComponentInternal<Props extends object = object> {
   unmounted: boolean;
   registeredMethods: ForgoComponentMethods<Props>;
   eventListeners: ComponentEventListeners<Props>;
@@ -330,28 +332,34 @@ interface ComponentInternal<Props extends object> {
 }
 
 const lifecycleEmitters = {
-  mount<Props extends object>(component: Component<Props>, props: Props): void {
+  mount<Props extends object = object>(
+    component: Component<Props>,
+    props: Props & ForgoComponentProps 
+  ): void {
     component.__internal.eventListeners.mount.forEach((cb) =>
       cb(props, component)
     );
   },
-  remount<Props extends object>(
+  remount<Props extends object = object>(
     component: Component<Props>,
-    props: Props
+    props: Props & ForgoComponentProps
   ): void {
     component.__internal.eventListeners.remount.forEach((cb) =>
       cb(props, component)
     );
   },
-  unmount<Props extends object>(component: Component<Props>, props: Props) {
+  unmount<Props extends object = object>(
+    component: Component<Props>,
+    props: Props & ForgoComponentProps
+  ) {
     component.__internal.eventListeners.unmount.forEach((cb) =>
       cb(props, component)
     );
   },
-  shouldUpdate<Props extends object>(
+  shouldUpdate<Props extends object = object>(
     component: Component<Props>,
-    newProps: Props,
-    oldProps: Props
+    newProps: Props & ForgoComponentProps,
+    oldProps: Props & ForgoComponentProps
   ): boolean {
     // Always rerender unless we have a specific reason not to
     if (component.__internal.eventListeners.shouldUpdate.length === 0)
@@ -361,9 +369,9 @@ const lifecycleEmitters = {
       .map((cb) => cb(newProps, oldProps, component))
       .some(Boolean);
   },
-  afterRender<Props extends object>(
+  afterRender<Props extends object = object>(
     component: Component<Props>,
-    props: Props,
+    props: Props & ForgoComponentProps,
     previousNode: ChildNode | undefined
   ) {
     component.__internal.eventListeners.afterRender.forEach((cb) =>
@@ -436,9 +444,9 @@ export class Component<Props extends object = object> {
 /**
  * jsxFactory function
  */
-export function createElement<TProps extends ForgoElementProps & { key?: any }>(
-  type: string | ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>,
-  props: TProps,
+export function createElement<Props extends ForgoElementProps & { key?: any }>(
+  type: string | ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
+  props: Props,
   ...args: any[]
 ) {
   props = props ?? {};
@@ -580,8 +588,8 @@ export function createForgoInstance(customEnv: any) {
     };
   }
 
-  function renderDOMElement<TProps extends ForgoDOMElementProps>(
-    forgoElement: ForgoDOMElement<TProps>,
+  function renderDOMElement<Props extends ForgoDOMElementProps>(
+    forgoElement: ForgoDOMElement<Props>,
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: ComponentState<object>[],
     mountOnPreExistingDOM: boolean
@@ -771,8 +779,8 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  function renderComponent<TProps extends ForgoDOMElementProps>(
-    forgoComponent: ForgoComponentElement<TProps>,
+  function renderComponent<Props extends ForgoDOMElementProps>(
+    forgoComponent: ForgoComponentElement<Props>,
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: ComponentState<any>[],
     mountOnPreExistingDOM: boolean
@@ -907,7 +915,7 @@ export function createForgoInstance(customEnv: any) {
 
       // Create new component state
       // ... and push it to pendingAttachStates
-      const newComponentState: ComponentState<TProps> = {
+      const newComponentState: ComponentState<Props> = {
         key: forgoComponent.key,
         ctor,
         component,
@@ -976,7 +984,7 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function withErrorBoundary(
-      props: TProps,
+      props: Props,
       statesToAttach: ComponentState<any>[],
       boundary: Component<any> | undefined,
       exec: () => RenderResult
@@ -1236,15 +1244,15 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function findReplacementCandidateForElement<
-    TProps extends ForgoDOMElementProps
+    Props extends ForgoDOMElementProps
   >(
-    forgoElement: ForgoDOMElement<TProps>,
+    forgoElement: ForgoDOMElement<Props>,
     insertionOptions: DOMNodeInsertionOptions,
     pendingAttachStates: ComponentState<object>[]
   ): boolean {
-    function isCompatibleElement<TProps extends ForgoDOMElementProps>(
+    function isCompatibleElement<Props extends ForgoDOMElementProps>(
       node: ChildNode,
-      forgoElement: ForgoDOMElement<TProps>,
+      forgoElement: ForgoDOMElement<Props>,
       pendingAttachStates: ComponentState<object>[]
     ): boolean {
       if (nodeIsElement(node)) {
@@ -1263,9 +1271,9 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function findReplacementCandidateForKeyedElement<
-      TProps extends ForgoDOMElementProps
+      Props extends ForgoDOMElementProps
     >(
-      forgoElement: WithRequiredProperty<ForgoDOMElement<TProps>, "key">,
+      forgoElement: WithRequiredProperty<ForgoDOMElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       pendingAttachStates: ComponentState<object>[]
     ): boolean {
@@ -1337,9 +1345,9 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function findReplacementCandidateForUnKeyedElement<
-      TProps extends ForgoDOMElementProps
+      Props extends ForgoDOMElementProps
     >(
-      forgoElement: Omit<ForgoDOMElement<TProps>, "key">,
+      forgoElement: Omit<ForgoDOMElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       pendingAttachStates: ComponentState<object>[]
     ): boolean {
@@ -1391,17 +1399,17 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function findReplacementCandidateForComponent<
-    TProps extends ForgoDOMElementProps
+    Props extends ForgoDOMElementProps
   >(
-    forgoComponent: ForgoComponentElement<TProps>,
+    forgoComponent: ForgoComponentElement<Props>,
     insertionOptions: DOMNodeInsertionOptions,
     componentIndex: number
   ): boolean {
     function findReplacementCandidateForKeyedComponent<
-      TProps extends ForgoDOMElementProps
+      Props extends ForgoDOMElementProps
     >(
       forgoComponent: WithRequiredProperty<
-        ForgoComponentElement<TProps>,
+        ForgoComponentElement<Props>,
         "key"
       >,
       insertionOptions: DOMNodeInsertionOptions,
@@ -1450,9 +1458,9 @@ export function createForgoInstance(customEnv: any) {
     }
 
     function findReplacementCandidateForUnkeyedComponent<
-      TProps extends ForgoDOMElementProps
+      Props extends ForgoDOMElementProps
     >(
-      forgoComponent: Omit<ForgoComponentElement<TProps>, "key">,
+      forgoComponent: Omit<ForgoComponentElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       componentIndex: number
     ): boolean {
@@ -2050,14 +2058,26 @@ export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
 /**
  * We bridge the old component syntax to the new syntax until our next breaking release
  */
-export type ForgoComponent<TProps extends ForgoComponentProps> = {
-  render: (props: TProps, args: ForgoRenderArgs) => ForgoNode | ForgoNode[];
-  afterRender?: (props: TProps, args: ForgoAfterRenderArgs) => void;
-  error?: (props: TProps, args: ForgoErrorArgs) => ForgoNode;
-  mount?: (props: TProps, args: ForgoRenderArgs) => void;
-  remount?: (props: TProps, args: ForgoRenderArgs) => void;
-  unmount?: (props: TProps, args: ForgoRenderArgs) => void;
-  shouldUpdate?: (newProps: TProps, oldProps: TProps) => boolean;
+export type ForgoComponent<Props extends object = object> = {
+  render: (
+    props: Props & ForgoComponentProps,
+    args: ForgoRenderArgs
+  ) => ForgoNode | ForgoNode[];
+  afterRender?: (
+    props: Props & ForgoComponentProps,
+    args: ForgoAfterRenderArgs
+  ) => void;
+  error?: (
+    props: Props & ForgoComponentProps,
+    args: ForgoErrorArgs
+  ) => ForgoNode;
+  mount?: (props: Props & ForgoComponentProps, args: ForgoRenderArgs) => void;
+  remount?: (props: Props & ForgoComponentProps, args: ForgoRenderArgs) => void;
+  unmount?: (props: Props & ForgoComponentProps, args: ForgoRenderArgs) => void;
+  shouldUpdate?: (
+    newProps: Props & ForgoComponentProps,
+    oldProps: Props & ForgoComponentProps
+  ) => boolean;
   __forgo?: { unmounted?: boolean };
 };
 
@@ -2076,8 +2096,8 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <Props extends object>(
-  legacyComponent: ForgoComponent<Props>
+export const legacyComponentSyntaxCompat = <Props extends object = object>(
+  legacyComponent: ForgoComponent<Props & ForgoComponentProps>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
     get element() {
@@ -2165,8 +2185,8 @@ function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<Props extends object>(
-  ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
+function assertIsComponent<Props extends object = object>(
+  ctor: ForgoNewComponentCtor<Props & ForgoComponentProps> | ForgoComponentCtor<Props & ForgoComponentProps>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
 ): Component<Props> {
@@ -2230,8 +2250,8 @@ function styleToString(style: any): string {
 }
 
 function isKeyedElement<
-  T extends ForgoElementBase<TProps>,
-  TProps extends ForgoElementProps
+  T extends ForgoElementBase<Props>,
+  Props extends ForgoElementProps
 >(t: T): t is WithRequiredProperty<T, "key"> {
   return t.key !== undefined;
 }

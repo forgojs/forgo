@@ -8,8 +8,8 @@ function componentFactory() {
     component: null as forgo.Component | null,
   };
 
-  const TestComponent: forgo.ForgoNewComponentCtor = () => {
-    const Child: forgo.ForgoNewComponentCtor = () => {
+  const TestComponent = () => {
+    const Child = () => {
       const component = new forgo.Component({
         render() {
           state.renderCount++;

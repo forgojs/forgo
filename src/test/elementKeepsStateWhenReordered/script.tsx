@@ -16,7 +16,7 @@ export let inputRef3: forgo.ForgoRef<HTMLInputElement> = {};
 export let inputRef4: forgo.ForgoRef<HTMLInputElement> = {};
 export let inputRef5: forgo.ForgoRef<HTMLInputElement> = {};
 
-const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
+const ContainerComponent = () => {
   component = new forgo.Component({
     render() {
       return (

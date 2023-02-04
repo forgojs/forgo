@@ -15,7 +15,7 @@ export function renderAgain() {
 
 export let remounted = false;
 
-const BasicComponent: forgo.ForgoNewComponentCtor = () => {
+const BasicComponent = () => {
   component = new forgo.Component({
     render() {
       return firstRun ? <div>Hello world</div> : <p>Hello world</p>;
