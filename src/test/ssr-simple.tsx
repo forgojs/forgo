@@ -10,7 +10,7 @@ function componentFactory() {
   interface GreetProps {
     text: string;
   }
-  const Greet: forgo.ForgoNewComponentCtor<GreetProps> = (_props: {
+  const Greet = (_props: {
     text: string;
   }) => {
     return new forgo.Component<GreetProps>({
@@ -19,7 +19,7 @@ function componentFactory() {
       },
     });
   };
-  const Parent: forgo.ForgoNewComponentCtor = () => {
+  const Parent = () => {
     return new forgo.Component({
       render() {
         return (

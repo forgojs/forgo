@@ -13,7 +13,7 @@ export function renderAgain() {
   component.update();
 }
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   component = new forgo.Component({
     render() {
       counter++;
@@ -26,7 +26,7 @@ const TestComponent: forgo.ForgoNewComponentCtor = () => {
   return component;
 };
 
-const SuperCompo: forgo.ForgoNewComponentCtor = () => {
+const SuperCompo = () => {
   return new forgo.Component({
     render() {
       return counter === 1 ? (

@@ -14,7 +14,7 @@ export function renderAgain() {
   component.update();
 }
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   component = new forgo.Component({
     render() {
       counter++;
@@ -24,7 +24,7 @@ const TestComponent: forgo.ForgoNewComponentCtor = () => {
   return component;
 };
 
-const Child: forgo.ForgoNewComponentCtor = () => {
+const Child = () => {
   const component = new forgo.Component({
     render() {
       return (
