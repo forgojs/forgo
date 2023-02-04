@@ -32,11 +32,11 @@ export type ForgoComponentProps = ForgoElementProps & {
   [prop: string]: any;
 };
 
-export type ForgoComponentCtor<Props extends object = object> = (
+export type ForgoComponentCtor<Props extends object> = (
   props: Props & ForgoComponentProps
 ) => ForgoComponent<Props>;
 
-export type ForgoNewComponentCtor<Props extends object = object> = (
+export type ForgoNewComponentCtor<Props extends object> = (
   props: Props & ForgoComponentProps
 ) => Component<Props>;
 
@@ -74,7 +74,7 @@ export type ForgoDOMElement<Props extends ForgoDOMElementProps> =
     type: string;
   };
 
-export type ForgoComponentElement<Props extends object = object> =
+export type ForgoComponentElement<Props extends object> =
   ForgoElementBase<Props> & {
     type: ForgoNewComponentCtor<Props>;
   };
@@ -121,7 +121,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
  * In addition it holds a bunch of other things. Like for example, a key which
  * uniquely identifies a child element when rendering a list.
  */
-export type ComponentState<Props extends object = object> = {
+export type ComponentState<Props extends object> = {
   key?: string | number;
   ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>;
   component: Component<Props>;
@@ -324,7 +324,7 @@ interface ComponentEventListeners<Props extends object>
   >;
 }
 
-interface ComponentInternal<Props extends object = object> {
+interface ComponentInternal<Props extends object> {
   unmounted: boolean;
   registeredMethods: ForgoComponentMethods<Props>;
   eventListeners: ComponentEventListeners<Props>;
@@ -332,7 +332,7 @@ interface ComponentInternal<Props extends object = object> {
 }
 
 const lifecycleEmitters = {
-  mount<Props extends object = object>(
+  mount<Props extends object>(
     component: Component<Props>,
     props: Props & ForgoComponentProps 
   ): void {
@@ -340,7 +340,7 @@ const lifecycleEmitters = {
       cb(props, component)
     );
   },
-  remount<Props extends object = object>(
+  remount<Props extends object>(
     component: Component<Props>,
     props: Props & ForgoComponentProps
   ): void {
@@ -348,7 +348,7 @@ const lifecycleEmitters = {
       cb(props, component)
     );
   },
-  unmount<Props extends object = object>(
+  unmount<Props extends object>(
     component: Component<Props>,
     props: Props & ForgoComponentProps
   ) {
@@ -356,7 +356,7 @@ const lifecycleEmitters = {
       cb(props, component)
     );
   },
-  shouldUpdate<Props extends object = object>(
+  shouldUpdate<Props extends object>(
     component: Component<Props>,
     newProps: Props & ForgoComponentProps,
     oldProps: Props & ForgoComponentProps
@@ -369,7 +369,7 @@ const lifecycleEmitters = {
       .map((cb) => cb(newProps, oldProps, component))
       .some(Boolean);
   },
-  afterRender<Props extends object = object>(
+  afterRender<Props extends object>(
     component: Component<Props>,
     props: Props & ForgoComponentProps,
     previousNode: ChildNode | undefined
@@ -385,7 +385,7 @@ const lifecycleEmitters = {
  * listeners. You may pass it around your application and to 3rd-party libraries
  * to build reusable logic.
  */
-export class Component<Props extends object = object> {
+export class Component<Props extends object> {
   /** @internal */
   public __internal: ComponentInternal<Props>;
 
@@ -2058,7 +2058,7 @@ export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
 /**
  * We bridge the old component syntax to the new syntax until our next breaking release
  */
-export type ForgoComponent<Props extends object = object> = {
+export type ForgoComponent<Props extends object> = {
   render: (
     props: Props & ForgoComponentProps,
     args: ForgoRenderArgs
@@ -2096,7 +2096,7 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <Props extends object = object>(
+export const legacyComponentSyntaxCompat = <Props extends object>(
   legacyComponent: ForgoComponent<Props & ForgoComponentProps>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
@@ -2185,7 +2185,7 @@ function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<Props extends object = object>(
+function assertIsComponent<Props extends object>(
   ctor: ForgoNewComponentCtor<Props & ForgoComponentProps> | ForgoComponentCtor<Props & ForgoComponentProps>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
