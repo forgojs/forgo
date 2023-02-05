@@ -1,14 +1,13 @@
 {
   "name": "forgo",
-  "version": "4.0.6",
-  "main": "./dist/forgo.min.js",
+  "version": "4.0.9",
   "type": "module",
   "author": "Jeswin Kumar<jeswinpk@agilehead.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/forgojs/forgo"
   },
-  "exports": "./dist/forgo.min.js",
+  "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "devDependencies": {
     "@types/jsdom": "^20.0.0",
@@ -28,8 +27,10 @@
   },
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "npm run clean && npx tsc --emitDeclarationOnly && npx esbuild ./src/index.ts --minify --bundle --format=esm --sourcemap --target=es2015 --outfile=dist/forgo.min.js",
-    "build-dev": "npm run clean && npx tsc",
+    "build": "npm run clean && npx tsc && npm run esbuild-make-dev && npm run esbuild-make",
+    "build-dev": "npm run clean && npx tsc && npm run esbuild-make-dev",
+    "esbuild-make": "npx esbuild ./src/index.ts --minify --bundle --format=esm --target=es2020 --outfile=dist/forgo.min.js",
+    "esbuild-make-dev": "npx esbuild ./src/index.ts --bundle --format=esm  --sourcemap --target=es2020 --outfile=dist/forgo.js",
     "test": "npx tsc && npx mocha dist/test/test.js"
   },
   "license": "MIT"

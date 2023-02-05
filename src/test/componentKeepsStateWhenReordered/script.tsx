@@ -9,21 +9,22 @@ function getRandomString() {
   );
 }
 
-export const componentStates = new Map<unknown, string>();
+export const componentStates = new Map<string | number, string>();
 
 interface StatefulComponentProps {
-  key: unknown;
+  key: string | number;
 }
 const StatefulComponent: forgo.ForgoNewComponentCtor<
   StatefulComponentProps
 > = () => {
   let state = getRandomString();
+
   const component = new forgo.Component<StatefulComponentProps>({
     render({ key }) {
       componentStates.set(key, state);
       return (
         <p state={state} key={key}>
-          Component #{key}
+          Component #{key} {state}
         </p>
       );
     },
@@ -45,7 +46,6 @@ export function reorderComponents() {
 const ContainerComponent = () => {
   containerComponent = new forgo.Component({
     render() {
-      componentStates.clear();
       return (
         <div>
           {sortOrder === 1 ? (

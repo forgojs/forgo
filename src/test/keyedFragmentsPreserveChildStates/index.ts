@@ -48,7 +48,11 @@ export default function () {
     // Capture the original states
     const grandchildrenStatePass1 = getStates("swappable");
 
+    const a1 = window.document.body.innerHTML;
+
     renderAgain();
+
+    const a2 = window.document.body.innerHTML;
 
     const grandchildrenStatePass2 = getStates("swappable");
 

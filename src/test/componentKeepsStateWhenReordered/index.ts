@@ -14,25 +14,24 @@ export default function () {
 
     run(dom);
 
-    const componentStatesFirstRender = await new Promise<Map<unknown, string>>(
-      (resolve) => {
-        window.addEventListener("load", () => {
-          resolve(new Map(Array.from(componentStates)));
-        });
-      }
-    );
+    await new Promise<Map<unknown, string>>((resolve) => {
+      window.addEventListener("load", () => {
+        resolve(new Map(Array.from(componentStates)));
+      });
+    });
 
     reorderComponents();
 
+    const finalOrder = ["1", "4", "3", 0, "2", "5"];
+
     // We explicitly test with a falsey value (zero) to catch if we use the
     // shorthand `if (key)` rather than the required `if (key !== undefined)`
-    [0, "1", "2", "3", "4", "5"].forEach((key) => {
-      componentStates
-        .get(key)!
-        .should.equal(
-          componentStatesFirstRender.get(key),
-          `component with key=${key} state is mismatched`
-        );
-    });
+    for (let i = 0; i < finalOrder.length; i++) {
+      const key = finalOrder[i];
+      const paraNodes = Array.from(window.document.querySelectorAll("p"));
+      paraNodes[i].innerHTML.should.equal(
+        `Component #${key} ${componentStates.get(key)}`
+      );
+    }
   });
 }

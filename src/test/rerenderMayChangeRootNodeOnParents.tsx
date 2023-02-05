@@ -9,20 +9,21 @@ function componentFactory() {
   } = { component: null };
 
   const Parent = () => {
+    let counter = 0;
     state.component = new forgo.Component({
       render() {
-        return <Child />;
+        counter++;
+        return <Child counter={counter} />;
       },
     });
     return state.component;
   };
 
-  const Child = () => {
-    let counter = 0;
+  type ChildProps = { counter: number };
+  const Child = (props: ChildProps) => {
     return new forgo.Component({
-      render() {
-        counter++;
-        return counter === 1 ? (
+      render(props: ChildProps) {
+        return props.counter === 1 ? (
           <div id="node1">This is a child node.</div>
         ) : (
           <p id="node2">This is a child node.</p>

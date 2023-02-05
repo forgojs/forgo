@@ -4,7 +4,7 @@ module.exports = {
   plugins: ["@typescript-eslint"],
   root: true,
   rules: {
-    "@typescript-eslint/strict-boolean-expressions": "error",
+    "@typescript-eslint/strict-boolean-expressions": ["error"],
   },
   parserOptions: {
     sourceType: "module",

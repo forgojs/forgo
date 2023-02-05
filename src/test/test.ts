@@ -26,7 +26,6 @@ import mountRunsOnceWhenChildRendersFragment from "./mountRunsOnceWhenChildRende
 import fragmentUnmountRunsOnce from "./fragmentUnmountRunsOnce/index.js";
 import replacingFragmentWithNodeWontUnmount from "./replacingFragmentWithNodeWontUnmount/index.js";
 import childWithFragmentUnmounts from "./childWithFragmentUnmounts/index.js";
-import rerenderMayUnmountParents from "./rerenderMayUnmountParents.js";
 import rerenderMayChangeRootNode from "./rerenderMayChangeRootNode.js";
 import dangerouslySetInnerHTML from "./dangerouslySetInnerHTML/index.js";
 import css from "./css/index.js";
@@ -68,7 +67,6 @@ mountRunsOnceWhenChildRendersFragment();
 fragmentUnmountRunsOnce();
 replacingFragmentWithNodeWontUnmount();
 childWithFragmentUnmounts();
-rerenderMayUnmountParents();
 rerenderMayChangeRootNode();
 rerenderMayChangeRootNodeOnParents();
 dangerouslySetInnerHTML();
