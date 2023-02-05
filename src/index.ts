@@ -187,7 +187,7 @@ export type DetachedNodeInsertionOptions = {
  * before creating a new node.
  */
 export type DOMNodeInsertionOptions = {
-  type: "search";
+  type: "new-component" | "existing-component";
   /**
    * The element that holds the previously-rendered version of this component
    */
@@ -550,7 +550,7 @@ export function createForgoInstance(customEnv: any) {
     }
 
     // We have to find a node to replace.
-    if (insertionOptions.type === "search") {
+    if (insertionOptions.type !== "detached") {
       const childNodes = insertionOptions.parentElement.childNodes;
 
       // If we're searching in a list, we replace if the current node is a text node.
@@ -649,7 +649,7 @@ export function createForgoInstance(customEnv: any) {
           const { nodes: nodesJustRendered } = internalRender(
             forgoChild,
             {
-              type: "search",
+              type: insertionOptions.type,
               parentElement: element,
               currentNodeIndex,
               length: element.childNodes.length - currentNodeIndex,
@@ -762,7 +762,7 @@ export function createForgoInstance(customEnv: any) {
         syncAttrsAndState(
           forgoElement,
           newElement,
-          insertionOptions.type === "search"
+          insertionOptions.type !== "detached"
             ? insertionOptions.currentNodeIndex
             : findNodeIndex(parentElement.childNodes, newElement, 0),
           true,
@@ -816,7 +816,7 @@ export function createForgoInstance(customEnv: any) {
 
     if (
       // We need to create a detached node.
-      insertionOptions.type !== "detached" &&
+      insertionOptions.type === "existing-component" &&
       !mountOnPreExistingDOM
     ) {
       const childNodes = insertionOptions.parentElement.childNodes;
@@ -890,7 +890,7 @@ export function createForgoInstance(customEnv: any) {
             () => {
               // Create new node insertion options.
               const newInsertionOptions: NodeInsertionOptions = {
-                type: "search",
+                type: insertionOptions.type,
                 currentNodeIndex: insertionOptions.currentNodeIndex,
                 length: updatedComponentState.nodes.length,
                 parentElement: insertionOptions.parentElement,
@@ -963,7 +963,7 @@ export function createForgoInstance(customEnv: any) {
             insertionOptions.type === "detached"
               ? insertionOptions
               : {
-                  type: "search",
+                  type: "new-component",
                   currentNodeIndex: insertionOptions.currentNodeIndex,
                   length: mountOnPreExistingDOM ? insertionOptions.length : 0,
                   parentElement: insertionOptions.parentElement,
@@ -1699,7 +1699,7 @@ export function createForgoInstance(customEnv: any) {
     const result = internalRender(
       forgoNode,
       {
-        type: "search",
+        type: "new-component",
         currentNodeIndex: 0,
         length: parentElement.childNodes.length,
         parentElement,
@@ -1850,7 +1850,7 @@ export function createForgoInstance(customEnv: any) {
         );
 
       const insertionOptions: DOMNodeInsertionOptions = {
-        type: "search",
+        type: "existing-component",
         currentNodeIndex: element.nodeIndex,
         length: originalComponentState.nodes.length,
         parentElement,
