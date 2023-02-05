@@ -113,7 +113,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
  * uniquely identifies a child element when rendering a list.
  */
 export type ComponentState<Props extends object = object> = {
-  key?: string | number;
+  key?: ForgoKeyType;
   ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>;
   component: Component<Props>;
   props: Props & ForgoElementProps;
@@ -126,19 +126,16 @@ export type ComponentState<Props extends object = object> = {
  * See explanation for ComponentState<Props>
  */
 export type NodeAttachedState = {
-  key?: string | number;
+  key?: ForgoKeyType;
   props: { [key: string]: any };
   components: ComponentState<any>[];
   style?: { [key: string]: any };
   deleted?: boolean;
   lookups: {
-    deletedUnkeyedNodes: DeletedNode[];
-    deletedKeyedComponentNodes: Map<string | number, ChildNode[]>;
-    keyedComponentNodes: Map<string | number, ChildNode[]>;
-    newlyAddedKeyedComponentNodes: Map<string | number, ChildNode[]>;
-    deletedKeyedElementNodes: Map<string | number, ChildNode>;
-    keyedElementNodes: Map<string | number, ChildNode>;
-    newlyAddedKeyedElementNodes: Map<string | number, ChildNode>;
+    keyedComponentNodes: Map<ForgoKeyType, ChildNode[]>;
+    newlyAddedKeyedComponentNodes: Map<ForgoKeyType, ChildNode[]>;
+    keyedElementNodes: Map<ForgoKeyType, ChildNode>;
+    newlyAddedKeyedElementNodes: Map<ForgoKeyType, ChildNode>;
     // This is a counter to check when to reset temp loopups (newly*)
     renderCount: number;
   };
@@ -407,9 +404,6 @@ export class Component<Props extends object = object> {
   }
 
   public update(props?: Props) {
-    // TODO: When we do our next breaking change, there's no reason for this to
-    // return anything, but we need to leave the behavior in while we have our
-    // compatibility layer.
     return rerender(this.__internal.element, props);
   }
 
@@ -605,26 +599,25 @@ export function createForgoInstance(customEnv: any) {
     pendingAttachStates: ComponentState<object>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
-    // We need to create a detached node
     if (insertionOptions.type === "detached") {
       return addElement(undefined, undefined);
-    }
-    // We have to find a node to replace.
-    else {
-      const found = findReplacementCandidateForElement(
-        forgoElement,
-        insertionOptions,
-        pendingAttachStates
+    } else {
+      if (insertionOptions.type === "existing-component") {
+        const found = findReplacementCandidateForElement(
+          forgoElement,
+          insertionOptions,
+          pendingAttachStates
+        );
+
+        if (found) {
+          return renderExistingElement(insertionOptions);
+        }
+      }
+
+      return addElement(
+        insertionOptions.parentElement,
+        insertionOptions.currentNodeIndex
       );
-
-      const renderResult = found
-        ? renderExistingElement(insertionOptions)
-        : addElement(
-            insertionOptions.parentElement,
-            insertionOptions.currentNodeIndex
-          );
-
-      return renderResult;
     }
 
     function renderChildNodes(element: Element) {
@@ -663,13 +656,7 @@ export function createForgoInstance(customEnv: any) {
 
         // Clear nodes remaining after currentNodeIndex
         // eg: if currentNodeIndex = 10 (and length = 20), remove everything > 10
-        markNodesForUnloading(
-          element.childNodes,
-          currentNodeIndex,
-          element.childNodes.length
-        );
-
-        unloadMarkedNodes(element);
+        unloadNodes(element, currentNodeIndex, element.childNodes.length);
 
         finalizeKeyLookups(state);
       }
@@ -688,27 +675,12 @@ export function createForgoInstance(customEnv: any) {
         insertionOptions.currentNodeIndex
       ] as Element;
 
-      const state = getForgoState(targetElement);
-
-      pendingAttachStates.forEach((pendingAttachState, i) => {
-        if (pendingAttachState.key !== undefined) {
-          const key = deriveComponentKey(pendingAttachState.key, i);
-          const nodesForKey =
-            parentState.lookups.newlyAddedKeyedComponentNodes.get(key) ?? [];
-          nodesForKey.push(targetElement);
-          parentState.lookups.newlyAddedKeyedComponentNodes.set(
-            key,
-            nodesForKey
-          );
-        }
-      });
-
-      if (forgoElement.key !== undefined) {
-        parentState.lookups.newlyAddedKeyedElementNodes.set(
-          forgoElement.key,
-          targetElement
-        );
-      }
+      addLookupKeysForElement(
+        forgoElement,
+        parentState,
+        targetElement,
+        pendingAttachStates
+      );
 
       syncAttrsAndState(
         forgoElement,
@@ -742,20 +714,13 @@ export function createForgoInstance(customEnv: any) {
 
       if (parentElement) {
         const parentState = getForgoState(parentElement);
-        pendingAttachStates.forEach((pendingAttachState, i) => {
-          if (pendingAttachState.key !== undefined) {
-            const key = deriveComponentKey(pendingAttachState.key, i);
-            parentState.lookups.newlyAddedKeyedComponentNodes.set(key, [
-              newElement,
-            ]);
-          }
-        });
-        if (forgoElement.key !== undefined) {
-          parentState.lookups.newlyAddedKeyedElementNodes.set(
-            forgoElement.key,
-            newElement
-          );
-        }
+
+        addLookupKeysForElement(
+          forgoElement,
+          parentState,
+          newElement,
+          pendingAttachStates
+        );
 
         parentElement.insertBefore(newElement, oldNode ?? null);
 
@@ -799,9 +764,6 @@ export function createForgoInstance(customEnv: any) {
 
       state.lookups.newlyAddedKeyedComponentNodes = new Map();
       state.lookups.newlyAddedKeyedElementNodes = new Map();
-      state.lookups.deletedKeyedComponentNodes = new Map();
-      state.lookups.deletedKeyedElementNodes = new Map();
-      state.lookups.deletedUnkeyedNodes = [];
     }
   }
 
@@ -810,30 +772,8 @@ export function createForgoInstance(customEnv: any) {
     insertionOptions: NodeInsertionOptions,
     pendingAttachStates: ComponentState<any>[],
     mountOnPreExistingDOM: boolean
-    // boundary: ForgoComponent<object> | undefined
   ): RenderResult {
     const componentIndex = pendingAttachStates.length;
-
-    if (
-      // We need to create a detached node.
-      insertionOptions.type === "existing-component" &&
-      !mountOnPreExistingDOM
-    ) {
-      const childNodes = insertionOptions.parentElement.childNodes;
-      const found = findReplacementCandidateForComponent(
-        forgoComponent,
-        insertionOptions,
-        pendingAttachStates.length
-      );
-
-      if (found) {
-        return renderExistingComponent(childNodes, insertionOptions);
-      }
-    }
-
-    // No nodes in target node list, or no matching node found.
-    // Nothing to unload.
-    return addComponent();
 
     function renderExistingComponent(
       childNodes: NodeListOf<ChildNode>,
@@ -844,7 +784,6 @@ export function createForgoInstance(customEnv: any) {
       const componentState = state.components[componentIndex];
 
       if (arePropsUnchanged(forgoComponent.props, componentState.props)) {
-        // Props are unchanged, OR shouldUpdate returned false
         return {
           nodes: componentState.nodes,
         };
@@ -856,14 +795,11 @@ export function createForgoInstance(customEnv: any) {
             componentState.props
           )
         ) {
-          // Since we have compatible state already stored,
-          // we'll push the savedComponentState into pending states for later attachment.
           const updatedComponentState = {
             ...componentState,
             props: forgoComponent.props,
           };
 
-          // Get a new element by calling render on existing component.
           const newForgoNode =
             updatedComponentState.component.__internal.registeredMethods.render(
               forgoComponent.props,
@@ -888,7 +824,6 @@ export function createForgoInstance(customEnv: any) {
             statesToAttach,
             boundary,
             () => {
-              // Create new node insertion options.
               const newInsertionOptions: NodeInsertionOptions = {
                 type: insertionOptions.type,
                 currentNodeIndex: insertionOptions.currentNodeIndex,
@@ -932,8 +867,6 @@ export function createForgoInstance(customEnv: any) {
         ? component
         : undefined;
 
-      // Create new component state
-      // ... and push it to pendingAttachStates
       const newComponentState: ComponentState<Props> = {
         key: forgoComponent.key,
         ctor,
@@ -952,13 +885,11 @@ export function createForgoInstance(customEnv: any) {
         statesToAttach,
         boundary,
         () => {
-          // Create an element by rendering the component
           const newForgoElement = component.__internal.registeredMethods.render(
             forgoComponent.props,
             component
           );
 
-          // Create new node insertion options.
           const newInsertionOptions: NodeInsertionOptions =
             insertionOptions.type === "detached"
               ? insertionOptions
@@ -969,7 +900,6 @@ export function createForgoInstance(customEnv: any) {
                   parentElement: insertionOptions.parentElement,
                 };
 
-          // Pass it on for rendering...
           const renderResult = internalRender(
             newForgoElement,
             newInsertionOptions,
@@ -978,12 +908,12 @@ export function createForgoInstance(customEnv: any) {
           );
 
           const nodeAttachedState = getForgoState(renderResult.nodes[0]);
-          const componentStateAttached =
+          const componentState =
             nodeAttachedState.components[indexOfNewComponentState];
-          componentStateAttached.nodes = renderResult.nodes;
+          componentState.nodes = renderResult.nodes;
 
           setNodeInfo(
-            componentStateAttached.component.__internal.element,
+            componentState.component.__internal.element,
             renderResult.nodes[0],
             insertionOptions.type !== "detached"
               ? insertionOptions.currentNodeIndex
@@ -1001,8 +931,6 @@ export function createForgoInstance(customEnv: any) {
             forgoComponent.props
           );
 
-          // No previousNode since new component. So just args and not
-          // afterRenderArgs.
           lifecycleEmitters.afterRender(
             component,
             forgoComponent.props,
@@ -1040,6 +968,25 @@ export function createForgoInstance(customEnv: any) {
         }
       }
     }
+
+    if (
+      insertionOptions.type === "existing-component" &&
+      !mountOnPreExistingDOM
+    ) {
+      const childNodes = insertionOptions.parentElement.childNodes;
+
+      const found = findReplacementCandidateForComponent(
+        forgoComponent,
+        insertionOptions,
+        pendingAttachStates
+      );
+
+      if (found) {
+        return renderExistingComponent(childNodes, insertionOptions);
+      }
+    }
+
+    return addComponent();
   }
 
   function renderComponentAndRemoveStaleNodes(
@@ -1056,7 +1003,6 @@ export function createForgoInstance(customEnv: any) {
     const componentState = statesToAttach.slice(-1)[0];
     const previousNode = componentState.component.__internal.element.node;
 
-    // Pass it on for rendering...
     const renderResult = internalRender(
       forgoNode,
       insertionOptions,
@@ -1085,8 +1031,8 @@ export function createForgoInstance(customEnv: any) {
     const deleteFromIndex =
       insertionOptions.currentNodeIndex + renderResult.nodes.length;
 
-    markNodesForUnloading(
-      insertionOptions.parentElement.childNodes,
+    unloadNodes(
+      insertionOptions.parentElement,
       deleteFromIndex,
       deleteFromIndex + previousNodeCount - numNodesReused
     );
@@ -1169,113 +1115,42 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  /**
-   * This doesn't unmount components attached to these nodes, but moves the node
-   * itself from the DOM to deletedXYXNodes under parentNode.lookups. We sort of
-   * "mark" it for deletion, but it may be resurrected if it's matched by a
-   * keyed forgo node that has been reordered.
-   *
-   * Nodes in between `from` and `to` (not inclusive of `to`) will be marked for
-   * unloading. Use `unloadMarkedNodes()` to actually unload the nodes once
-   * we're sure we don't need to resurrect them.
-   */
-  function markNodesForUnloading(
-    nodes: ArrayLike<ChildNode>,
-    from: number,
-    to: number
-  ): ChildNode[] {
-    const removedNodes: ChildNode[] = [];
+  function unloadNodes(parentElement: Element, from: number, to: number) {
+    const nodes = parentElement.childNodes;
 
     if (to > from) {
-      const parentElement = nodes[from].parentElement as HTMLElement;
       const parentState = getForgoState(parentElement);
 
       for (let i = from; i < to; i++) {
         const node = nodes[from];
-
         const state = getForgoState(node);
-
-        // Remove the node from DOM
         node.remove();
 
-        // If the component is keyed, we have to remove the entry in key-map
+        // a) we have to call unmount on the component if this was the primary node.
+        // b) If the component is keyed remove the entry in key-map
         state.components.forEach((component, i) => {
+          if (component.component.__internal.element.node === node) {
+            if (!component.component.__internal.unmounted) {
+              lifecycleEmitters.unmount(component.component, component.props);
+            }
+          }
+
           if (component.key !== undefined) {
-            const key = deriveComponentKey(component.key, i);
-            const nodesForKey =
-              parentState.lookups.keyedComponentNodes.get(key);
-            if (nodesForKey !== undefined) {
-              const updatedNodesForKey = nodesForKey.filter((x) => x !== node);
-              if (updatedNodesForKey.length) {
-                parentState.lookups.keyedComponentNodes.set(
-                  key,
-                  updatedNodesForKey
-                );
-              } else {
-                parentState.lookups.keyedComponentNodes.delete(key);
+            const key = deriveComponentKeyTillIndex(state.components, i);
+            if (key) {
+              const nodesForKey =
+                parentState.lookups.keyedComponentNodes.get(key);
+              if (nodesForKey) {
+                nodesForKey.splice(nodesForKey.indexOf(node), 1);
+                if (nodesForKey.length === 0) {
+                  parentState.lookups.keyedComponentNodes.delete(key);
+                }
               }
             }
-            const deletedNodesForKey =
-              parentState.lookups.deletedKeyedComponentNodes.get(key) ?? [];
-            deletedNodesForKey.push(node);
-            parentState.lookups.deletedKeyedComponentNodes.set(
-              key,
-              deletedNodesForKey
-            );
           }
         });
-
-        if (state.key !== undefined) {
-          parentState.lookups.keyedComponentNodes.delete(state.key);
-          parentState.lookups.deletedKeyedComponentNodes.set(state.key, [node]);
-        } else {
-          parentState.lookups.deletedUnkeyedNodes.push({ node });
-        }
-
-        removedNodes.push(node);
       }
     }
-
-    return removedNodes;
-  }
-
-  /*
-   * Unmount components from nodes. If a componentState is attached to the node
-   * that is about to be unloaded, then we should unmount the component.
-   */
-  function unloadMarkedNodes(parentElement: Element) {
-    function unloadNode(node: ChildNode) {
-      const state = getForgoState(node);
-      state.deleted = true;
-      for (const componentState of state.components) {
-        if (componentState.component.__internal.element.node === node) {
-          if (!componentState.component.__internal.unmounted) {
-            lifecycleEmitters.unmount(
-              componentState.component,
-              componentState.props
-            );
-          }
-        }
-      }
-    }
-
-    const parentState = getForgoState(parentElement);
-
-    for (const nodeList of parentState.lookups.deletedKeyedComponentNodes.values()) {
-      for (const node of nodeList) {
-        if (node.isConnected) {
-          unloadNode(node);
-        }
-      }
-    }
-
-    for (const { node } of parentState.lookups.deletedUnkeyedNodes) {
-      unloadNode(node);
-    }
-
-    // Clear deleted nodes
-    parentState.lookups.deletedKeyedComponentNodes.clear();
-    parentState.lookups.deletedUnkeyedNodes = [];
   }
 
   function findReplacementCandidateForElement<Props extends object>(
@@ -1296,239 +1171,175 @@ export function createForgoInstance(customEnv: any) {
             (componentState, i) =>
               pendingAttachStates[i] !== undefined &&
               pendingAttachStates[i].component === componentState.component
-          )
+          ) &&
+          ((!forgoElement.key && !state.key) || forgoElement.key === state.key)
         );
       } else {
         return false;
       }
     }
 
-    function findReplacementCandidateForKeyedElement<Props extends object>(
-      forgoElement: WithRequiredProperty<ForgoDOMElement<Props>, "key">,
-      insertionOptions: DOMNodeInsertionOptions,
-      pendingAttachStates: ComponentState<object>[]
-    ): boolean {
+    function findReplacementCandidateForKeyedElement(key: string): boolean {
       const { parentElement, currentNodeIndex: searchFrom } = insertionOptions;
 
-      // First let's check active nodes.
       const parentState = getForgoState(parentElement);
 
-      // See if the node is in our key lookup
-      const nodeFromKeyLookup = parentState.lookups.keyedElementNodes.get(
-        forgoElement.key
-      );
+      const element = parentState.lookups.keyedElementNodes.get(key);
 
-      if (nodeFromKeyLookup !== undefined) {
-        if (
-          isCompatibleElement(
-            nodeFromKeyLookup,
-            forgoElement,
-            pendingAttachStates
-          )
-        ) {
-          // Let's insert the nodes at the corresponding position.
+      if (element) {
+        if (isCompatibleElement(element, forgoElement, pendingAttachStates)) {
+          // Let's insert the nodes at the corrent position.
           const firstNodeInSearchList = parentElement.childNodes[searchFrom];
-          if (nodeFromKeyLookup !== firstNodeInSearchList) {
-            parentElement.insertBefore(
-              nodeFromKeyLookup,
-              firstNodeInSearchList ?? null
-            );
+          if (element !== firstNodeInSearchList) {
+            parentElement.insertBefore(element, firstNodeInSearchList ?? null);
           }
           return true;
         } else {
           // Node is mismatched. No point in keeping it in key lookup.
-          parentState.lookups.keyedComponentNodes.delete(forgoElement.key);
+          // This happens when a component renders a DIV tag first, and then say a P tag
+          parentState.lookups.keyedElementNodes.delete(key);
           return false;
         }
-      }
-      // Not found in active nodes. Check deleted nodes.
-      else {
-        const nodeFromKeyLookup =
-          parentState.lookups.deletedKeyedElementNodes.get(forgoElement.key);
-        if (nodeFromKeyLookup !== undefined) {
-          const nodes = parentElement.childNodes;
-
-          // Delete key from lookup since we're either going to resurrect the node or discard it.
-          parentState.lookups.deletedKeyedComponentNodes.delete(
-            forgoElement.key
-          );
-
-          if (
-            isCompatibleElement(
-              nodeFromKeyLookup,
-              forgoElement,
-              pendingAttachStates
-            )
-          ) {
-            // Let's insert the nodes at the corresponding position.
-            const firstNodeInSearchList = nodes[searchFrom];
-            if (nodeFromKeyLookup !== firstNodeInSearchList) {
-              parentElement.insertBefore(
-                nodeFromKeyLookup,
-                firstNodeInSearchList ?? null
-              );
-            }
-            return true;
-          }
-        }
+      } else {
+        // No such node. Return false.
         return false;
       }
     }
 
-    function findReplacementCandidateForUnKeyedElement<Props extends object>(
-      forgoElement: Omit<ForgoDOMElement<Props>, "key">,
-      insertionOptions: DOMNodeInsertionOptions,
-      pendingAttachStates: ComponentState<object>[]
-    ): boolean {
-      const {
-        parentElement,
-        currentNodeIndex: searchFrom,
-        length,
-      } = insertionOptions;
-      const nodes = parentElement.childNodes;
+    function findReplacementCandidateForUnKeyedElement(): boolean {
+      const nodes = insertionOptions.parentElement.childNodes;
 
-      for (let i = searchFrom; i < searchFrom + length; i++) {
-        const node = nodes[i] as ChildNode;
-        if (nodeIsElement(node)) {
-          const state = getForgoState(node);
-
-          // If the candidate has a key defined, we don't match it with
-          // an unkeyed forgo element
-          if (
-            node.tagName.toLowerCase() === forgoElement.type &&
-            state.key === undefined &&
-            isCompatibleElement(node, forgoElement, pendingAttachStates)
-          ) {
-            const elementAtSearchIndex =
-              parentElement.childNodes[searchFrom] ?? null;
-            if (node !== elementAtSearchIndex) {
-              parentElement.insertBefore(node, elementAtSearchIndex);
-            }
-            return true;
+      for (
+        let i = insertionOptions.currentNodeIndex;
+        i < insertionOptions.currentNodeIndex + insertionOptions.length;
+        i++
+      ) {
+        const node = nodes[i];
+        if (isCompatibleElement(node, forgoElement, pendingAttachStates)) {
+          // Let's insert the nodes at the corrent position.
+          const firstNodeInSearchList =
+            insertionOptions.parentElement.childNodes[
+              insertionOptions.currentNodeIndex
+            ];
+          if (node !== firstNodeInSearchList) {
+            insertionOptions.parentElement.insertBefore(
+              node,
+              firstNodeInSearchList ?? null
+            );
           }
+          return true;
         }
       }
 
       return false;
     }
 
-    if (isKeyedElement(forgoElement)) {
-      return findReplacementCandidateForKeyedElement(
-        forgoElement,
-        insertionOptions,
-        pendingAttachStates
-      );
+    const key = deriveElementKey(forgoElement.key, pendingAttachStates);
+
+    if (key !== undefined) {
+      return findReplacementCandidateForKeyedElement(key);
     } else {
-      return findReplacementCandidateForUnKeyedElement(
-        forgoElement,
-        insertionOptions,
-        pendingAttachStates
-      );
+      return findReplacementCandidateForUnKeyedElement();
     }
   }
 
   function findReplacementCandidateForComponent<Props extends object>(
     forgoComponent: ForgoComponentElement<Props>,
     insertionOptions: DOMNodeInsertionOptions,
-    componentIndex: number
+    pendingAttachStates: ComponentState<any>[]
   ): boolean {
-    function findReplacementCandidateForKeyedComponent<Props extends object>(
-      forgoComponent: WithRequiredProperty<ForgoComponentElement<Props>, "key">,
-      insertionOptions: DOMNodeInsertionOptions,
-      componentIndex: number
-    ): boolean {
-      const { parentElement, currentNodeIndex: searchFrom } = insertionOptions;
-      const key = deriveComponentKey(forgoComponent.key, componentIndex);
+    const componentIndex = pendingAttachStates.length;
 
-      // If forgo element has a key, we gotta find it in the childNodeMap (under active and deleted).
-      const parentState = getForgoState(parentElement);
+    function isCompatibleNode(node: ChildNode): node is Element {
+      const state = getForgoState(node);
+      for (let i = 0; i <= componentIndex; i++) {
+        if (
+          !state.components[i] ||
+          pendingAttachStates[i].ctor !== state.components[i].ctor ||
+          pendingAttachStates[i].key !== state.components[i].key
+        ) {
+          return false;
+        }
+      }
+      return true;
+    }
 
-      // Check active nodes first
+    function findReplacementCandidateForKeyedComponent(key: string): boolean {
+      const parentState = getForgoState(insertionOptions.parentElement);
       const nodesForKey = parentState.lookups.keyedComponentNodes.get(key);
 
       if (nodesForKey !== undefined) {
-        // Let's insert the nodes at the corresponding position.
-        const elementAtIndex = parentElement.childNodes[searchFrom];
+        let elementAtIndex: ChildNode | null =
+          insertionOptions.parentElement.childNodes[
+            insertionOptions.currentNodeIndex
+          ];
+
         for (const node of nodesForKey) {
-          if (node !== elementAtIndex) {
-            parentElement.insertBefore(node, elementAtIndex ?? null);
-          }
-        }
-        return true;
-      }
-      // Not found in active nodes. Check deleted nodes.
-      else {
-        const matchingNodes =
-          parentState.lookups.deletedKeyedComponentNodes.get(key);
-
-        if (matchingNodes !== undefined) {
-          // Delete key from lookup since we're either going to resurrect these nodes
-          parentState.lookups.deletedKeyedComponentNodes.delete(key);
-
-          // Append it to the beginning of the node list.
-          for (const node of matchingNodes) {
-            const firstNodeInSearchList = parentElement.childNodes[searchFrom];
-            if (node !== firstNodeInSearchList) {
-              parentElement.insertBefore(node, firstNodeInSearchList ?? null);
+          if (isCompatibleNode(node)) {
+            if (node !== elementAtIndex) {
+              insertionOptions.parentElement.insertBefore(
+                node,
+                elementAtIndex ?? null
+              );
             }
+            elementAtIndex = node.nextSibling;
+          } else {
+            throw new Error(
+              `Invariant error. Component with key ${key} has mismatched component state.`
+            );
           }
-
-          return true;
         }
+        return nodesForKey.length > 0;
       }
       return false;
     }
 
-    function findReplacementCandidateForUnkeyedComponent<Props extends object>(
-      forgoComponent: Omit<ForgoComponentElement<Props>, "key">,
-      insertionOptions: DOMNodeInsertionOptions,
-      componentIndex: number
-    ): boolean {
-      const {
-        parentElement,
-        currentNodeIndex: searchFrom,
-        length,
-      } = insertionOptions;
-      const nodes = parentElement.childNodes;
+    function findReplacementCandidateForUnkeyedComponent(): boolean {
+      const nodes = insertionOptions.parentElement.childNodes;
+      let found = false;
 
-      for (let i = searchFrom; i < searchFrom + length; i++) {
+      for (
+        let i = insertionOptions.currentNodeIndex;
+        i < insertionOptions.currentNodeIndex + insertionOptions.length;
+        i++
+      ) {
         const node = nodes[i] as ChildNode;
-        const state = getForgoState(node);
 
-        if (state !== undefined && state.components.length > componentIndex) {
-          if (state.components[componentIndex].ctor === forgoComponent.type) {
-            const elementAtSearchIndex =
-              parentElement.childNodes[searchFrom] ?? null;
-            if (node !== elementAtSearchIndex) {
-              parentElement.insertBefore(node, elementAtSearchIndex);
-            }
-            return true;
+        let elementAtIndex: ChildNode | null =
+          insertionOptions.parentElement.childNodes[
+            insertionOptions.currentNodeIndex
+          ];
+
+        if (isCompatibleNode(node)) {
+          found = true;
+          if (node !== elementAtIndex) {
+            insertionOptions.parentElement.insertBefore(
+              node,
+              elementAtIndex ?? null
+            );
           }
+          elementAtIndex = node.nextSibling;
+        } else {
+          break;
         }
       }
-
-      return false;
+      return found;
     }
 
-    if (isKeyedElement(forgoComponent)) {
-      return findReplacementCandidateForKeyedComponent(
-        forgoComponent,
-        insertionOptions,
+    if (forgoComponent.key) {
+      const key = deriveComponentKeyTillIndex(
+        pendingAttachStates,
         componentIndex
       );
-    } else {
-      return findReplacementCandidateForUnkeyedComponent(
-        forgoComponent,
-        insertionOptions,
-        componentIndex
-      );
+      if (key) {
+        return findReplacementCandidateForKeyedComponent(key);
+      }
     }
+
+    // No key.
+    return findReplacementCandidateForUnkeyedComponent();
   }
 
-  /**
-   * Attach props from the forgoElement onto the DOM node. We also need to attach
-   * states from pendingAttachStates
-   */
   function syncAttrsAndState(
     forgoNode: ForgoNode,
     node: ChildNode,
@@ -1589,8 +1400,6 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      // TODO: What preact does to figure out attr vs prop
-      //  - do a (key in element) check.
       const entries = Object.entries(forgoNode.props);
       for (const [key, value] of entries) {
         if (suppressedAttributes.includes(key)) continue;
@@ -1641,7 +1450,6 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      // Now attach the internal forgo state.
       const state: NodeAttachedState = {
         ...existingState,
         key: forgoNode.key,
@@ -1651,16 +1459,12 @@ export function createForgoInstance(customEnv: any) {
 
       setForgoState(node, state);
     } else {
-      // Now attach the internal forgo state.
       const state: NodeAttachedState = {
         props: {},
         components: pendingAttachStates,
         lookups: {
-          deletedKeyedComponentNodes: new Map(),
-          deletedUnkeyedNodes: [],
           keyedComponentNodes: new Map(),
           newlyAddedKeyedComponentNodes: new Map(),
-          deletedKeyedElementNodes: new Map(),
           newlyAddedKeyedElementNodes: new Map(),
           keyedElementNodes: new Map(),
           renderCount: 0,
@@ -1671,9 +1475,6 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  /*
-    Mount will render the DOM as a child of the specified container element.
-  */
   function mount(
     forgoNode: ForgoNode,
     container: Element | string | null
@@ -1743,19 +1544,9 @@ export function createForgoInstance(customEnv: any) {
       );
     }
 
-    markNodesForUnloading(
-      parentElement.childNodes,
-      0,
-      parentElement.childNodes.length
-    );
-
-    unloadMarkedNodes(parentElement);
+    unloadNodes(parentElement, 0, parentElement.childNodes.length);
   }
 
-  /*
-    This render function returns the rendered dom node.
-    forgoNode is the node to render.
-  */
   function render(forgoNode: ForgoNode): {
     node: ChildNode;
     nodes: ChildNode[];
@@ -1771,19 +1562,6 @@ export function createForgoInstance(customEnv: any) {
     return { node: renderResult.nodes[0], nodes: renderResult.nodes };
   }
 
-  /**
-   * Code inside a component will call rerender whenever it wants to rerender.
-   * The following function is what they'll need to call.
-
-   * Given only a DOM element, how do we know what component to render? We'll
-   * fetch all that information from the state information stored on the
-   * element.
-
-   * This is attached to a node inside a NodeAttachedState structure.
-
-   * @param forceUnmount Allows a user to explicitly tear down a Forgo app from
-      outside the framework
-   */
   function rerender(
     element: ForgoElementArg | undefined,
     props?: any
@@ -1905,8 +1683,6 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      unloadMarkedNodes(parentElement);
-
       // Run afterRender() if defined.
       lifecycleEmitters.afterRender(
         originalComponentState.component,
@@ -2000,9 +1776,6 @@ function arePropsUnchanged(
   return newPropsHasAllKeys;
 }
 
-/**
- * Attach a new Forgo application to a DOM element
- */
 export function mount(
   forgoNode: ForgoNode,
   container: Element | string | null
@@ -2010,10 +1783,6 @@ export function mount(
   return forgoInstance.mount(forgoNode, container);
 }
 
-/**
- * Unmount a Forgo application from outside.
- * @param container The root element that the Forgo app was mounted onto
- */
 export function unmount(container: Element | string | null): void {
   return forgoInstance.unmount(container);
 }
@@ -2074,9 +1843,6 @@ function stringOfNonEmptyPrimitiveNode(
   return node.toString();
 }
 
-/**
- * Get Node Types
- */
 function isForgoElement(
   forgoNode: ForgoNode
 ): forgoNode is ForgoElement<object> {
@@ -2094,20 +1860,14 @@ function isForgoFragment(node: ForgoNode): node is ForgoFragment {
   return !isNullOrUndefined(node) && (node as any).type === Fragment;
 }
 
-/*
-  Get the state (NodeAttachedState) saved into an element.
-*/
 export function getForgoState(node: ChildNode): NodeAttachedState {
   if (node.__forgo === undefined) {
     node.__forgo = {
       props: {},
       components: [],
       lookups: {
-        deletedKeyedComponentNodes: new Map(),
-        deletedUnkeyedNodes: [],
         keyedComponentNodes: new Map(),
         newlyAddedKeyedComponentNodes: new Map(),
-        deletedKeyedElementNodes: new Map(),
         keyedElementNodes: new Map(),
         newlyAddedKeyedElementNodes: new Map(),
         renderCount: 0,
@@ -2117,9 +1877,6 @@ export function getForgoState(node: ChildNode): NodeAttachedState {
   return node.__forgo;
 }
 
-/*
-  Sets the state (NodeAttachedState) on an element.
-*/
 export function setForgoState(node: ChildNode, state: NodeAttachedState): void {
   node.__forgo = state;
 }
@@ -2244,8 +2001,87 @@ function legacyComponentSyntaxCompat<Props extends object = object>(
   return component;
 }
 
-function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
-  return `$Component${componentIndex}_${key}`;
+// If components at different levels have keys, we will store in the lookup
+// table a key derived by concatenating (a) keys from consecutive components having
+// keys starting from the topmost parent, and (b) element's key
+function addLookupKeysForElement<TProps extends object>(
+  forgoElement: ForgoElement<TProps>,
+  parentState: NodeAttachedState,
+  targetElement: Element,
+  pendingAttachStates: ComponentState<any>[]
+) {
+  let currentKey = "";
+  let numKeysAdded = 0;
+
+  for (let i = 0; i < pendingAttachStates.length; i++) {
+    const pendingAttachState = pendingAttachStates[i];
+    if (!pendingAttachState.key) {
+      break;
+    }
+    currentKey += formatComponentKey(pendingAttachState.key, i);
+    const nodesForKey =
+      parentState.lookups.newlyAddedKeyedComponentNodes.get(currentKey);
+    if (nodesForKey) {
+      nodesForKey.push(targetElement);
+    } else {
+      parentState.lookups.newlyAddedKeyedComponentNodes.set(currentKey, [
+        targetElement,
+      ]);
+    }
+    numKeysAdded++;
+  }
+
+  // Check if all parent components have keys, and if the element has a key as well.
+  if (
+    numKeysAdded === pendingAttachStates.length &&
+    forgoElement.key !== undefined
+  ) {
+    parentState.lookups.newlyAddedKeyedElementNodes.set(
+      currentKey + forgoElement.key,
+      targetElement
+    );
+  }
+}
+
+function formatComponentKey(key: ForgoKeyType, componentIndex: number) {
+  return `$Component${componentIndex}_${key}$`;
+}
+
+function deriveComponentKeyTillIndex(
+  pendingAttachStates: ComponentState<any>[],
+  componentIndex: number
+): string | undefined {
+  let currentKey = "";
+
+  for (let i = 0; i <= componentIndex; i++) {
+    const pendingAttachState = pendingAttachStates[i];
+    if (!pendingAttachState.key) {
+      return undefined;
+    }
+    currentKey += formatComponentKey(pendingAttachState.key, i);
+  }
+
+  return currentKey;
+}
+
+function deriveElementKey(
+  key: ForgoKeyType | undefined,
+  pendingAttachStates: ComponentState<any>[]
+): string | undefined {
+  if (key === undefined) {
+    return "";
+  }
+
+  let currentKey = "";
+
+  for (let i = 0; i < pendingAttachStates.length; i++) {
+    const pendingAttachState = pendingAttachStates[i];
+    if (!pendingAttachState.key) {
+      return undefined;
+    }
+    currentKey += formatComponentKey(pendingAttachState.key, i);
+  }
+  return currentKey + key;
 }
 
 /*
