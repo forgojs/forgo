@@ -166,6 +166,42 @@ If you assign the component to a variable (such as when adding lifecycle event
 handlers), you'll need to annotate the generic types on both the constructor and
 the component.
 
+Generic props can also be used:
+
+```tsx
+import * as forgo from "forgo";
+import type { ForgoNewComponentCtor, Component } from "forgo";
+
+// Props have to be assigned to the initial props for TSX to recognize the generic
+type ListProps<T extends string | number> = {
+  data: T[],
+  render: (item: T) => Component
+}
+
+const List = <T extends string | number> = (
+  initial: ListProps<T>
+): Component<ListProps<T>> => new forgo.Component<ListProps<T>>({
+  render(props) {
+    return (
+      <ul>
+        {props.data.map(item => props.render(item))}
+      </ul>
+  }
+});
+
+const App: ForgoNewComponentCtor = () => new forgo.Component({
+  render(props) {
+    return (
+      <List
+        data={[1, '2', 3]}
+        // item: number | string
+        render={item => <li>{item}</li>}
+      />
+    )
+  }
+})
+```
+
 _If you're handy with TypeScript, [we'd love a PR to infer the types!](https://github.com/forgojs/forgo/issues/68)_
 
 ```tsx
