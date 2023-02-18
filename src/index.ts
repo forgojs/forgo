@@ -27,7 +27,7 @@ const suppressedAttributes = ["ref", "dangerouslySetInnerHTML"];
 
 export type ForgoSimpleComponentCtor<TProps extends object> = (
   props: TProps & ForgoElementBaseProps
-) => ForgoLegacyComponent<TProps>;
+) => ForgoSimpleComponent<TProps>;
 
 export type ForgoNewComponentCtor<TProps extends object> = (
   props: TProps & ForgoElementBaseProps
@@ -180,7 +180,7 @@ export type DetachedNodeInsertionOptions = {
  * Instructs the renderer to search for an existing node to modify or replace,
  * before creating a new node.
  */
-export type SearchableNodeInsertionOptions = {
+export type AttachedNodeInsertionOptions = {
   type: "attached";
   /**
    * The element that holds the previously-rendered version of this component
@@ -202,7 +202,7 @@ export type SearchableNodeInsertionOptions = {
  */
 export type NodeInsertionOptions =
   | DetachedNodeInsertionOptions
-  | SearchableNodeInsertionOptions;
+  | AttachedNodeInsertionOptions;
 
 /*
   Result of the render functions.
@@ -700,7 +700,7 @@ export function createForgoInstance(customEnv: any) {
     function renderExistingElement(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
-      insertionOptions: SearchableNodeInsertionOptions
+      insertionOptions: AttachedNodeInsertionOptions
     ): RenderResult {
       // Get rid of unwanted nodes.
       markNodesForUnloading(
@@ -774,7 +774,7 @@ export function createForgoInstance(customEnv: any) {
     function renderExistingComponent(
       insertAt: number,
       childNodes: NodeListOf<ChildNode>,
-      insertionOptions: SearchableNodeInsertionOptions
+      insertionOptions: AttachedNodeInsertionOptions
     ): RenderResult {
       const targetNode = childNodes[insertAt];
       const state = getExistingForgoState(targetNode);
@@ -999,7 +999,7 @@ export function createForgoInstance(customEnv: any) {
 
   function renderComponentAndRemoveStaleNodes<TProps extends object>(
     forgoNode: ForgoNode,
-    insertionOptions: SearchableNodeInsertionOptions,
+    insertionOptions: AttachedNodeInsertionOptions,
     statesToAttach: NodeAttachedComponentState<any>[],
     componentState: NodeAttachedComponentState<TProps>,
     mountOnPreExistingDOM: boolean
@@ -1094,7 +1094,7 @@ export function createForgoInstance(customEnv: any) {
         const totalNodesBeforeRender =
           insertionOptions.parentElement.childNodes.length;
 
-        const newInsertionOptions: SearchableNodeInsertionOptions = {
+        const newInsertionOptions: AttachedNodeInsertionOptions = {
           ...insertionOptions,
           currentNodeIndex,
           length: numNodes,
@@ -1783,7 +1783,7 @@ export function createForgoInstance(customEnv: any) {
 
       const nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
 
-      const insertionOptions: SearchableNodeInsertionOptions = {
+      const insertionOptions: AttachedNodeInsertionOptions = {
         type: "attached",
         currentNodeIndex: nodeIndex,
         length: originalComponentState.nodes.length,
@@ -2046,7 +2046,7 @@ function clearDeletedNodes(element: Element) {
 /**
  * We bridge the old component syntax to the new syntax until our next breaking release
  */
-export type ForgoLegacyComponent<TProps extends object> = {
+export type ForgoSimpleComponent<TProps extends object> = {
   render: (
     props: TProps & ForgoElementBaseProps,
     args: ForgoRenderArgs
@@ -2087,8 +2087,8 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <TProps extends object>(
-  legacyComponent: ForgoLegacyComponent<TProps>
+export const simpleComponentSyntaxCompat = <TProps extends object>(
+  simpleComponent: ForgoSimpleComponent<TProps>
 ): Component<TProps> => {
   const mkRenderArgs = (component: Component<TProps>): ForgoRenderArgs => ({
     get element() {
@@ -2101,12 +2101,12 @@ export const legacyComponentSyntaxCompat = <TProps extends object>(
 
   const componentBody: ForgoComponentMethods<TProps> = {
     render(props, component) {
-      return legacyComponent.render(props, mkRenderArgs(component));
+      return simpleComponent.render(props, mkRenderArgs(component));
     },
   };
-  if (legacyComponent.error) {
+  if (simpleComponent.error) {
     componentBody.error = (props, error) => {
-      return legacyComponent.error!(
+      return simpleComponent.error!(
         props,
         Object.assign(mkRenderArgs(component), { error })
       );
@@ -2115,27 +2115,27 @@ export const legacyComponentSyntaxCompat = <TProps extends object>(
   const component = new Component<TProps>({
     ...componentBody,
   });
-  if (legacyComponent.mount) {
+  if (simpleComponent.mount) {
     component.mount((props) => {
-      legacyComponent.mount!(props, mkRenderArgs(component));
+      simpleComponent.mount!(props, mkRenderArgs(component));
     });
   }
-  if (legacyComponent.unmount) {
+  if (simpleComponent.unmount) {
     component.unmount((props) => {
-      legacyComponent.unmount!(props, mkRenderArgs(component));
+      simpleComponent.unmount!(props, mkRenderArgs(component));
     });
   }
-  if (legacyComponent.afterRender) {
+  if (simpleComponent.afterRender) {
     component.afterRender((props, previousNode) => {
-      legacyComponent.afterRender!(
+      simpleComponent.afterRender!(
         props,
         Object.assign(mkRenderArgs(component), { previousNode })
       );
     });
   }
-  if (legacyComponent.shouldUpdate) {
+  if (simpleComponent.shouldUpdate) {
     component.shouldUpdate((newProps, oldProps) => {
-      return legacyComponent.shouldUpdate!(newProps, oldProps);
+      return simpleComponent.shouldUpdate!(newProps, oldProps);
     });
   }
   return component;
@@ -2146,10 +2146,10 @@ export const legacyComponentSyntaxCompat = <TProps extends object>(
 */
 function assertIsComponent<TProps extends object>(
   ctor: ForgoNewComponentCtor<TProps> | ForgoSimpleComponentCtor<TProps>,
-  component: Component<TProps> | ForgoLegacyComponent<TProps>
+  component: Component<TProps> | ForgoSimpleComponent<TProps>
 ): Component<TProps> {
   if (!(component instanceof Component) && Reflect.has(component, "render")) {
-    return legacyComponentSyntaxCompat(component);
+    return simpleComponentSyntaxCompat(component);
   }
 
   if (!(component instanceof Component)) {
