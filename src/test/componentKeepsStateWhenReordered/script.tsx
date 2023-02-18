@@ -14,9 +14,7 @@ export const componentStates = new Map<unknown, string>();
 interface StatefulComponentProps {
   key: unknown;
 }
-const StatefulComponent: forgo.ForgoNewComponentCtor<
-  StatefulComponentProps
-> = () => {
+const StatefulComponent = () => {
   let state = getRandomString();
   const component = new forgo.Component<StatefulComponentProps>({
     render({ key }) {
@@ -35,14 +33,14 @@ const StatefulComponent: forgo.ForgoNewComponentCtor<
 };
 
 let sortOrder = 1;
-let containerComponent: forgo.Component;
+let containerComponent: forgo.Component<StatefulComponentProps>;
 
 export function reorderComponents() {
   sortOrder = 2;
-  containerComponent.update({});
+  containerComponent.update({ key: undefined });
 }
 
-const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
+const ContainerComponent = () => {
   containerComponent = new forgo.Component({
     render() {
       componentStates.clear();

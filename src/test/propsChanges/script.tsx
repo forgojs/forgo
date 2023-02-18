@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: forgo.Component;
+let component: forgo.Component<{}>;
 
 export function renderAgain() {
   component.update();
@@ -18,7 +18,7 @@ export let mutatedProps: {
   [key: string]: boolean;
 } = {};
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   let counter: number = 0;
 
   const el: forgo.ForgoRef<HTMLDivElement> = {};

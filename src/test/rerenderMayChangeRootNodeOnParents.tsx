@@ -5,10 +5,10 @@ import { run } from "./componentRunner.js";
 
 function componentFactory() {
   const state: {
-    component: forgo.Component | null;
+    component: forgo.Component<{}> | null;
   } = { component: null };
 
-  const Parent: forgo.ForgoNewComponentCtor = () => {
+  const Parent = () => {
     state.component = new forgo.Component({
       render() {
         return <Child />;
@@ -17,7 +17,7 @@ function componentFactory() {
     return state.component;
   };
 
-  const Child: forgo.ForgoNewComponentCtor = () => {
+  const Child = () => {
     let counter = 0;
     return new forgo.Component({
       render() {

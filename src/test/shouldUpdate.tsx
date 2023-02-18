@@ -3,10 +3,10 @@ import { run } from "./componentRunner.js";
 
 function componentFactory() {
   const state: {
-    component: forgo.Component | null;
+    component: forgo.Component<{}> | null;
   } = { component: null };
 
-  const TestComponent: forgo.ForgoNewComponentCtor = () => {
+  const TestComponent = () => {
     let counter = 0;
 
     state.component = new forgo.Component({

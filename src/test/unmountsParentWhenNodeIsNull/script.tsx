@@ -9,12 +9,12 @@ let isFirstRender = true;
 
 export let hasUnmounted = false;
 
-let component: forgo.Component;
+let component: forgo.Component<{}>;
 export function renderAgain() {
   component.update();
 }
 
-const Parent: forgo.ForgoNewComponentCtor = () => {
+const Parent = () => {
   component = new forgo.Component({
     render() {
       if (isFirstRender) {

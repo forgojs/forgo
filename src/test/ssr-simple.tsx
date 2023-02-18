@@ -10,16 +10,15 @@ function componentFactory() {
   interface GreetProps {
     text: string;
   }
-  const Greet: forgo.ForgoNewComponentCtor<GreetProps> = (_props: {
-    text: string;
-  }) => {
+  const Greet = (_props: GreetProps) => {
     return new forgo.Component<GreetProps>({
       render(props) {
         return <p>{props.text}</p>;
       },
     });
   };
-  const Parent: forgo.ForgoNewComponentCtor = () => {
+
+  const Parent = () => {
     return new forgo.Component({
       render() {
         return (

@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-const BasicComponent: forgo.ForgoNewComponentCtor = () => {
+const BasicComponent = () => {
   return new forgo.Component({
     render() {
       return <div>Hello world</div>;
