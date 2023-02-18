@@ -11,8 +11,8 @@ const componentFactory = () => {
     idAttr: string | null;
     parentChildrenCount: number;
   } = { parentEl: {}, parentChildrenCount: 0, idAttr: null };
-  const TestComponent = () => {
-    const Child = () => {
+  const TestComponent: ForgoNewComponentCtor = () => {
+    const Child: ForgoNewComponentCtor = () => {
       const component = new forgo.Component({
         render() {
           return <div>Hello world</div>;
@@ -49,7 +49,7 @@ const recursiveComponentFactory = () => {
     renderCount: 0,
   };
 
-  const TestComponent = () => {
+  const TestComponent: ForgoNewComponentCtor = () => {
     const component = new forgo.Component({
       render() {
         state.renderCount += 1;

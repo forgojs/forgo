@@ -7,7 +7,7 @@ let document: Document;
 
 export let inputRef: ForgoRef<HTMLInputElement> = {};
 
-const Parent = () => {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

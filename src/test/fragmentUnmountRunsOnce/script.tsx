@@ -13,7 +13,7 @@ export function renderAgain() {
   component.update();
 }
 
-const TestComponent = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;

@@ -16,7 +16,7 @@ function componentFactory() {
     childUnmounted: false,
   };
 
-  const Parent1 = () => {
+  const Parent1: forgo.ForgoNewComponentCtor = () => {
     const component = new forgo.Component({
       render() {
         return <Parent2 />;
@@ -28,7 +28,7 @@ function componentFactory() {
     return component;
   };
 
-  const Parent2 = () => {
+  const Parent2: forgo.ForgoNewComponentCtor = () => {
     const component = new forgo.Component({
       render() {
         return <Child />;
@@ -40,7 +40,7 @@ function componentFactory() {
     return component;
   };
 
-  const Child = () => {
+  const Child: forgo.ForgoNewComponentCtor = () => {
     let counter = 0;
     state.component = new forgo.Component({
       render() {

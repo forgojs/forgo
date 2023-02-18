@@ -6,7 +6,7 @@ function componentFactory() {
     component: forgo.Component | null;
   } = { component: null };
 
-  const TestComponent = () => {
+  const TestComponent: forgo.ForgoNewComponentCtor = () => {
     let counter = 0;
 
     state.component = new forgo.Component({

@@ -13,7 +13,7 @@ export function renderAgain() {
   component.update();
 }
 
-const Parent = () => {
+const Parent: forgo.ForgoNewComponentCtor = () => {
   parentCounter = 0;
 
   return new forgo.Component({
@@ -29,7 +29,7 @@ const Parent = () => {
   });
 };
 
-const ParentWithSharedNode = () => {
+const ParentWithSharedNode: forgo.ForgoNewComponentCtor = () => {
   parentCounter = 0;
 
   return new forgo.Component({
@@ -40,7 +40,7 @@ const ParentWithSharedNode = () => {
   });
 };
 
-const Child = () => {
+const Child: forgo.ForgoNewComponentCtor = () => {
   childCounter = 0;
 
   component = new forgo.Component({

@@ -13,7 +13,7 @@ export function renderAgain() {
 
 export let unmountCounter = 0;
 
-const TestComponent = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   component = new forgo.Component({
     render() {
       counter++;

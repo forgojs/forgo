@@ -10,7 +10,7 @@ const componentFactory = () => {
     component: null as forgo.Component | null,
   };
 
-  const Parent = () => {
+  const Parent: forgo.ForgoNewComponentCtor = () => {
     let firstRender = true;
 
     state.component = new forgo.Component({
@@ -30,7 +30,7 @@ const componentFactory = () => {
     return state.component;
   };
 
-  const Child = () => {
+  const Child: forgo.ForgoNewComponentCtor = () => {
     const component = new forgo.Component({
       render() {
         return <div>This is the child component</div>;

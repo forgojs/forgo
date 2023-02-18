@@ -223,7 +223,7 @@ export default function () {
       let shouldUpdate: Props | null = null;
 
       const LegacyComponent: forgo.ForgoComponentCtor<
-        forgo.ForgoElementProps & Props
+        forgo.ForgoComponentProps & Props
       > = () => {
         return {
           mount(props) {
