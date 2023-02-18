@@ -15,7 +15,7 @@
 
 # 3.2.0
 
-- #59: Forgo's legacy component syntax (component syntax used through v3.1.1)
+- #59: Forgo's legacy component syntax (component syntax used through v3.1.1, also called simple component syntax)
   has been deprecated, and will be removed in v4.0. For more details, please see
   the deprecation notice on https://forgojs.org.
 - Fix #62: ensure that a child component's `mount()` lifecycle method is only

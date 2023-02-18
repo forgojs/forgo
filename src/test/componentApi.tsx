@@ -209,7 +209,7 @@ export default function () {
     });
   });
 
-  describe("The legacy component API", () => {
+  describe("The simple/legacy component API", () => {
     it("still works", async () => {
       interface Props {
         foo: number;
@@ -220,7 +220,7 @@ export default function () {
       let afterRender: Props | null = null;
       let shouldUpdate: Props | null = null;
 
-      const LegacyComponent: forgo.ForgoSimpleComponentCtor<Props> = () => {
+      const SimpleComponent: forgo.ForgoSimpleComponentCtor<Props> = () => {
         return {
           mount(props) {
             mounted = props;
@@ -250,7 +250,7 @@ export default function () {
       const ParentComponent = (initialProps: ParentProps) => {
         component = new forgo.Component<ParentProps>({
           render({ renderChild }) {
-            if (renderChild) return <LegacyComponent foo={1} />;
+            if (renderChild) return <SimpleComponent foo={1} />;
             return null;
           },
         });

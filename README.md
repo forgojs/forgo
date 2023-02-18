@@ -1078,15 +1078,6 @@ If you find issues, please file a bug on
 [Github](https://github.com/forgojs/forgo/issues). You can also reach out to us
 via Twitter (@forgojs).
 
-## Deprecation of legacy component syntax is 3.2.0
-In version 3.2.0, Forgo introduced a new syntax for components. This change
-makes Forgo easier to extend with reusable libraries, and makes it
-straightforward to colocate logic that spans mounts & unmounts.
-
-The legacy component syntax will be removed in v4.0. Until then, Forgo will
-print a warning to the console whenever it sees a legacy component. You can
-suppress these warnings by setting `window.FORGO_NO_LEGACY_WARN = true;`.
-
 ### Migrating
 Forgo components are now instances of the `Component` class, rather than
 freestanding object values. The `new Component` constructor accepts an object

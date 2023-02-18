@@ -1840,11 +1840,6 @@ export function createForgoInstance(customEnv: any) {
         renderResult.nodes.length > 0 ? statesToAttach : []
       );
 
-      // Unmount rendered component itself if all nodes are gone.
-      // if (renderResult.nodes.length === 0) {
-      //   unmountComponents([newComponentState], 0);
-      // }
-
       // Run afterRender() if defined.
       lifecycleEmitters.afterRender(
         originalComponentState.component,
