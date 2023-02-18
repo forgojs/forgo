@@ -20,7 +20,7 @@ const componentFactory = () => {
     update: () => undefined,
   };
 
-  const Component = () => {
+  const Component: ForgoNewComponentCtor = () => {
     // We want to reassign this inside the component ctor closure to test that
     // the component doesn't get recreated when it stops rendering null
     state.internalState = Math.random().toString();

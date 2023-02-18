@@ -5,7 +5,7 @@ import { mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-const TestComponent = () => {
+const TestComponent: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (
@@ -19,7 +19,7 @@ const TestComponent = () => {
   });
 };
 
-const NestedFragmentComponent = () => {
+const NestedFragmentComponent: forgo.ForgoNewComponentCtor = () => {
   return new forgo.Component({
     render() {
       return (

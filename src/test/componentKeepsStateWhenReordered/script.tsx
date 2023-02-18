@@ -42,7 +42,7 @@ export function reorderComponents() {
   containerComponent.update({});
 }
 
-const ContainerComponent = () => {
+const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
   containerComponent = new forgo.Component({
     render() {
       componentStates.clear();

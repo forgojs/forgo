@@ -1,7 +1,6 @@
 import sourceMapSupport from "source-map-support";
 sourceMapSupport.install();
 
-import "should";
 import mount from "./mount/index.js";
 import boundary from "./boundary/index.js";
 import passProps from "./passProps/index.js";
@@ -39,12 +38,10 @@ import unmountsParentWhenNodeIsNull from "./unmountsParentWhenNodeIsNull.js";
 import rerenderMayChangeRootNodeOnParents from "./rerenderMayChangeRootNodeOnParents.js";
 import keyedFragmentsPreserveChildStates from "./keyedFragmentsPreserveChildStates/index.js";
 import rootElementChangeDoesNotUnmount from "./rootElementChangeDoesNotUnmount.js";
-import fragmentMountEvent from "./fragmentMountEvent.js";
+import fragmentMountTiming from "./fragmentMountEvent.js";
 import componentApi from "./componentApi.js";
-import remount from "./remount/index.js";
 
 mount();
-remount();
 boundary();
 passProps();
 elementRef();
@@ -81,5 +78,5 @@ elementKeepsStateWhenReordered();
 unmountsParentWhenNodeIsNull();
 keyedFragmentsPreserveChildStates();
 rootElementChangeDoesNotUnmount();
-fragmentMountEvent();
+fragmentMountTiming();
 componentApi();

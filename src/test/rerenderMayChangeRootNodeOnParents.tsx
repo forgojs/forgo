@@ -8,7 +8,7 @@ function componentFactory() {
     component: forgo.Component | null;
   } = { component: null };
 
-  const Parent = () => {
+  const Parent: forgo.ForgoNewComponentCtor = () => {
     state.component = new forgo.Component({
       render() {
         return <Child />;
@@ -17,7 +17,7 @@ function componentFactory() {
     return state.component;
   };
 
-  const Child = () => {
+  const Child: forgo.ForgoNewComponentCtor = () => {
     let counter = 0;
     return new forgo.Component({
       render() {

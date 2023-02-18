@@ -1,4 +1,4 @@
-import type { ForgoElementProps } from "./index.js";
+import type { ForgoDOMElementProps } from "./index.js";
 
 /* JSX Definitions */
 type Defaultize<Props, Defaults> =
@@ -420,7 +420,7 @@ export type WheelEventHandler<Target extends EventTarget> = EventHandler<
 */
 
 export interface DOMAttributes<Target extends EventTarget>
-  extends ForgoElementProps {
+  extends ForgoDOMElementProps {
   // Image Events
   onload?: GenericEventHandler<Target>;
   onerror?: GenericEventHandler<Target>;
