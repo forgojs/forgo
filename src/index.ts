@@ -653,12 +653,11 @@ export function createForgoInstance(customEnv: any) {
       );
     }
 
-    function renderChildNodes(parentElement: Element) {
+    function renderChildNodes(element: Element) {
       // If the user gave us exact HTML to stuff into this parent, we can
       // skip/ignore the usual rendering logic
       if (forgoElement.props.dangerouslySetInnerHTML) {
-        parentElement.innerHTML =
-          forgoElement.props.dangerouslySetInnerHTML.__html;
+        element.innerHTML = forgoElement.props.dangerouslySetInnerHTML.__html;
       } else {
         // Coerce children to always be an array, for simplicity
         const forgoChildren = flatten([forgoElement.props.children]).filter(
@@ -666,71 +665,30 @@ export function createForgoInstance(customEnv: any) {
           (x) => x !== undefined && x !== null
         );
 
-        // Make sure that if the user prepends non-Forgo DOM children under this
-        // parent that we start with the correct offset, otherwise we'll do DOM
-        // transformations that don't make any sense for the given input.
-        const firstForgoChildIndex = Array.from(
-          parentElement.childNodes
-        ).findIndex((child) => getForgoState(child));
-        // Each node we render will push any leftover children further down the
-        // parent's list of children. After rendering everything, we can clean
-        // up anything extra. We'll know what's extra because all nodes we want
-        // to preserve come before this index.
-        let lastRenderedNodeIndex =
-          firstForgoChildIndex === -1 ? 0 : firstForgoChildIndex;
+        let currentNodeIndex = 0;
+
         for (const forgoChild of forgoChildren) {
-          const { nodes: nodesAfterRender } = internalRender(
+          const { nodes: nodesJustRendered } = internalRender(
             forgoChild,
             {
-              type: "attached",
-              parentElement,
-              currentNodeIndex: lastRenderedNodeIndex,
-              length: parentElement.childNodes.length - lastRenderedNodeIndex,
+              type: insertionOptions.type,
+              parentElement: element,
+              currentNodeIndex,
+              length: element.childNodes.length - currentNodeIndex,
             },
             [],
             mountOnPreExistingDOM
           );
-          // Continue down the children list to wherever's right after the stuff
-          // we just added. Because users are allowed to add arbitrary stuff to
-          // the DOM manually, we can't just jump by the count of rendered
-          // elements, since that's the count of *managed* elements, which might
-          // be interspersed with unmanaged elements that we also need to skip
-          // past.
-          if (nodesAfterRender.length) {
-            while (
-              parentElement.childNodes[lastRenderedNodeIndex] !==
-              nodesAfterRender[nodesAfterRender.length - 1]
-            ) {
-              lastRenderedNodeIndex += 1;
-            }
-            // Move the counter *past* the last node we inserted. E.g., if we just
-            // inserted our first node, we need to increment from 0 -> 1, where
-            // we'll start searching for the next thing we insert
-            lastRenderedNodeIndex += 1;
-            // If we're updating an existing DOM element, it's possible that the
-            // user manually added some DOM nodes somewhere in the middle of our
-            // managed nodes. If that happened, we need to scan forward until we
-            // pass them and find the next managed node, which we'll use as the
-            // starting point for whatever we render next. We still need the +1
-            // above to make sure we always progress the index, in case this is
-            // our first render pass and there's nothing to scan forward to.
-            while (lastRenderedNodeIndex < parentElement.childNodes.length) {
-              if (
-                getForgoState(parentElement.childNodes[lastRenderedNodeIndex])
-              ) {
-                break;
-              }
-              lastRenderedNodeIndex += 1;
-            }
-          }
+
+          currentNodeIndex += nodesJustRendered.length;
         }
 
         // Remove all nodes that don't correspond to the rendered output of a
         // live component
         markNodesForUnloading(
-          parentElement.childNodes,
-          lastRenderedNodeIndex,
-          parentElement.childNodes.length
+          element.childNodes,
+          currentNodeIndex,
+          element.childNodes.length
         );
       }
     }
