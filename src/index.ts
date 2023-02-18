@@ -2086,7 +2086,7 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
 export const legacyComponentSyntaxCompat = <Props extends object = object>(
-  legacyComponent: ForgoComponent<Props>
+  legacyComponent: ForgoComponent<Props & ForgoElementProps>
 ): Component<Props> => {
   const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
     get element() {
@@ -2176,8 +2176,8 @@ function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
 */
 function assertIsComponent<Props extends object = object>(
   ctor:
-    | ForgoNewComponentCtor<Props>
-    | ForgoComponentCtor<Props>,
+    | ForgoNewComponentCtor<Props & ForgoElementProps>
+    | ForgoComponentCtor<Props & ForgoElementProps>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
 ): Component<Props> {
