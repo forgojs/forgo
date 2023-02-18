@@ -1,4 +1,4 @@
-import type { ForgoDOMElementProps } from "./index.js";
+import { ForgoDOMElementProps } from ".";
 
 /* JSX Definitions */
 type Defaultize<Props, Defaults> =

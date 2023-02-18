@@ -14,7 +14,7 @@ function componentFactory() {
     elementBoundAtMountTime: null,
   };
 
-  const TestComponent: ForgoNewComponentCtor = () => {
+  const TestComponent = () => {
     const el: ForgoRef<HTMLDivElement> = {};
 
     const component = new forgo.Component({

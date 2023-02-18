@@ -5,7 +5,7 @@ import { Component, mount, setCustomEnv } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-const ErrorComponent: forgo.ForgoNewComponentCtor = () => {
+const ErrorComponent = () => {
   return new forgo.Component({
     render() {
       throw new Error("Some error occurred :(");
@@ -13,18 +13,16 @@ const ErrorComponent: forgo.ForgoNewComponentCtor = () => {
   });
 };
 
-interface ErrorBoundaryComponentProps {
+interface ErrorBoundaryComponentProps extends forgo.ForgoElementBaseProps {
   name: string;
 }
 
-const ErrorBoundary: forgo.ForgoNewComponentCtor<
-  ErrorBoundaryComponentProps
-> = () => {
-  return new Component({
+const ErrorBoundary = (props: ErrorBoundaryComponentProps) => {
+  return new Component<ErrorBoundaryComponentProps>({
     render({ children }) {
       return <div>{children}</div>;
     },
-    error(props: ErrorBoundaryComponentProps, error) {
+    error(props, error) {
       return (
         <p>
           Error in {props.name}: {(error as Error).message}
@@ -34,7 +32,7 @@ const ErrorBoundary: forgo.ForgoNewComponentCtor<
   });
 };
 
-const App: forgo.ForgoNewComponentCtor = () => {
+const App = () => {
   return new forgo.Component({
     render() {
       return (

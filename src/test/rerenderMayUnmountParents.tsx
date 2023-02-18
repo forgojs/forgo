@@ -5,7 +5,7 @@ import { run } from "./componentRunner.js";
 
 function componentFactory() {
   const state: {
-    component: forgo.Component | null;
+    component: forgo.Component<{}> | null;
     parent1Unmounted: boolean;
     parent2Unmounted: boolean;
     childUnmounted: boolean;
@@ -16,7 +16,7 @@ function componentFactory() {
     childUnmounted: false,
   };
 
-  const Parent1: forgo.ForgoNewComponentCtor = () => {
+  const Parent1 = () => {
     const component = new forgo.Component({
       render() {
         return <Parent2 />;
@@ -28,7 +28,7 @@ function componentFactory() {
     return component;
   };
 
-  const Parent2: forgo.ForgoNewComponentCtor = () => {
+  const Parent2 = () => {
     const component = new forgo.Component({
       render() {
         return <Child />;
@@ -40,7 +40,7 @@ function componentFactory() {
     return component;
   };
 
-  const Child: forgo.ForgoNewComponentCtor = () => {
+  const Child = () => {
     let counter = 0;
     state.component = new forgo.Component({
       render() {

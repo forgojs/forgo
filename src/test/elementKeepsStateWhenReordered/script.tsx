@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { mount, setCustomEnv } from "../../index.js";
 
 let sortOrder = 1;
-let component: forgo.Component;
+let component: forgo.Component<{}>;
 
 export function reorderElements() {
   sortOrder = 2;
@@ -16,7 +16,7 @@ export let inputRef3: forgo.ForgoRef<HTMLInputElement> = {};
 export let inputRef4: forgo.ForgoRef<HTMLInputElement> = {};
 export let inputRef5: forgo.ForgoRef<HTMLInputElement> = {};
 
-const ContainerComponent: forgo.ForgoNewComponentCtor = () => {
+const ContainerComponent = () => {
   component = new forgo.Component({
     render() {
       return (

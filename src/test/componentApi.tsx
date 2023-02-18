@@ -222,9 +222,7 @@ export default function () {
       let afterRender: Props | null = null;
       let shouldUpdate: Props | null = null;
 
-      const LegacyComponent: forgo.ForgoComponentCtor<
-        forgo.ForgoComponentProps & Props
-      > = () => {
+      const LegacyComponent: forgo.ForgoLegacyComponentCtor<Props> = () => {
         return {
           mount(props) {
             mounted = props;

@@ -6,7 +6,7 @@ let window: DOMWindow;
 let document: Document;
 let counter = 0;
 
-let component: forgo.Component;
+let component: forgo.Component<{}>;
 
 export function renderAgain() {
   component.update();
@@ -14,7 +14,7 @@ export function renderAgain() {
 
 export let mountCounter = 0;
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   component = new forgo.Component({
     render() {
       counter++;

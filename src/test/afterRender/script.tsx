@@ -5,7 +5,7 @@ import { mount, setCustomEnv, Component } from "../../index.js";
 let window: DOMWindow;
 let document: Document;
 
-let component: Component;
+let component: Component<{}>;
 
 export function renderAgain() {
   component.update();
@@ -15,7 +15,7 @@ export let currentNode: ChildNode | undefined;
 export let previousNode: ChildNode | undefined;
 export let counterX10: number;
 
-const TestComponent: forgo.ForgoNewComponentCtor = () => {
+const TestComponent = () => {
   let counter: number = 0;
   component = new Component({
     render() {
@@ -55,7 +55,7 @@ function ComponentOnTextNode() {
   return component;
 }
 
-const ComponentWithRef: forgo.ForgoNewComponentCtor = () => {
+const ComponentWithRef = () => {
   const ref: forgo.ForgoRef<HTMLDivElement> = {};
   const component = new forgo.Component({
     render() {
@@ -68,18 +68,17 @@ const ComponentWithRef: forgo.ForgoNewComponentCtor = () => {
   return component;
 };
 
-const ComponentWithDangerouslySetInnerHTML: forgo.ForgoNewComponentCtor =
-  () => {
-    const component = new forgo.Component({
-      render() {
-        return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
-      },
-    });
-    component.afterRender((_props, _previousNode, component) => {
-      currentNode = component.__internal.element.node;
-    });
-    return component;
-  };
+const ComponentWithDangerouslySetInnerHTML = () => {
+  const component = new forgo.Component({
+    render() {
+      return <div dangerouslySetInnerHTML={{ __html: "<div></div>" }} />;
+    },
+  });
+  component.afterRender((_props, _previousNode, component) => {
+    currentNode = component.__internal.element.node;
+  });
+  return component;
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;
