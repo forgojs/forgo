@@ -1,12 +1,18 @@
 import { DOMWindow, JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import should from "should";
-import { renderAgain, runStringKey, unmountedElements } from "./script.js";
+import {
+  renderAgain,
+  runObjectKey,
+  runStringKey,
+  unmountedElements,
+} from "./script.js";
 
 export default function () {
   describe("replacement by key", () => {
     const tests: [string, (dom: JSDOM) => void][] = [
       ["string key", runStringKey],
+      ["object key", runObjectKey],
     ];
     tests.forEach(([testName, run]) => {
       it(`replaces a child by ${testName}`, async () => {
@@ -23,7 +29,7 @@ export default function () {
             resolve();
           });
         });
-
+        
         renderAgain();
 
         window.document.body.innerHTML.should.containEql("Hello 2X");
