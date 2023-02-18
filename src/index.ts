@@ -25,13 +25,13 @@ export type ForgoDOMElementProps = {
 
 export type ForgoComponentProps = ForgoElementProps;
 
-export type ForgoComponentCtor<Props extends {} = {}> = (
-  props: Props & ForgoComponentProps
-) => ForgoComponent<Props>;
+export type ForgoComponentCtor<TProps extends object = object> = (
+  props: TProps & ForgoComponentProps
+) => ForgoComponent<TProps>;
 
-export type ForgoNewComponentCtor<Props extends {} = {}> = (
-  props: Props & ForgoComponentProps
-) => Component<Props>;
+export type ForgoNewComponentCtor<TProps extends object = object> = (
+  props: TProps & ForgoComponentProps
+) => Component<TProps>;
 
 export type ForgoElementArg = {
   node?: ChildNode;
@@ -85,7 +85,7 @@ export type ForgoNonEmptyPrimitiveNode =
   | number
   | boolean
   | object
-  | BigInt
+  | bigint
   | null
   | undefined;
 
@@ -110,7 +110,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
   In addition it holds a bunch of other things. 
   Like for example, a key which uniquely identifies a child element when rendering a list.
 */
-export type NodeAttachedComponentState<TProps extends {}> = {
+export type NodeAttachedComponentState<TProps extends object = object> = {
   key?: any;
   ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>;
   component: Component<TProps>;
@@ -247,15 +247,15 @@ const COMMENT_NODE_TYPE = 8;
  * 2. error() is called when this component, or one of its children, throws an
  *    error.
  */
-export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
+export interface ForgoComponentMethods<TProps extends ForgoComponentProps> {
   render: (
-    props: Props & ForgoComponentProps,
-    component: Component<Props>
+    props: TProps & ForgoComponentProps,
+    component: Component<TProps>
   ) => ForgoNode | ForgoNode[];
   error?: (
-    props: Props & ForgoComponentProps,
+    props: TProps & ForgoComponentProps,
     error: unknown,
-    component: Component<Props>
+    component: Component<TProps>
   ) => ForgoNode;
 }
 
@@ -265,6 +265,7 @@ export interface ForgoComponentMethods<Props extends ForgoComponentProps> {
  * information will fail to typecheck until they handle the new event.
  */
 type ComponentEventListenerBase = {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   [event in keyof typeof lifecycleEmitters]: Array<Function>;
 };
 /**
@@ -275,52 +276,58 @@ type ComponentEventListenerBase = {
 // TODO: figure out if TS gets angry if the user passes an async function as an
 // event listener. Maybe we need to default to unknown instead of void for the
 // return type?
-interface ComponentEventListeners<Props extends {}>
+interface ComponentEventListeners<TProps extends object = object>
   extends ComponentEventListenerBase {
   mount: Array<
-    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+    (props: TProps & ForgoComponentProps, component: Component<TProps>) => void
   >;
   unmount: Array<
-    (props: Props & ForgoComponentProps, component: Component<Props>) => void
+    (props: TProps & ForgoComponentProps, component: Component<TProps>) => void
   >;
   afterRender: Array<
     (
-      props: Props & ForgoComponentProps,
+      props: TProps & ForgoComponentProps,
       previousNode: ChildNode | undefined,
-      component: Component<Props>
+      component: Component<TProps>
     ) => void
   >;
   shouldUpdate: Array<
     (
-      newProps: Props & ForgoComponentProps,
-      oldProps: Props & ForgoComponentProps,
-      component: Component<Props>
+      newProps: TProps & ForgoComponentProps,
+      oldProps: TProps & ForgoComponentProps,
+      component: Component<TProps>
     ) => boolean
   >;
 }
 
-interface ComponentInternal<Props extends {}> {
+interface ComponentInternal<TProps extends object = object> {
   unmounted: boolean;
-  registeredMethods: ForgoComponentMethods<Props>;
-  eventListeners: ComponentEventListeners<Props>;
+  registeredMethods: ForgoComponentMethods<TProps>;
+  eventListeners: ComponentEventListeners<TProps>;
   element: ForgoElementArg;
 }
 
 const lifecycleEmitters = {
-  mount<Props extends {}>(component: Component<Props>, props: Props): void {
+  mount<TProps extends object = object>(
+    component: Component<TProps>,
+    props: TProps
+  ): void {
     component.__internal.eventListeners.mount.forEach((cb) =>
       cb(props, component)
     );
   },
-  unmount<Props extends {}>(component: Component<Props>, props: Props) {
+  unmount<TProps extends object = object>(
+    component: Component<TProps>,
+    props: TProps
+  ) {
     component.__internal.eventListeners.unmount.forEach((cb) =>
       cb(props, component)
     );
   },
-  shouldUpdate<Props extends {}>(
-    component: Component<Props>,
-    newProps: Props,
-    oldProps: Props
+  shouldUpdate<TProps extends object = object>(
+    component: Component<TProps>,
+    newProps: TProps,
+    oldProps: TProps
   ): boolean {
     // Always rerender unless we have a specific reason not to
     if (component.__internal.eventListeners.shouldUpdate.length === 0)
@@ -330,9 +337,9 @@ const lifecycleEmitters = {
       .map((cb) => cb(newProps, oldProps, component))
       .some(Boolean);
   },
-  afterRender<Props extends {}>(
-    component: Component<Props>,
-    props: Props,
+  afterRender<TProps extends object = object>(
+    component: Component<TProps>,
+    props: TProps,
     previousNode: ChildNode | undefined
   ) {
     component.__internal.eventListeners.afterRender.forEach((cb) =>
@@ -346,16 +353,16 @@ const lifecycleEmitters = {
  * listeners. You may pass it around your application and to 3rd-party libraries
  * to build reusable logic.
  */
-export class Component<Props extends {} = {}> {
+export class Component<TProps extends object = object> {
   /** @internal */
-  public __internal: ComponentInternal<Props>;
+  public __internal: ComponentInternal<TProps>;
 
   /**
    * @params methods The render method is mandatory. It receives your current
    * props and returns JSX that Forgo will render to the page. Other methods are
    * optional. See the forgojs.org for more details.
    */
-  constructor(registeredMethods: ForgoComponentMethods<Props>) {
+  constructor(registeredMethods: ForgoComponentMethods<TProps>) {
     this.__internal = {
       registeredMethods,
       unmounted: false,
@@ -369,29 +376,29 @@ export class Component<Props extends {} = {}> {
     };
   }
 
-  public update(props?: Props) {
+  public update(props?: TProps) {
     // TODO: When we do our next breaking change, there's no reason for this to
     // return anything, but we need to leave the behavior in while we have our
     // compatibility layer.
     return rerender(this.__internal.element, props);
   }
 
-  public mount(listener: ComponentEventListeners<Props>["mount"][number]) {
+  public mount(listener: ComponentEventListeners<TProps>["mount"][number]) {
     this.__internal.eventListeners["mount"].push(listener as any);
   }
 
-  public unmount(listener: ComponentEventListeners<Props>["unmount"][number]) {
+  public unmount(listener: ComponentEventListeners<TProps>["unmount"][number]) {
     this.__internal.eventListeners["unmount"].push(listener as any);
   }
 
   public shouldUpdate(
-    listener: ComponentEventListeners<Props>["shouldUpdate"][number]
+    listener: ComponentEventListeners<TProps>["shouldUpdate"][number]
   ) {
     this.__internal.eventListeners["shouldUpdate"].push(listener as any);
   }
 
   public afterRender(
-    listener: ComponentEventListeners<Props>["afterRender"][number]
+    listener: ComponentEventListeners<TProps>["afterRender"][number]
   ) {
     this.__internal.eventListeners["afterRender"].push(listener as any);
   }
@@ -402,15 +409,17 @@ export class Component<Props extends {} = {}> {
  */
 export function createElement<TProps extends ForgoElementProps & { key?: any }>(
   type: string | ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>,
-  props: TProps
+  props: TProps,
+  ...args: any[]
 ) {
   props = props ?? {};
   props.children =
-    arguments.length > 3
-      ? flatten(Array.from(arguments).slice(2))
-      : arguments.length === 3
-      ? flatten(arguments[2])
+    args.length > 1
+      ? flatten(Array.from(args))
+      : args.length === 1
+      ? flatten(args[0])
       : undefined;
+
   const key = props.key ?? undefined;
   return { type, props, key, __is_forgo_element__: true };
 }
@@ -424,7 +433,7 @@ export const h = createElement;
 */
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
-    if (!node.__forgo?.deleted) {
+    if (node.__forgo === undefined || node.__forgo.deleted === false) {
       return value(e);
     }
   };
@@ -469,7 +478,11 @@ export function createForgoInstance(customEnv: any) {
     }
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
-      return renderNonElement(forgoNode, insertionOptions, statesAwaitingAttach);
+      return renderNonElement(
+        forgoNode,
+        insertionOptions,
+        statesAwaitingAttach
+      );
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
@@ -890,7 +903,7 @@ export function createForgoInstance(customEnv: any) {
       }
       // shouldUpdate() returned false
       else {
-        let indexOfNode = findNodeIndex(
+        const indexOfNode = findNodeIndex(
           insertionOptions.parentElement.childNodes,
           componentState.component.__internal.element.node
         );
@@ -1009,7 +1022,7 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  function renderComponentAndRemoveStaleNodes<TProps extends {}>(
+  function renderComponentAndRemoveStaleNodes<TProps extends object = object>(
     forgoNode: ForgoNode,
     insertionOptions: SearchableNodeInsertionOptions,
     statesToAttach: NodeAttachedComponentState<any>[],
@@ -1271,7 +1284,7 @@ export function createForgoInstance(customEnv: any) {
           } else {
             const stateOnCurrentNode = getExistingForgoState(x);
             return (
-              !stateOnCurrentNode.components[i] ||
+              stateOnCurrentNode.components[i] === undefined ||
               stateOnCurrentNode.components[i].component !== state.component
             );
           }
@@ -1358,7 +1371,7 @@ export function createForgoInstance(customEnv: any) {
           //  we don't match it with an unkeyed forgo element
           if (
             node.tagName.toLowerCase() === forgoElement.type &&
-            !stateOnNode?.key
+            (stateOnNode === undefined || stateOnNode.key === undefined)
           ) {
             return { found: true, index: i };
           }
@@ -1376,7 +1389,7 @@ export function createForgoInstance(customEnv: any) {
           deletedNodes.splice(i, 1);
           // Append it to the beginning of the node list.
           const firstNodeInSearchList = nodes[searchFrom];
-          if (firstNodeInSearchList) {
+          if (!isNullOrUndefined(firstNodeInSearchList)) {
             parentElement.insertBefore(node, firstNodeInSearchList);
           } else {
             parentElement.appendChild(node);
@@ -1470,9 +1483,9 @@ export function createForgoInstance(customEnv: any) {
           deletedNodes.splice(i, nodesToResurrect.length);
 
           // Append resurrected nodes to the beginning of the node list.
-          let insertBeforeNode = nodes[searchFrom];
+          const insertBeforeNode = nodes[searchFrom];
 
-          if (insertBeforeNode) {
+          if (!isNullOrUndefined(insertBeforeNode)) {
             for (const node of nodesToResurrect) {
               parentElement.insertBefore(node, insertBeforeNode);
             }
@@ -1624,11 +1637,11 @@ export function createForgoInstance(customEnv: any) {
     forgoNode: ForgoNode,
     container: Element | string | null
   ): RenderResult {
-    let parentElement = (
+    const parentElement = (
       isString(container) ? env.document.querySelector(container) : container
     ) as Element;
 
-    if (!parentElement) {
+    if (isNullOrUndefined(parentElement)) {
       throw new Error(
         `The mount() function was called on a non-element (${
           typeof container === "string" ? container : container?.tagName
@@ -1671,11 +1684,11 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function unmount(container: Element | string | null) {
-    let parentElement = (
+    const parentElement = (
       isString(container) ? env.document.querySelector(container) : container
     ) as Element;
 
-    if (!parentElement) {
+    if (isNullOrUndefined(parentElement)) {
       throw new Error(
         `The unmount() function was called on a non-element (${
           typeof container === "string" ? container : container?.tagName
@@ -1751,7 +1764,10 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.props
         )
       ) {
-        let indexOfNode = findNodeIndex(parentElement.childNodes, element.node);
+        const indexOfNode = findNodeIndex(
+          parentElement.childNodes,
+          element.node
+        );
 
         return {
           nodes: sliceNodes(
@@ -1783,7 +1799,7 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.component
         );
 
-      let nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
+      const nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
 
       const insertionOptions: SearchableNodeInsertionOptions = {
         type: "search",
@@ -1861,15 +1877,20 @@ export function createForgoInstance(customEnv: any) {
   }
 
   function createElement(
-    forgoElement: ForgoDOMElement<any>,
+    forgoElement: ForgoDOMElement<{ is?: string; xmlns?: string }>,
     parentElement: Element | undefined
   ) {
     const namespaceURI =
-      forgoElement.props.xmlns ?? forgoElement.type === "svg"
+      forgoElement.props.xmlns !== undefined
+        ? (forgoElement.props.xmlns as string)
+        : forgoElement.type === "svg"
         ? SVG_NAMESPACE
-        : parentElement && parentElement.namespaceURI;
-    if (forgoElement.props.is) {
-      return namespaceURI
+        : parentElement
+        ? parentElement.namespaceURI
+        : null;
+
+    if (forgoElement.props.is !== undefined) {
+      return namespaceURI !== null
         ? env.document.createElementNS(namespaceURI, forgoElement.type, {
             is: forgoElement.props.is,
           })
@@ -1877,7 +1898,7 @@ export function createForgoInstance(customEnv: any) {
             is: forgoElement.props.is,
           });
     } else {
-      return namespaceURI
+      return namespaceURI !== null
         ? env.document.createElementNS(namespaceURI, forgoElement.type)
         : env.document.createElement(forgoElement.type);
     }
@@ -1891,7 +1912,7 @@ export function createForgoInstance(customEnv: any) {
   };
 }
 
-const windowObject = globalThis ? globalThis : window;
+const windowObject = globalThis !== undefined ? globalThis : window;
 
 let forgoInstance = createForgoInstance({
   window: windowObject,
@@ -2062,19 +2083,19 @@ export type ForgoErrorArgs = ForgoRenderArgs & {
 
 // We export this so forgo-state & friends can publish non-breaking
 // compatibility releases
-export const legacyComponentSyntaxCompat = <Props extends {}>(
-  legacyComponent: ForgoComponent<Props>
-): Component<Props> => {
-  const mkRenderArgs = (component: Component<Props>): ForgoRenderArgs => ({
+export const legacyComponentSyntaxCompat = <TProps extends object = object>(
+  legacyComponent: ForgoComponent<TProps>
+): Component<TProps> => {
+  const mkRenderArgs = (component: Component<TProps>): ForgoRenderArgs => ({
     get element() {
       return component.__internal.element;
     },
     update(props) {
-      return component.update(props as unknown as Props);
+      return component.update(props as unknown as TProps);
     },
   });
 
-  const componentBody: ForgoComponentMethods<Props> = {
+  const componentBody: ForgoComponentMethods<TProps> = {
     render(props, component) {
       return legacyComponent.render(props, mkRenderArgs(component));
     },
@@ -2087,7 +2108,7 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
       );
     };
   }
-  const component = new Component<Props>({
+  const component = new Component<TProps>({
     ...componentBody,
   });
   if (legacyComponent.mount) {
@@ -2119,11 +2140,11 @@ export const legacyComponentSyntaxCompat = <Props extends {}>(
 /*
   Throw if component is a non-component
 */
-function assertIsComponent<Props extends {}>(
-  ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
-  component: Component<Props> | ForgoComponent<Props>,
+function assertIsComponent<TProps extends object = object>(
+  ctor: ForgoNewComponentCtor<TProps> | ForgoComponentCtor<TProps>,
+  component: Component<TProps> | ForgoComponent<TProps>,
   warnOnLegacySyntax: boolean
-): Component<Props> {
+): Component<TProps> {
   if (!(component instanceof Component) && Reflect.has(component, "render")) {
     if (warnOnLegacySyntax) {
       console.warn(
@@ -2145,6 +2166,12 @@ function assertIsComponent<Props extends {}>(
   }
 
   return component;
+}
+
+function isNullOrUndefined<T>(
+  value: T | null | undefined
+): value is null | undefined {
+  return value === null || value === undefined;
 }
 
 function isString(val: unknown): val is string {
@@ -2228,7 +2255,10 @@ export * as JSX from "./jsxTypes.js";
 // within a namespace without using import aliases.
 import * as JSXTypes from "./jsxTypes.js";
 // The createElement namespace exists so that users can set their TypeScript
-// jsxFactory to createElement instead of forgo.createElement.
+// jsxFactory to createElement instead of forgo.createElement.// eslint-disable-next-line @typescript-eslint/no-namespace
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace createElement {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   export import JSX = JSXTypes;
 }
