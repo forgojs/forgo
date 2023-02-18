@@ -149,10 +149,9 @@ Here's how the API looks when using TypeScript (which is optional):
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor } from "forgo";
 
 // The constructor generic type accepts the shape of your component's props
-const HelloWorld: ForgoNewComponentCtor<{ name: string }> = () => {
+const HelloWorld = () => {
   return new forgo.Component({
     render({ name }) {
       return <p>Hello, {name}!</p>;
@@ -200,12 +199,11 @@ _If you're handy with TypeScript, [we'd love a PR to infer the types!](https://g
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor } from "forgo";
 
 interface HelloWorldProps {
   name: string;
 }
-const HelloWorld: ForgoNewComponentCtor<HelloWorldProps> = () => {
+const HelloWorld = () => {
   const component = new forgo.Component<HelloWorldProps>({
     render({ name }) {
       return <p>Hello, {name}!</p>;

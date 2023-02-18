@@ -11,9 +11,7 @@ type ComponentProps = {
 
 export type Wrapping = "DIV" | "NONE" | "FRAGMENT";
 
-const ComponentReturningWrappedPrimitive: forgo.ForgoNewComponentCtor<
-  ComponentProps
-> = (_props: ComponentProps) => {
+const ComponentReturningWrappedPrimitive = (_props: ComponentProps) => {
   return new forgo.Component<ComponentProps>({
     render(props: ComponentProps) {
       return <div id="mydiv">{props.value}</div>;
@@ -21,9 +19,7 @@ const ComponentReturningWrappedPrimitive: forgo.ForgoNewComponentCtor<
   });
 };
 
-const ComponentReturningPrimitive: forgo.ForgoNewComponentCtor<
-  ComponentProps
-> = (_props: ComponentProps) => {
+const ComponentReturningPrimitive = (_props: ComponentProps) => {
   return new forgo.Component<ComponentProps>({
     render(props: ComponentProps) {
       return props.value;
@@ -31,9 +27,7 @@ const ComponentReturningPrimitive: forgo.ForgoNewComponentCtor<
   });
 };
 
-const ComponentReturningPrimitiveInFragment: forgo.ForgoNewComponentCtor<
-  ComponentProps
-> = (_props: ComponentProps) => {
+const ComponentReturningPrimitiveInFragment = (_props: ComponentProps) => {
   return new forgo.Component<ComponentProps>({
     render(props: ComponentProps) {
       return <>{props.value}</>;
