@@ -25,7 +25,7 @@ export type ForgoDOMElementProps = {
 // set Forgo-only attributes that don't make sense to appear in the DOM
 const suppressedAttributes = ["ref", "dangerouslySetInnerHTML"];
 
-export type ForgoLegacyComponentCtor<TProps extends object> = (
+export type ForgoSimpleComponentCtor<TProps extends object> = (
   props: TProps & ForgoElementBaseProps
 ) => ForgoLegacyComponent<TProps>;
 
@@ -110,7 +110,7 @@ export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 */
 export type NodeAttachedComponentState<TProps extends ForgoElementBaseProps> = {
   key?: any;
-  ctor: ForgoNewComponentCtor<TProps> | ForgoLegacyComponentCtor<TProps>;
+  ctor: ForgoNewComponentCtor<TProps> | ForgoSimpleComponentCtor<TProps>;
   component: Component<TProps>;
   props: TProps;
   nodes: ChildNode[];
@@ -419,7 +419,7 @@ export function createElement<
   type:
     | string
     | ForgoNewComponentCtor<TProps>
-    | ForgoLegacyComponentCtor<TProps>,
+    | ForgoSimpleComponentCtor<TProps>,
   props: TProps,
   ...args: any[]
 ) {
@@ -2164,7 +2164,7 @@ export const legacyComponentSyntaxCompat = <TProps extends object>(
   Throw if component is a non-component
 */
 function assertIsComponent<TProps extends object>(
-  ctor: ForgoNewComponentCtor<TProps> | ForgoLegacyComponentCtor<TProps>,
+  ctor: ForgoNewComponentCtor<TProps> | ForgoSimpleComponentCtor<TProps>,
   component: Component<TProps> | ForgoLegacyComponent<TProps>
 ): Component<TProps> {
   if (!(component instanceof Component) && Reflect.has(component, "render")) {

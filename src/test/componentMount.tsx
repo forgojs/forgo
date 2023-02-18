@@ -3,8 +3,6 @@ import should from "should";
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
 
-import type { ForgoNewComponentCtor } from "../index.js";
-
 const componentFactory = () => {
   const state: {
     parentEl: forgo.ForgoRef<HTMLDivElement>;

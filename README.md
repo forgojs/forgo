@@ -149,10 +149,9 @@ Here's how the API looks when using TypeScript (which is optional):
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor } from "forgo";
 
 // The constructor generic type accepts the shape of your component's props
-const HelloWorld: ForgoNewComponentCtor<{ name: string }> = () => {
+const HelloWorld = () => {
   return new forgo.Component({
     render({ name }) {
       return <p>Hello, {name}!</p>;
@@ -169,48 +168,42 @@ Generic props can also be used:
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor, Component } from "forgo";
 
 // Props have to be assigned to the initial props for TSX to recognize the generic
 type ListProps<T extends string | number> = {
-  data: T[],
-  render: (item: T) => Component
-}
+  data: T[];
+};
 
-const List = <T extends string | number> = (
-  initial: ListProps<T>
-): Component<ListProps<T>> => new forgo.Component<ListProps<T>>({
-  render(props) {
-    return (
-      <ul>
-        {props.data.map(item => props.render(item))}
-      </ul>
-  }
-});
+const List = <T extends string | number>(initial: ListProps<T>) =>
+  new forgo.Component<ListProps<T>>({
+    render(props) {
+      return (
+        <ul>
+          {props.data.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+      );
+    },
+  });
 
-const App: ForgoNewComponentCtor = () => new forgo.Component({
-  render(props) {
-    return (
-      <List
-        data={[1, '2', 3]}
-        // item: number | string
-        render={item => <li>{item}</li>}
-      />
-    )
-  }
-})
+const App = () =>
+  new forgo.Component({
+    render(props) {
+      return <List data={[1, "2", 3]} />;
+    },
+  });
 ```
 
 _If you're handy with TypeScript, [we'd love a PR to infer the types!](https://github.com/forgojs/forgo/issues/68)_
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor } from "forgo";
 
 interface HelloWorldProps {
   name: string;
 }
-const HelloWorld: ForgoNewComponentCtor<HelloWorldProps> = () => {
+const HelloWorld = () => {
   const component = new forgo.Component<HelloWorldProps>({
     render({ name }) {
       return <p>Hello, {name}!</p>;

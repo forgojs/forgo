@@ -52,9 +52,7 @@ function componentFactory() {
     foo: string;
     forceUpdate?: boolean;
   }
-  const TestComponent: forgo.ForgoNewComponentCtor<TestComponentProps> = (
-    _props
-  ) => {
+  const TestComponent = (_props: TestComponentProps) => {
     const component = new forgo.Component<TestComponentProps>({
       render(...args) {
         state.render.push({ key: "render", args });
@@ -105,7 +103,7 @@ function componentFactory() {
    * We use the wrapper to have a way for tests to unmount the actual component
    * we're testing
    */
-  const Wrapper: forgo.ForgoNewComponentCtor<WrapperProps> = () => {
+  const Wrapper = (props: WrapperProps) => {
     const wrapper = new forgo.Component<WrapperProps>({
       render(props) {
         if (props.unmount) return <p>Unmounted!</p>;
@@ -222,7 +220,7 @@ export default function () {
       let afterRender: Props | null = null;
       let shouldUpdate: Props | null = null;
 
-      const LegacyComponent: forgo.ForgoLegacyComponentCtor<Props> = () => {
+      const LegacyComponent: forgo.ForgoSimpleComponentCtor<Props> = () => {
         return {
           mount(props) {
             mounted = props;
@@ -248,7 +246,8 @@ export default function () {
         renderChild: boolean;
       }
       let component: forgo.Component<ParentProps>;
-      const ParentComponent: forgo.ForgoNewComponentCtor<ParentProps> = () => {
+
+      const ParentComponent = (initialProps: ParentProps) => {
         component = new forgo.Component<ParentProps>({
           render({ renderChild }) {
             if (renderChild) return <LegacyComponent foo={1} />;

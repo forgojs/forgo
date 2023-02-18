@@ -2,7 +2,7 @@ import should from "should";
 
 import * as forgo from "../index.js";
 import { run } from "./componentRunner.js";
-import type { ForgoRef, ForgoNewComponentCtor } from "../index.js";
+import type { ForgoRef } from "../index.js";
 
 // We should only call those pendingMounts after a component renders, not after
 // elements render. I guess? Or maybe, only after component || array renders?
