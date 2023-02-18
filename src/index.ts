@@ -36,6 +36,7 @@ export type ForgoNewComponentCtor<TProps extends object> = (
 export type ForgoElementArg = {
   node?: ChildNode;
   componentIndex: number;
+  nodeIndex: number;
 };
 
 /*
@@ -117,16 +118,24 @@ export type NodeAttachedComponentState<TProps extends ForgoElementBaseProps> = {
   isMounted: boolean;
 };
 
+export type ForgoKeyType = string | number;
+
 /*
   This is the state data structure which gets stored on a node.  
   See explanation for NodeAttachedComponentState<TProps>
 */
 export type NodeAttachedState = {
-  key?: string | number;
+  key?: ForgoKeyType;
   props?: { [key: string]: any };
   components: NodeAttachedComponentState<any>[];
   style?: { [key: string]: any };
   deleted?: boolean;
+  lookups: {
+    keyedComponentNodes: Map<ForgoKeyType, ChildNode[]>;
+    newlyAddedKeyedComponentNodes: Map<ForgoKeyType, ChildNode[]>;
+    keyedElementNodes: Map<ForgoKeyType, ChildNode>;
+    newlyAddedKeyedElementNodes: Map<ForgoKeyType, ChildNode>;
+  };
 };
 
 // CSS types lifted from preact.
@@ -172,7 +181,7 @@ export type DetachedNodeInsertionOptions = {
  * before creating a new node.
  */
 export type SearchableNodeInsertionOptions = {
-  type: "new-component";
+  type: "attached";
   /**
    * The element that holds the previously-rendered version of this component
    */
@@ -378,6 +387,7 @@ export class Component<TProps extends object> {
       },
       element: {
         componentIndex: MISSING_COMPONENT_INDEX,
+        nodeIndex: MISSING_NODE_INDEX,
       },
     };
   }
@@ -554,7 +564,7 @@ export function createForgoInstance(customEnv: any) {
       undefined;
 
     // We have to find a node to replace.
-    if (insertionOptions.type === "new-component") {
+    if (insertionOptions.type === "attached") {
       const childNodes = insertionOptions.parentElement.childNodes;
 
       // If we're searching in a list, we replace if the current node is a text node.
@@ -672,7 +682,7 @@ export function createForgoInstance(customEnv: any) {
           const { nodes: nodesAfterRender } = internalRender(
             forgoChild,
             {
-              type: "new-component",
+              type: "attached",
               parentElement,
               currentNodeIndex: lastRenderedNodeIndex,
               length: parentElement.childNodes.length - lastRenderedNodeIndex,
@@ -858,7 +868,7 @@ export function createForgoInstance(customEnv: any) {
           () => {
             // Create new node insertion options.
             const newInsertionOptions: NodeInsertionOptions = {
-              type: "new-component",
+              type: "attached",
               currentNodeIndex: insertionOptions.currentNodeIndex,
               length: updatedComponentState.nodes.length,
               parentElement: insertionOptions.parentElement,
@@ -938,7 +948,7 @@ export function createForgoInstance(customEnv: any) {
             insertionOptions.type === "detached"
               ? insertionOptions
               : {
-                  type: "new-component",
+                  type: "attached",
                   currentNodeIndex: insertionOptions.currentNodeIndex,
                   length: mountOnPreExistingDOM ? insertionOptions.length : 0,
                   parentElement: insertionOptions.parentElement,
@@ -1621,6 +1631,7 @@ export function createForgoInstance(customEnv: any) {
 
       // Now attach the internal forgo state.
       const state: NodeAttachedState = {
+        ...existingState,
         key: forgoNode.key,
         props: forgoNode.props,
         components: statesAwaitingAttach,
@@ -1631,6 +1642,12 @@ export function createForgoInstance(customEnv: any) {
       // Now attach the internal forgo state.
       const state: NodeAttachedState = {
         components: statesAwaitingAttach,
+        lookups: {
+          keyedComponentNodes: new Map(),
+          newlyAddedKeyedComponentNodes: new Map(),
+          newlyAddedKeyedElementNodes: new Map(),
+          keyedElementNodes: new Map(),
+        },
       };
 
       setForgoState(node, state);
@@ -1665,7 +1682,7 @@ export function createForgoInstance(customEnv: any) {
     const result = internalRender(
       forgoNode,
       {
-        type: "new-component",
+        type: "attached",
         currentNodeIndex: 0,
         length: parentElement.childNodes.length,
         parentElement,
@@ -1809,7 +1826,7 @@ export function createForgoInstance(customEnv: any) {
       const nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
 
       const insertionOptions: SearchableNodeInsertionOptions = {
-        type: "new-component",
+        type: "attached",
         currentNodeIndex: nodeIndex,
         length: originalComponentState.nodes.length,
         parentElement,
@@ -2023,10 +2040,21 @@ function isForgoFragment(node: ForgoNode): node is ForgoFragment {
 /*
   Get the state (NodeAttachedState) saved into an element.
 */
-export function getForgoState(node: ChildNode): NodeAttachedState | undefined {
+export function getForgoState(node: ChildNode): NodeAttachedState {
+  if (node.__forgo === undefined) {
+    node.__forgo = {
+      props: {},
+      components: [],
+      lookups: {
+        keyedComponentNodes: new Map(),
+        newlyAddedKeyedComponentNodes: new Map(),
+        keyedElementNodes: new Map(),
+        newlyAddedKeyedElementNodes: new Map(),
+      },
+    };
+  }
   return node.__forgo;
 }
-
 /*
   Same as above, but throws if undefined. (Caller must make sure.)
 */
