@@ -2184,7 +2184,7 @@ function assertIsComponent<Props extends object = object>(
   if (!(component instanceof Component) && Reflect.has(component, "render")) {
     if (warnOnLegacySyntax) {
       console.warn(
-        "Legacy component syntax is deprecated since v3.2.0 and will be removed in v5.0. The affected component was found here:"
+        "Legacy component syntax is deprecated in v3.2.0 and will be removed in v4.0. The affected component was found here:"
       );
       // Minification mangles component names so we have to settle for a
       // stacktrace.
