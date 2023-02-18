@@ -36,7 +36,6 @@ export type ForgoNewComponentCtor<Props extends object = object> = (
 
 export type ForgoElementArg = {
   node?: ChildNode;
-  nodeIndex: number;
   componentIndex: number;
 };
 
@@ -398,7 +397,7 @@ export class Component<Props extends object = object> {
         unmount: [],
         shouldUpdate: [],
       },
-      element: { componentIndex: -1, nodeIndex: -1 },
+      element: { componentIndex: -1 },
     };
   }
 
@@ -572,17 +571,9 @@ export function createForgoInstance(customEnv: any) {
         const nextNode = childNodes[insertionOptions.currentNodeIndex];
         insertionOptions.parentElement.insertBefore(node, nextNode ?? null);
       }
-
-      syncAttrsAndState(
-        forgoNode,
-        node,
-        insertionOptions.currentNodeIndex,
-        true,
-        pendingAttachStates
-      );
-    } else {
-      syncAttrsAndState(forgoNode, node, -1, true, pendingAttachStates);
     }
+
+    syncAttrsAndState(forgoNode, node, true, pendingAttachStates);
 
     return {
       nodes: [node],
@@ -703,7 +694,6 @@ export function createForgoInstance(customEnv: any) {
       syncAttrsAndState(
         forgoElement,
         targetElement,
-        insertionOptions.currentNodeIndex,
         false,
         pendingAttachStates
       );
@@ -750,27 +740,9 @@ export function createForgoInstance(customEnv: any) {
 
       if (parentElement) {
         parentElement.insertBefore(newElement, oldNode ?? null);
-
-        syncAttrsAndState(
-          forgoElement,
-          newElement,
-          insertionOptions.type === "search"
-            ? insertionOptions.currentNodeIndex
-            : findNodeIndex(parentElement.childNodes, newElement, 0),
-          true,
-          pendingAttachStates
-        );
-      } else {
-        syncAttrsAndState(
-          forgoElement,
-          newElement,
-          insertionOptions.type === "search"
-            ? insertionOptions.currentNodeIndex
-            : -1,
-          true,
-          pendingAttachStates
-        );
       }
+
+      syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
 
       renderChildNodes(newElement);
 
@@ -905,8 +877,18 @@ export function createForgoInstance(customEnv: any) {
       }
       // shouldUpdate() returned false
       else {
+        const indexOfNode = findNodeIndex(
+          insertionOptions.parentElement.childNodes,
+          componentState.component.__internal.element.node,
+          insertionOptions.currentNodeIndex
+        );
+
         return {
-          nodes: componentState.nodes,
+          nodes: sliceNodes(
+            insertionOptions.parentElement.childNodes,
+            indexOfNode,
+            indexOfNode + componentState.nodes.length
+          ),
         };
       }
     }
@@ -973,14 +955,8 @@ export function createForgoInstance(customEnv: any) {
           const componentStateAttached =
             nodeAttachedState.components[indexOfNewComponentState];
           componentStateAttached.nodes = renderResult.nodes;
-
-          setNodeInfo(
-            componentStateAttached.component.__internal.element,
-            renderResult.nodes[0],
-            insertionOptions.type !== "detached"
-              ? insertionOptions.currentNodeIndex
-              : -1
-          );
+          componentStateAttached.component.__internal.element.node =
+            renderResult.nodes[0];
 
           lifecycleEmitters.mount(
             newComponentState.component,
@@ -1086,11 +1062,8 @@ export function createForgoInstance(customEnv: any) {
       const componentStateAttached =
         nodeAttachedState.components[componentIndex];
       componentStateAttached.nodes = renderResult.nodes;
-      setNodeInfo(
-        componentStateAttached.component.__internal.element,
-        renderResult.nodes[0],
-        insertionOptions.currentNodeIndex
-      );
+      componentStateAttached.component.__internal.element.node =
+        renderResult.nodes[0];
     }
 
     return renderResult;
@@ -1518,7 +1491,6 @@ export function createForgoInstance(customEnv: any) {
   function syncAttrsAndState(
     forgoNode: ForgoNode,
     node: ChildNode,
-    nodeIndex: number,
     isNewNode: boolean,
     pendingAttachStates: ComponentState<object>[]
   ) {
@@ -1526,12 +1498,9 @@ export function createForgoInstance(customEnv: any) {
     // components are already holding a reference to the args object.
     // They don't know yet that args.element.node is undefined.
     if (pendingAttachStates.length > 0) {
-      setNodeInfo(
-        pendingAttachStates[pendingAttachStates.length - 1].component.__internal
-          .element,
-        node,
-        nodeIndex
-      );
+      pendingAttachStates[
+        pendingAttachStates.length - 1
+      ].component.__internal.element.node = node;
     }
 
     if (isForgoElement(forgoNode)) {
@@ -1773,16 +1742,8 @@ export function createForgoInstance(customEnv: any) {
     element: ForgoElementArg | undefined,
     props?: any
   ): RenderResult {
-    if (element === undefined || element.node === undefined) {
+    if (!element?.node) {
       throw new Error(`Missing node information in rerender() argument.`);
-    }
-
-    if (element.node.parentElement !== null && element.nodeIndex === -1) {
-      element.nodeIndex = findNodeIndex(
-        element.node.parentElement.childNodes,
-        element.node,
-        0
-      );
     }
 
     const parentElement = element.node.parentElement;
@@ -1800,11 +1761,17 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.props
         )
       ) {
+        const indexOfNode = findNodeIndex(
+          parentElement.childNodes,
+          element.node,
+          0
+        );
+
         return {
           nodes: sliceNodes(
             parentElement.childNodes,
-            element.nodeIndex,
-            element.nodeIndex + originalComponentState.nodes.length
+            indexOfNode,
+            indexOfNode + originalComponentState.nodes.length
           ),
         };
       }
@@ -1831,9 +1798,15 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.component
         );
 
+      const nodeIndex = findNodeIndex(
+        parentElement.childNodes,
+        element.node,
+        0
+      );
+
       const insertionOptions: DOMNodeInsertionOptions = {
         type: "search",
-        currentNodeIndex: element.nodeIndex,
+        currentNodeIndex: nodeIndex,
         length: originalComponentState.nodes.length,
         parentElement,
       };
@@ -1879,11 +1852,7 @@ export function createForgoInstance(customEnv: any) {
         // Fix up the root node for parent.
         if (parentState.nodes.length > 0) {
           // The root node might have changed, so fix it up just in case.
-          setNodeInfo(
-            parentState.component.__internal.element,
-            parentState.nodes[0],
-            indexOfOriginalRootNode
-          );
+          parentState.component.__internal.element.node = parentState.nodes[0];
         }
       }
 
@@ -2268,6 +2237,10 @@ function isKeyedElement<
   return t.key !== undefined;
 }
 
+/**
+ * node.childNodes is some funky data structure that's not really not an array,
+ * so we can't just slice it like normal
+ */
 function sliceNodes(
   nodes: ArrayLike<ChildNode>,
   from: number,
@@ -2282,15 +2255,10 @@ function sliceNodes(
   return result;
 }
 
-function setNodeInfo(
-  element: ForgoElementArg,
-  node: ChildNode,
-  nodeIndex: number
-) {
-  element.node = node;
-  element.nodeIndex = nodeIndex;
-}
-
+/**
+ * node.childNodes is some funky data structure that's not really not an array,
+ * so we can't just search for the value like normal
+ */
 function findNodeIndex(
   nodes: ArrayLike<ChildNode>,
   element: ChildNode | undefined,
