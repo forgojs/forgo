@@ -169,36 +169,31 @@ Generic props can also be used:
 
 ```tsx
 import * as forgo from "forgo";
-import type { ForgoNewComponentCtor, Component } from "forgo";
 
 // Props have to be assigned to the initial props for TSX to recognize the generic
 type ListProps<T extends string | number> = {
-  data: T[],
-  render: (item: T) => Component
-}
+  data: T[];
+};
 
-const List = <T extends string | number> = (
-  initial: ListProps<T>
-): Component<ListProps<T>> => new forgo.Component<ListProps<T>>({
-  render(props) {
-    return (
-      <ul>
-        {props.data.map(item => props.render(item))}
-      </ul>
-  }
-});
+const List = <T extends string | number>(initial: ListProps<T>) =>
+  new forgo.Component<ListProps<T>>({
+    render(props) {
+      return (
+        <ul>
+          {props.data.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+      );
+    },
+  });
 
-const App: ForgoNewComponentCtor = () => new forgo.Component({
-  render(props) {
-    return (
-      <List
-        data={[1, '2', 3]}
-        // item: number | string
-        render={item => <li>{item}</li>}
-      />
-    )
-  }
-})
+const App = () =>
+  new forgo.Component({
+    render(props) {
+      return <List data={[1, "2", 3]} />;
+    },
+  });
 ```
 
 _If you're handy with TypeScript, [we'd love a PR to infer the types!](https://github.com/forgojs/forgo/issues/68)_
