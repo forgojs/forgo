@@ -198,20 +198,6 @@ export type NodeInsertionOptions =
   | SearchableNodeInsertionOptions;
 
 /*
-  These are child nodes which have been removed from the tree (within the 
-  render-child loop for an element).
-  When a compatible node is found for rendering, the previous incompatible nodes
-  are removed from the parent. But when a keyed child node has been removed earlier
-  in the loop and a later forgoElement has the same key, it needs to be 
-  reattached and it should no longer be unmounted. Otherwise, at the end of the cycle 
-  all unloadable nodes are fully unmounted. 
-*/
-export type UnloadableChildNode = {
-  node: ChildNode;
-  pendingAttachStates: NodeAttachedComponentState<any>[];
-};
-
-/*
   Result of the render functions.
 */
 export type RenderResult = {
@@ -463,13 +449,13 @@ export function createForgoInstance(customEnv: any) {
     * @param insertionOptions Which nodes need to be replaced by the new
     * node(s), or whether the new node should be created detached from the DOM
     * (without replacement). 
-    * @param pendingAttachStates The list of Component State objects which will
+    * @param statesAwaitingAttach The list of Component State objects which will
     * be attached to the element.
     */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // Array of Nodes, or Fragment
@@ -477,20 +463,20 @@ export function createForgoInstance(customEnv: any) {
       return renderArray(
         flatten(forgoNode),
         insertionOptions,
-        pendingAttachStates,
+        statesAwaitingAttach,
         mountOnPreExistingDOM
       );
     }
     // Primitive Nodes
     else if (!isForgoElement(forgoNode)) {
-      return renderNonElement(forgoNode, insertionOptions, pendingAttachStates);
+      return renderNonElement(forgoNode, insertionOptions, statesAwaitingAttach);
     }
     // HTML Element
     else if (isForgoDOMElement(forgoNode)) {
       return renderDOMElement(
         forgoNode,
         insertionOptions,
-        pendingAttachStates,
+        statesAwaitingAttach,
         mountOnPreExistingDOM
       );
     }
@@ -499,7 +485,7 @@ export function createForgoInstance(customEnv: any) {
       const result = renderComponent(
         forgoNode,
         insertionOptions,
-        pendingAttachStates,
+        statesAwaitingAttach,
         mountOnPreExistingDOM
       );
       // In order to prevent issue #50 (Fragments having mount() called before
@@ -531,7 +517,7 @@ export function createForgoInstance(customEnv: any) {
   function renderNonElement(
     forgoNode: ForgoNonEmptyPrimitiveNode,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    statesAwaitingAttach: NodeAttachedComponentState<any>[]
   ): RenderResult {
     // Text and comment nodes will always be recreated (why?).
     let node: ChildNode;
@@ -573,12 +559,12 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    syncAttrsAndState(forgoNode, node, true, pendingAttachStates);
-    unmountComponents(pendingAttachStates, oldComponentState);
+    syncAttrsAndState(forgoNode, node, true, statesAwaitingAttach);
+    unmountComponents(statesAwaitingAttach, oldComponentState);
     return {
       nodes: [node],
       pendingMounts: [
-        () => mountComponents(pendingAttachStates, oldComponentState),
+        () => mountComponents(statesAwaitingAttach, oldComponentState),
       ],
     };
   }
@@ -599,7 +585,7 @@ export function createForgoInstance(customEnv: any) {
   function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoDOMElement<TProps>,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     // We need to create a detached node
@@ -741,17 +727,17 @@ export function createForgoInstance(customEnv: any) {
         forgoElement,
         targetElement,
         false,
-        pendingAttachStates
+        statesAwaitingAttach
       );
 
       renderChildNodes(targetElement);
-      unloadMarkedNodes(targetElement, pendingAttachStates);
-      unmountComponents(pendingAttachStates, oldComponentState);
+      unloadMarkedNodes(targetElement, statesAwaitingAttach);
+      unmountComponents(statesAwaitingAttach, oldComponentState);
 
       return {
         nodes: [targetElement],
         pendingMounts: [
-          () => mountComponents(pendingAttachStates, oldComponentState),
+          () => mountComponents(statesAwaitingAttach, oldComponentState),
         ],
       };
     }
@@ -770,14 +756,14 @@ export function createForgoInstance(customEnv: any) {
         forgoElement.props.ref.value = newElement;
       }
 
-      syncAttrsAndState(forgoElement, newElement, true, pendingAttachStates);
+      syncAttrsAndState(forgoElement, newElement, true, statesAwaitingAttach);
 
       renderChildNodes(newElement);
-      unmountComponents(pendingAttachStates, undefined);
+      unmountComponents(statesAwaitingAttach, undefined);
 
       return {
         nodes: [newElement],
-        pendingMounts: [() => mountComponents(pendingAttachStates, undefined)],
+        pendingMounts: [() => mountComponents(statesAwaitingAttach, undefined)],
       };
     }
   }
@@ -789,11 +775,11 @@ export function createForgoInstance(customEnv: any) {
   function renderComponent<TProps extends ForgoDOMElementProps>(
     forgoElement: ForgoComponentElement<TProps>,
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
     // boundary: ForgoComponent<any> | undefined
   ): RenderResult {
-    const componentIndex = pendingAttachStates.length;
+    const componentIndex = statesAwaitingAttach.length;
 
     if (
       // We need to create a detached node.
@@ -808,7 +794,7 @@ export function createForgoInstance(customEnv: any) {
         insertionOptions.parentElement,
         insertionOptions.currentNodeIndex,
         insertionOptions.length,
-        pendingAttachStates.length
+        statesAwaitingAttach.length
       );
 
       if (searchResult.found) {
@@ -860,7 +846,7 @@ export function createForgoInstance(customEnv: any) {
             updatedComponentState.component
           );
 
-        const statesToAttach = pendingAttachStates.concat(
+        const statesToAttach = statesAwaitingAttach.concat(
           updatedComponentState
         );
 
@@ -934,7 +920,7 @@ export function createForgoInstance(customEnv: any) {
         : undefined;
 
       // Create new component state
-      // ... and push it to pendingAttachStates
+      // ... and push it to statesAwaitAttach[]
       const newComponentState: NodeAttachedComponentState<any> = {
         key: forgoElement.key,
         ctor,
@@ -944,7 +930,7 @@ export function createForgoInstance(customEnv: any) {
         isMounted: false,
       };
 
-      const statesToAttach = pendingAttachStates.concat(newComponentState);
+      const statesToAttach = statesAwaitingAttach.concat(newComponentState);
 
       return withErrorBoundary(
         forgoElement.props,
@@ -1101,7 +1087,7 @@ export function createForgoInstance(customEnv: any) {
   function renderArray(
     forgoNodes: ForgoNode[],
     insertionOptions: NodeInsertionOptions,
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const flattenedNodes = flatten(forgoNodes);
@@ -1129,7 +1115,7 @@ export function createForgoInstance(customEnv: any) {
         const renderResult = internalRender(
           forgoNode,
           newInsertionOptions,
-          pendingAttachStates,
+          statesAwaitingAttach,
           mountOnPreExistingDOM
         );
 
@@ -1200,7 +1186,7 @@ export function createForgoInstance(customEnv: any) {
     */
   function unloadMarkedNodes(
     parentElement: Element,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    statesAwaitingAttach: NodeAttachedComponentState<any>[]
   ) {
     const deletedNodes = getDeletedNodes(parentElement);
 
@@ -1209,7 +1195,7 @@ export function createForgoInstance(customEnv: any) {
       if (state) {
         state.deleted = true;
         const oldComponentStates = state.components;
-        unmountComponents(pendingAttachStates, oldComponentStates);
+        unmountComponents(statesAwaitingAttach, oldComponentStates);
       }
     }
     clearDeletedNodes(parentElement);
@@ -1252,7 +1238,7 @@ export function createForgoInstance(customEnv: any) {
    * The `unmount` lifecycle event will be called.
    */
   function unmountComponents(
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
     if (!oldComponentStates) return;
@@ -1261,7 +1247,7 @@ export function createForgoInstance(customEnv: any) {
     let parentHasUnmounted = false;
 
     const indexOfFirstIncompatibleState = findIndexOfFirstIncompatibleState(
-      pendingAttachStates,
+      statesAwaitingAttach,
       oldComponentStates
     );
 
@@ -1305,22 +1291,22 @@ export function createForgoInstance(customEnv: any) {
    * state[].
    */
   function mountComponents(
-    pendingAttachStates: NodeAttachedComponentState<any>[],
+    statesAwaitingAttach: NodeAttachedComponentState<any>[],
     oldComponentStates: NodeAttachedComponentState<any>[] | undefined
   ) {
     const indexOfFirstIncompatibleState = oldComponentStates
       ? findIndexOfFirstIncompatibleState(
-          pendingAttachStates,
+          statesAwaitingAttach,
           oldComponentStates
         )
       : 0;
 
     for (
       let i = indexOfFirstIncompatibleState;
-      i < pendingAttachStates.length;
+      i < statesAwaitingAttach.length;
       i++
     ) {
-      const state = pendingAttachStates[i];
+      const state = statesAwaitingAttach[i];
       // This function is called in every syncStateAndProps() call, so many of
       // the calls will be for already-mounted components. Only fire the mount
       // lifecycle events when appropriate.
@@ -1505,20 +1491,20 @@ export function createForgoInstance(customEnv: any) {
 
   /**
    * Attach props from the forgoElement onto the DOM node. We also need to attach
-   * states from pendingAttachStates
+   * states from statesAwaitingAttach
    */
   function syncAttrsAndState(
     forgoNode: ForgoNode,
     node: ChildNode,
     isNewNode: boolean,
-    pendingAttachStates: NodeAttachedComponentState<any>[]
+    statesAwaitingAttach: NodeAttachedComponentState<any>[]
   ) {
     // We have to inject node into the args object.
     // components are already holding a reference to the args object.
     // They don't know yet that args.element.node is undefined.
-    if (pendingAttachStates.length > 0) {
-      pendingAttachStates[
-        pendingAttachStates.length - 1
+    if (statesAwaitingAttach.length > 0) {
+      statesAwaitingAttach[
+        statesAwaitingAttach.length - 1
       ].component.__internal.element.node = node;
     }
 
@@ -1617,14 +1603,14 @@ export function createForgoInstance(customEnv: any) {
       const state: NodeAttachedState = {
         key: forgoNode.key,
         props: forgoNode.props,
-        components: pendingAttachStates,
+        components: statesAwaitingAttach,
       };
 
       setForgoState(node, state);
     } else {
       // Now attach the internal forgo state.
       const state: NodeAttachedState = {
-        components: pendingAttachStates,
+        components: statesAwaitingAttach,
       };
 
       setForgoState(node, state);
