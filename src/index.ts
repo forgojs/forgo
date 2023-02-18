@@ -879,8 +879,7 @@ export function createForgoInstance(customEnv: any) {
       else {
         const indexOfNode = findNodeIndex(
           insertionOptions.parentElement.childNodes,
-          componentState.component.__internal.element.node,
-          insertionOptions.currentNodeIndex
+          componentState.component.__internal.element.node
         );
 
         return {
@@ -1145,13 +1144,12 @@ export function createForgoInstance(customEnv: any) {
   ): ChildNode[] {
     const removedNodes: ChildNode[] = [];
 
-    if (to > from) {
-      const parentElement = nodes[from].parentElement as HTMLElement;
+    const nodesToRemove = sliceNodes(nodes, from, to);
+    if (nodesToRemove.length) {
+      const parentElement = nodesToRemove[0].parentElement as HTMLElement;
       const parentState = getForgoState(parentElement);
 
-      for (let i = from; i < to; i++) {
-        const node = nodes[from];
-
+      for (const node of nodesToRemove) {
         const state = getForgoState(node);
 
         // Remove the node from DOM
@@ -1237,7 +1235,9 @@ export function createForgoInstance(customEnv: any) {
     parentState.lookups.deletedUnkeyedNodes = [];
   }
 
-  function findReplacementCandidateForElement<Props extends object>(
+  function findReplacementCandidateForElement<
+    Props extends object
+  >(
     forgoElement: ForgoDOMElement<Props>,
     insertionOptions: DOMNodeInsertionOptions,
     pendingAttachStates: ComponentState<object>[]
@@ -1262,7 +1262,9 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    function findReplacementCandidateForKeyedElement<Props extends object>(
+    function findReplacementCandidateForKeyedElement<
+      Props extends object
+    >(
       forgoElement: WithRequiredProperty<ForgoDOMElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       pendingAttachStates: ComponentState<object>[]
@@ -1334,7 +1336,9 @@ export function createForgoInstance(customEnv: any) {
       }
     }
 
-    function findReplacementCandidateForUnKeyedElement<Props extends object>(
+    function findReplacementCandidateForUnKeyedElement<
+      Props extends object
+    >(
       forgoElement: Omit<ForgoDOMElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       pendingAttachStates: ComponentState<object>[]
@@ -1386,12 +1390,16 @@ export function createForgoInstance(customEnv: any) {
     }
   }
 
-  function findReplacementCandidateForComponent<Props extends object>(
+  function findReplacementCandidateForComponent<
+    Props extends object
+  >(
     forgoComponent: ForgoComponentElement<Props>,
     insertionOptions: DOMNodeInsertionOptions,
     componentIndex: number
   ): boolean {
-    function findReplacementCandidateForKeyedComponent<Props extends object>(
+    function findReplacementCandidateForKeyedComponent<
+      Props extends object
+    >(
       forgoComponent: WithRequiredProperty<ForgoComponentElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       componentIndex: number
@@ -1438,7 +1446,9 @@ export function createForgoInstance(customEnv: any) {
       return false;
     }
 
-    function findReplacementCandidateForUnkeyedComponent<Props extends object>(
+    function findReplacementCandidateForUnkeyedComponent<
+      Props extends object
+    >(
       forgoComponent: Omit<ForgoComponentElement<Props>, "key">,
       insertionOptions: DOMNodeInsertionOptions,
       componentIndex: number
@@ -1763,8 +1773,7 @@ export function createForgoInstance(customEnv: any) {
       ) {
         const indexOfNode = findNodeIndex(
           parentElement.childNodes,
-          element.node,
-          0
+          element.node
         );
 
         return {
@@ -1798,11 +1807,7 @@ export function createForgoInstance(customEnv: any) {
           originalComponentState.component
         );
 
-      const nodeIndex = findNodeIndex(
-        parentElement.childNodes,
-        element.node,
-        0
-      );
+      const nodeIndex = findNodeIndex(parentElement.childNodes, element.node);
 
       const insertionOptions: DOMNodeInsertionOptions = {
         type: "search",
@@ -2051,7 +2056,10 @@ export type ForgoComponent<Props extends object = object> = {
     props: Props & ForgoElementProps,
     args: ForgoAfterRenderArgs
   ) => void;
-  error?: (props: Props & ForgoElementProps, args: ForgoErrorArgs) => ForgoNode;
+  error?: (
+    props: Props & ForgoElementProps,
+    args: ForgoErrorArgs
+  ) => ForgoNode;
   mount?: (props: Props & ForgoElementProps, args: ForgoRenderArgs) => void;
   remount?: (props: Props & ForgoElementProps, args: ForgoRenderArgs) => void;
   unmount?: (props: Props & ForgoElementProps, args: ForgoRenderArgs) => void;
@@ -2167,7 +2175,9 @@ function deriveComponentKey(key: ForgoKeyType, componentIndex: number) {
   Throw if component is a non-component
 */
 function assertIsComponent<Props extends object = object>(
-  ctor: ForgoNewComponentCtor<Props> | ForgoComponentCtor<Props>,
+  ctor:
+    | ForgoNewComponentCtor<Props>
+    | ForgoComponentCtor<Props>,
   component: Component<Props> | ForgoComponent<Props>,
   warnOnLegacySyntax: boolean
 ): Component<Props> {
@@ -2246,13 +2256,7 @@ function sliceNodes(
   from: number,
   to: number
 ): ChildNode[] {
-  const result: ChildNode[] = [];
-
-  for (let i = from; i < to; i++) {
-    result.push(nodes[i]);
-  }
-
-  return result;
+  return Array.from(nodes).slice(from, to);
 }
 
 /**
@@ -2261,17 +2265,10 @@ function sliceNodes(
  */
 function findNodeIndex(
   nodes: ArrayLike<ChildNode>,
-  element: ChildNode | undefined,
-  startSearchFrom: number
+  element: ChildNode | undefined
 ): number {
-  if (element === undefined) return -1;
-
-  for (let i = startSearchFrom; i < nodes.length; i++) {
-    if (nodes[i] === element) {
-      return i;
-    }
-  }
-  return -1;
+  if (!element) return -1;
+  return Array.from(nodes).indexOf(element);
 }
 
 /* JSX Types */
