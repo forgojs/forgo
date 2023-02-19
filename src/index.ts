@@ -12,13 +12,13 @@ export type ForgoRef<T> = {
 */
 export type ForgoElementBaseProps = {
   children?: ForgoNode | ForgoNode[];
-  ref?: ForgoRef<Element>;
 };
 
 // DOM elements have the additional fields
 export type ForgoDOMElementProps = {
   xmlns?: string;
   dangerouslySetInnerHTML?: { __html: string };
+  ref?: ForgoRef<Element>;
 } & ForgoElementBaseProps;
 
 // Since we'll set any attribute the user passes us, we need to be sure not to
@@ -609,6 +609,10 @@ export function createForgoInstance(customEnv: any) {
       insertionPointer.parentElement
     );
 
+    if (forgoElement.props.ref) {
+      forgoElement.props.ref.value = newElement;
+    }
+
     syncAttrsAndState(forgoElement, newElement, true, statesAwaitingAttach);
 
     insertionPointer.parentElement.insertBefore(
@@ -626,12 +630,13 @@ export function createForgoInstance(customEnv: any) {
       insertionPointer.parentElement.innerHTML =
         forgoElement.props.dangerouslySetInnerHTML.__html;
     } else {
-      renderChildNodes(forgoElement, insertionPointer, mountOnPreExistingDOM);
+      renderChildNodes(
+        forgoElement,
+        newInsertionPointer,
+        mountOnPreExistingDOM
+      );
     }
 
-    if (forgoElement.props.ref) {
-      forgoElement.props.ref.value = newElement;
-    }
     return {
       nodes: [newElement],
     };
@@ -689,15 +694,20 @@ export function createForgoInstance(customEnv: any) {
         [],
         mountOnPreExistingDOM
       );
-      renderedNodes.push.apply(renderedNodes, renderResult.nodes);
+      renderedNodes.push(...renderResult.nodes);
     }
 
     // Now what all childNodes have been rendered, we can unmount leftover nodes.
-    let unloadable: ChildNode | null = renderedNodes[renderedNodes.length - 1];
+    if (
+      renderedNodes.length < insertionPointer.parentElement.childNodes.length
+    ) {
+      let nodeToUnload: ChildNode | null =
+        insertionPointer.parentElement.childNodes[renderedNodes.length];
 
-    while (unloadable !== null) {
-      unloadNode(unloadable);
-      unloadable = unloadable.nextSibling;
+      while (nodeToUnload !== null) {
+        unloadNode(nodeToUnload);
+        nodeToUnload = nodeToUnload.nextSibling;
+      }
     }
   }
 
@@ -802,8 +812,8 @@ export function createForgoInstance(customEnv: any) {
         newComponentState.component.__internal.element.node =
           renderResult.nodes[0];
 
-        // No previousNode since new component. So just args and not
-        // afterRenderArgs.
+        lifecycleEmitters.mount(component, forgoComponentElement.props);
+
         lifecycleEmitters.afterRender(
           component,
           forgoComponentElement.props,
@@ -879,11 +889,6 @@ export function createForgoInstance(customEnv: any) {
         mountOnPreExistingDOM
       );
 
-      lifecycleEmitters.mount(
-        updatedComponentState.component,
-        forgoComponentElement.props
-      );
-
       lifecycleEmitters.afterRender(
         updatedComponentState.component,
         forgoComponentElement.props,
@@ -894,17 +899,8 @@ export function createForgoInstance(customEnv: any) {
     }
     // shouldUpdate() returned false
     else {
-      const indexOfNode = findNodeIndex(
-        insertionPointer.parentElement.childNodes,
-        componentState.component.__internal.element.node
-      );
-
       return {
-        nodes: sliceNodes(
-          insertionPointer.parentElement.childNodes,
-          indexOfNode,
-          indexOfNode + componentState.nodes.length
-        ),
+        nodes: componentState.nodes,
       };
     }
   }
@@ -1046,24 +1042,25 @@ export function createForgoInstance(customEnv: any) {
     componentIndex: number
   ): insertionPointer is NodeInsertionPointer<ChildNode, ChildNode> {
     // Check if a keyed component is mounted on this node.
-    function nodeBelongsToKeyedComponent(node: ChildNode) {
-      const stateOnNode = getForgoState(node);
-      if (stateOnNode && stateOnNode.components.length > componentIndex) {
-        if (
-          stateOnNode.components[componentIndex].ctor === forgoElement.type &&
-          stateOnNode.components[componentIndex].key === forgoElement.key
-        ) {
-          return true;
-        }
-      }
-      return false;
-    }
+
     if (insertionPointer.currentNode !== undefined) {
       let node: ChildNode | null = insertionPointer.currentNode;
 
       while (node !== null) {
-        if (nodeBelongsToKeyedComponent(node)) {
-          return true;
+        const stateOnNode = getForgoState(node);
+        if (stateOnNode.components.length > componentIndex) {
+          if (
+            stateOnNode.components[componentIndex].ctor === forgoElement.type &&
+            stateOnNode.components[componentIndex].key === forgoElement.key
+          ) {
+            if (node !== insertionPointer.currentNode) {
+              insertionPointer.parentElement.insertBefore(
+                insertionPointer.currentNode,
+                node
+              );
+            }
+            return true;
+          }
         }
 
         if (node === insertionPointer.lastNode) {
@@ -1102,7 +1099,7 @@ export function createForgoInstance(customEnv: any) {
       const existingState = getForgoState(node);
 
       // Remove props which don't exist
-      if (existingState && existingState.props) {
+      if (existingState.props) {
         for (const key in existingState.props) {
           if (!(key in forgoNode.props)) {
             if (key !== "children" && key !== "xmlns") {
@@ -1251,19 +1248,6 @@ export function createForgoInstance(customEnv: any) {
       mountOnPreExistingDOM
     );
 
-    // Remove excess nodes.
-    // This happens when there are pre-existing nodes.
-    if (result.nodes.length < parentElement.childNodes.length) {
-      const nodesToRemove = sliceNodes(
-        parentElement.childNodes,
-        result.nodes.length,
-        parentElement.childNodes.length
-      );
-      for (const node of nodesToRemove) {
-        node.remove();
-      }
-    }
-
     return result;
   }
 
@@ -1294,7 +1278,13 @@ export function createForgoInstance(customEnv: any) {
     node: ChildNode;
     nodes: ChildNode[];
   } {
-    throw new Error("Not implemented.");
+    const insertionPointer: NodeInsertionPointer = {
+      parentElement: env.document.createElement("div"),
+      currentNode: undefined,
+      lastNode: undefined,
+    };
+    const renderResult = internalRender(forgoNode, insertionPointer, [], false);
+    return { node: renderResult.nodes[0], nodes: renderResult.nodes };
   }
 
   /**
@@ -1711,6 +1701,7 @@ export * as JSX from "./jsxTypes.js";
 // export within createElement because I can't find a way to export a namespace
 // within a namespace without using import aliases.
 import * as JSXTypes from "./jsxTypes.js";
+import { currentNode } from "./test/afterRender/script.js";
 // The createElement namespace exists so that users can set their TypeScript
 // jsxFactory to createElement instead of forgo.createElement.// eslint-disable-next-line @typescript-eslint/no-namespace
 
