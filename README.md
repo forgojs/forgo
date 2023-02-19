@@ -67,7 +67,7 @@ const HelloWorld = () => {
   return new forgo.Component({
     render() {
       return <p>Hello, world!</p>;
-    }
+    },
   });
 };
 ```
@@ -124,11 +124,12 @@ const ClickCounter = (initialProps) => {
         <div>
           <p>Hello, {firstName}!</p>
           <button type="button" onclick={onclick}>
-            The button has been clicked {clickCounter} times in {seconds} seconds
+            The button has been clicked {clickCounter} times in {seconds}{" "}
+            seconds
           </button>
         </div>
       );
-    }
+    },
   });
 
   // You can add callbacks to react to lifecycle events,
@@ -145,37 +146,17 @@ const ClickCounter = (initialProps) => {
 };
 ```
 
-Here's how the API looks when using TypeScript (which is optional):
+We have full typescript support as well. Here's an example.
 
 ```tsx
-import * as forgo from "forgo";
+import { createElement, Fragment, mount, Component } from "forgo";
 
-// The constructor generic type accepts the shape of your component's props
-const HelloWorld = () => {
-  return new forgo.Component({
-    render({ name }) {
-      return <p>Hello, {name}!</p>;
-    }
-  });
-};
-```
-
-If you assign the component to a variable (such as when adding lifecycle event
-handlers), you'll need to annotate the generic types on both the constructor and
-the component. 
-
-Generic props can also be used:
-
-```tsx
-import * as forgo from "forgo";
-
-// Props have to be assigned to the initial props for TSX to recognize the generic
 type ListProps<T extends string | number> = {
   data: T[];
 };
 
-const List = <T extends string | number>(initial: ListProps<T>) =>
-  new forgo.Component<ListProps<T>>({
+function List<T extends string | number>(initial: ListProps<T>) {
+  return new Component<ListProps<T>>({
     render(props) {
       return (
         <ul>
@@ -186,34 +167,14 @@ const List = <T extends string | number>(initial: ListProps<T>) =>
       );
     },
   });
+}
 
 const App = () =>
-  new forgo.Component({
+  new Component({
     render(props) {
       return <List data={[1, "2", 3]} />;
     },
   });
-```
-
-_If you're handy with TypeScript, [we'd love a PR to infer the types!](https://github.com/forgojs/forgo/issues/68)_
-
-```tsx
-import * as forgo from "forgo";
-
-interface HelloWorldProps {
-  name: string;
-}
-const HelloWorld = () => {
-  const component = new forgo.Component<HelloWorldProps>({
-    render({ name }) {
-      return <p>Hello, {name}!</p>;
-    }
-  });
-
-  component.mount(() => console.log("Mounted!"));
-
-  return component;
-};
 ```
 
 ## Launching your components when the page loads
@@ -270,7 +231,7 @@ const Parent = (_initialProps) => {
           <Greeter firstName="Kai" />
         </div>
       );
-    }
+    },
   });
 };
 
@@ -278,7 +239,7 @@ const Greeter = (_initialProps) => {
   return new forgo.Component({
     render(props, _component) {
       return <div>Hello {props.firstName}</div>;
-    }
+    },
   });
 };
 ```
@@ -291,7 +252,7 @@ const MyComponent = () => {
   return new forgo.Component({
     render(_props) {
       return <NumberComponent myNumber={2} />;
-    }
+    },
   });
 };
 ```
@@ -354,10 +315,12 @@ const MyComponent = (_initialProps) => {
       return (
         <div>
           <input type="text" ref={myInputRef} />
-          <button type="button" onclick={onClick}>Click me!</button>
+          <button type="button" onclick={onClick}>
+            Click me!
+          </button>
         </div>
       );
-    }
+    },
   });
 };
 ```
@@ -389,7 +352,7 @@ const Component = (_initialProps) => {
           <input type="text" oninput={onInput} />
         </div>
       );
-    }
+    },
   });
 };
 ```
@@ -428,7 +391,7 @@ const Parent = () => {
           ))}
         </div>
       );
-    }
+    },
   });
 };
 
@@ -471,7 +434,7 @@ export const InboxComponent = (_initialProps) => {
           </ul>
         </div>
       );
-    }
+    },
   });
 
   component.mount(async () => {
@@ -497,7 +460,7 @@ const Greeter = (_initialProps) => {
   const component = new forgo.Component({
     render(_props, _component) {
       return <div id="hello">Hello {props.firstName}</div>;
-    }
+    },
   });
 
   component.mount((_props, _component) => {
@@ -526,7 +489,7 @@ const Greeter = (_initialProps) => {
   const component = new forgo.Component({
     render(props, _component) {
       return <div>Hello {props.firstName}</div>;
-    }
+    },
   });
 
   component.unmount((props, _component) => {
@@ -560,7 +523,7 @@ const Greeter = (_initialProps) => {
   const component = new forgo.Component({
     render(props, component) {
       return <div>Hello {props.firstName}</div>;
-    }
+    },
   });
 
   component.shouldUpdate((newProps, oldProps) => {
@@ -568,7 +531,7 @@ const Greeter = (_initialProps) => {
   });
 
   return component;
-}
+};
 ```
 
 ## Error handling
@@ -587,9 +550,9 @@ const BadComponent = () => {
   return new forgo.Component({
     render() {
       throw new Error("Some error occurred :(");
-    }
+    },
   });
-}
+};
 
 // The first ancestor with an error() method defined will catch the error
 const Parent = (initialProps) => {
@@ -607,9 +570,9 @@ const Parent = (initialProps) => {
           Error in {props.name}: {error.message}
         </p>
       );
-    }
+    },
   });
-}
+};
 ```
 
 ## The AfterRender Event
@@ -626,7 +589,7 @@ const Greeter = (_initialProps) => {
   const component = new forgo.Component({
     render(props, component) {
       return <div id="hello">Hello {props.firstName}</div>;
-    }
+    },
   });
 
   component.afterRender((_props, previousNode, _component) => {
@@ -658,9 +621,9 @@ const TodoList = (initialProps) => {
           Add a Todo
         </button>
       );
-    }
+    },
   });
-}
+};
 ```
 
 `component.update()` may optionally receive new props to use in the render.
@@ -707,9 +670,9 @@ const App = () => {
             matchUrl("/about", () => <AboutPage />)}
         </Router>
       );
-    }
+    },
   });
-}
+};
 ```
 
 ## Application State Management
@@ -729,7 +692,7 @@ const mailboxState = defineState({
   messages: [],
   drafts: [],
   spam: [],
-  unread: 0
+  unread: 0,
 });
 
 // A Forgo component that should react to state changes
@@ -739,7 +702,9 @@ const MailboxView = () => {
       if (mailboxState.messages.length > 0) {
         return (
           <div>
-            {mailboxState.messages.map((m) => <p>{m}</p>)}
+            {mailboxState.messages.map((m) => (
+              <p>{m}</p>
+            ))}
           </div>
         );
       }
@@ -749,7 +714,7 @@ const MailboxView = () => {
           <p>There are no messages for {mailboxState.username}.</p>
         </div>
       );
-    }
+    },
   });
 
   component.mount(() => updateInbox());
@@ -760,7 +725,7 @@ const MailboxView = () => {
   // even handlers
   bindToStates([mailboxState], component);
   return component;
-}
+};
 
 async function updateInbox() {
   const data = await fetchInboxData();
@@ -792,9 +757,9 @@ const App = () => {
           <LazyComponent title="It's that easy :D" />
         </Suspense>
       );
-    }
+    },
   });
-}
+};
 ```
 
 ## Integrating Forgo into an existing app
@@ -818,9 +783,9 @@ const LiveScores = () => {
   return new forgo.Component({
     render(props) {
       return <p id="live-scores">Top score is {props.topscore}</p>;
-    }
+    },
   });
-}
+};
 
 // Mount it on a DOM node usual
 window.addEventListener("load", () => {
@@ -849,9 +814,9 @@ const MyComponent = () => {
   return new forgo.Component({
     render() {
       return <div>Hello world</div>;
-    }
+    },
   });
-}
+};
 
 // Get the html (string) and serve it via koa, express etc.
 const html = render(<MyComponent />);
@@ -892,7 +857,7 @@ const App = () => {
           </p>
         </div>
       );
-    }
+    },
   });
 
   component.mount(() => {
@@ -1079,6 +1044,7 @@ If you find issues, please file a bug on
 via Twitter (@forgojs).
 
 ### Migrating
+
 Forgo components are now instances of the `Component` class, rather than
 freestanding object values. The `new Component` constructor accepts an object
 holding a `render()` an optional `error()` method. All other methods have been
@@ -1097,6 +1063,7 @@ The `afterRender` lifecycle event now receives the `previousNode` as a function
 parameter, instead of a property on `args`.
 
 Before:
+
 ```jsx
 const MyComponent = () => {
   return {
@@ -1107,15 +1074,16 @@ const MyComponent = () => {
     shouldUpdate() {},
     afterRender() {},
   };
-}
+};
 ```
 
 After:
+
 ```jsx
 const MyComponent = () => {
   const component = new Component({
     render() {},
-    error() {}
+    error() {},
   });
 
   component.mount(() => {});
@@ -1124,7 +1092,7 @@ const MyComponent = () => {
   component.afterRender(() => {});
 
   return component;
-}
+};
 ```
 
 ## Breaking changes in 2.0
