@@ -55,45 +55,47 @@ function componentFactory() {
 }
 
 export default function () {
-  it("rerender may change root node", async () => {
-    const { Component, state } = componentFactory();
-    const { document } = await run(() => <Component />);
+  describe("rerender may change root node", () => {
+    it("rerender may change root node", async () => {
+      const { Component, state } = componentFactory();
+      const { document } = await run(() => <Component />);
 
-    const node1FirstPass = document.getElementById("node1");
-    const node2FirstPass = document.getElementById("node2");
-    const stateFirstPass = forgo.getForgoState(
-      node2FirstPass as ChildNode
-    ) as forgo.NodeAttachedState;
-    should.equal(
-      stateFirstPass.components[0].component.__internal.element.node,
-      node1FirstPass
-    );
-    should.equal(
-      stateFirstPass.components[1].component.__internal.element.node,
-      node1FirstPass
-    );
-    should.equal(
-      stateFirstPass.components[2].component.__internal.element.node,
-      node1FirstPass
-    );
+      const node1FirstPass = document.getElementById("node1");
+      const node2FirstPass = document.getElementById("node2");
+      const stateFirstPass = forgo.getForgoState(
+        node2FirstPass as ChildNode
+      ) as forgo.NodeAttachedState;
+      should.equal(
+        stateFirstPass.components[0].component.__internal.element.node,
+        node1FirstPass
+      );
+      should.equal(
+        stateFirstPass.components[1].component.__internal.element.node,
+        node1FirstPass
+      );
+      should.equal(
+        stateFirstPass.components[2].component.__internal.element.node,
+        node1FirstPass
+      );
 
-    state.component!.update();
+      state.component!.update();
 
-    const node2SecondPass = document.getElementById("node2");
-    const stateSecondPass = forgo.getForgoState(
-      node2SecondPass as ChildNode
-    ) as forgo.NodeAttachedState;
-    should.equal(
-      stateSecondPass.components[0].component.__internal.element.node,
-      node2SecondPass
-    );
-    should.equal(
-      stateSecondPass.components[1].component.__internal.element.node,
-      node2SecondPass
-    );
-    should.equal(
-      stateSecondPass.components[2].component.__internal.element.node,
-      node2SecondPass
-    );
+      const node2SecondPass = document.getElementById("node2");
+      const stateSecondPass = forgo.getForgoState(
+        node2SecondPass as ChildNode
+      ) as forgo.NodeAttachedState;
+      should.equal(
+        stateSecondPass.components[0].component.__internal.element.node,
+        node2SecondPass
+      );
+      should.equal(
+        stateSecondPass.components[1].component.__internal.element.node,
+        node2SecondPass
+      );
+      should.equal(
+        stateSecondPass.components[2].component.__internal.element.node,
+        node2SecondPass
+      );
+    });
   });
 }

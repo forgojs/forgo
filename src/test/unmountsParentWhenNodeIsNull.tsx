@@ -48,32 +48,34 @@ const componentFactory = () => {
 };
 
 export default function () {
-  it("does not unmount parent when render returns null", async () => {
-    const { Component, state } = componentFactory();
+  describe("not unmount parent when render returns null", () => {
+    it("does not unmount parent when render returns null", async () => {
+      const { Component, state } = componentFactory();
 
-    await run(() => <Component />);
+      await run(() => <Component />);
 
-    // Make sure that the first render mounts the component, even if it renders
-    // null
-    should.equal(state.hasMounted, true);
-    should.equal(state.hasUnmounted, false);
-    should.equal(state.renderedElement!.nodeType, 8);
+      // Make sure that the first render mounts the component, even if it renders
+      // null
+      should.equal(state.hasMounted, true);
+      should.equal(state.hasUnmounted, false);
+      should.equal(state.renderedElement!.nodeType, 8);
 
-    const internalState = state.internalState;
-    // Sanity checks for rendering the randomized state
-    should.equal(typeof internalState, "string");
-    should.notEqual(internalState, "");
+      const internalState = state.internalState;
+      // Sanity checks for rendering the randomized state
+      should.equal(typeof internalState, "string");
+      should.notEqual(internalState, "");
 
-    state.shouldRenderNull = true;
-    state.update();
-    should.equal(state.hasUnmounted, false);
-    should.equal(state.renderedElement!.nodeType, 8);
+      state.shouldRenderNull = true;
+      state.update();
+      should.equal(state.hasUnmounted, false);
+      should.equal(state.renderedElement!.nodeType, 8);
 
-    state.shouldRenderNull = false;
-    state.update();
-    should.equal(state.hasUnmounted, false);
-    should.equal(state.renderedElement!.nodeType, 1);
-    const newInternalState = state.internalState;
-    should.equal(newInternalState, internalState);
+      state.shouldRenderNull = false;
+      state.update();
+      should.equal(state.hasUnmounted, false);
+      should.equal(state.renderedElement!.nodeType, 1);
+      const newInternalState = state.internalState;
+      should.equal(newInternalState, internalState);
+    });
   });
 }

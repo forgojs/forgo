@@ -4,23 +4,25 @@ import { mountCounter, renderAgain, run } from "./script.js";
 import should from "should";
 
 export default function () {
-  it("runs mount only once when child renders fragment", async () => {
-    const dom = new JSDOM(htmlFile(), {
-      runScripts: "outside-only",
-      resources: "usable",
-    });
-    const window = dom.window;
-
-    run(dom);
-
-    await new Promise<void>((resolve) => {
-      window.addEventListener("load", () => {
-        resolve();
+  describe("runs mount only once when child renders fragment", () => {
+    it("runs mount only once when child renders fragment", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
       });
+      const window = dom.window;
+
+      run(dom);
+
+      await new Promise<void>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve();
+        });
+      });
+
+      renderAgain();
+
+      should.equal(mountCounter, 1);
     });
-
-    renderAgain();
-
-    should.equal(mountCounter, 1);
   });
 }

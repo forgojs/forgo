@@ -28,14 +28,16 @@ function componentFactory() {
 }
 
 export default function () {
-  it("skips render if shouldUpdate() returns false", async () => {
-    const { Component, state } = componentFactory();
-    const { document } = await run(() => <Component />);
+  describe("shouldUpdate", () => {
+    it("skips render if shouldUpdate() returns false", async () => {
+      const { Component, state } = componentFactory();
+      const { document } = await run(() => <Component />);
 
-    state.component!.update();
-    state.component!.update();
-    state.component!.update();
+      state.component!.update();
+      state.component!.update();
+      state.component!.update();
 
-    document.body.innerHTML.should.containEql("Counter is 1");
+      document.body.innerHTML.should.containEql("Counter is 1");
+    });
   });
 }

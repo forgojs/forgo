@@ -38,16 +38,18 @@ function componentFactory() {
 }
 
 export default function () {
-  it("simple server side rendering", async () => {
-    const dom = new JSDOM(htmlFile("<div><p>Hello1</p><p>World1</p></div>"), {
-      runScripts: "outside-only",
-      resources: "usable",
+  describe("server side rendering", () => {
+    it("simple server side rendering", async () => {
+      const dom = new JSDOM(htmlFile("<div><p>Hello1</p><p>World1</p></div>"), {
+        runScripts: "outside-only",
+        resources: "usable",
+      });
+
+      const { Component } = componentFactory();
+      const { document } = await run(() => <Component />, dom);
+
+      document.body.innerHTML.should.not.containEql("World1");
+      document.body.innerHTML.should.containEql("World2");
     });
-
-    const { Component } = componentFactory();
-    const { document } = await run(() => <Component />, dom);
-
-    document.body.innerHTML.should.not.containEql("World1");
-    document.body.innerHTML.should.containEql("World2");
   });
 }

@@ -61,14 +61,16 @@ function componentFactory() {
 }
 
 export default function () {
-  it("rerender may unmount parents", async () => {
-    const { Component, state } = componentFactory();
-    await run(() => <Component />);
+  describe("unmounting parents", () => {
+    it("rerender may unmount parents", async () => {
+      const { Component, state } = componentFactory();
+      await run(() => <Component />);
 
-    state.component!.update();
+      state.component!.update();
 
-    should.equal(state.parent1Unmounted, true);
-    should.equal(state.parent2Unmounted, true);
-    should.equal(state.childUnmounted, true);
+      should.equal(state.parent1Unmounted, true);
+      should.equal(state.parent2Unmounted, true);
+      should.equal(state.childUnmounted, true);
+    });
   });
 }

@@ -49,28 +49,30 @@ const componentFactory = () => {
 };
 
 export default function () {
-  it("runs unmount() when a child component goes away", async () => {
-    const { state, TestComponent } = componentFactory();
-    await run(() => <TestComponent />);
+  describe("component unmount", () => {
+    it("runs unmount() when a child component goes away", async () => {
+      const { state, TestComponent } = componentFactory();
+      await run(() => <TestComponent />);
 
-    state.component!.update();
+      state.component!.update();
 
-    should.equal(state.childUnmounts, 1);
-  });
+      should.equal(state.childUnmounts, 1);
+    });
 
-  it("unmounts the component tree when forgo.unmount() is called", async () => {
-    const { state, TestComponent } = componentFactory();
-    // Use a fragment to be sure we handle unmounting more than one root component
-    const { document } = await run(() => (
-      <>
-        <TestComponent />
-        <TestComponent />
-      </>
-    ));
+    it("unmounts the component tree when forgo.unmount() is called", async () => {
+      const { state, TestComponent } = componentFactory();
+      // Use a fragment to be sure we handle unmounting more than one root component
+      const { document } = await run(() => (
+        <>
+          <TestComponent />
+          <TestComponent />
+        </>
+      ));
 
-    forgo.unmount(document.getElementById("root")!);
-    should.equal(state.parentUnmounts, 2);
-    should.equal(state.childUnmounts, 2);
-    should.equal(document.getElementById("root")!.childNodes.length, 0);
+      forgo.unmount(document.getElementById("root")!);
+      should.equal(state.parentUnmounts, 2);
+      should.equal(state.childUnmounts, 2);
+      should.equal(document.getElementById("root")!.childNodes.length, 0);
+    });
   });
 }

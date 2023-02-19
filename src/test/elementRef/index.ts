@@ -4,21 +4,23 @@ import should from "should";
 import { inputRef, run } from "./script.js";
 
 export default function () {
-  it("attaches element refs", async () => {
-    const dom = new JSDOM(htmlFile(), {
-      runScripts: "outside-only",
-      resources: "usable",
-    });
-    const window = dom.window;
-
-    run(dom);
-
-    await new Promise<void>((resolve) => {
-      window.addEventListener("load", () => {
-        resolve();
+  describe("element refs", () => {
+    it("attaches element refs", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
       });
-    });
+      const window = dom.window;
 
-    should.equal((inputRef.value as HTMLInputElement).tagName, "INPUT");
+      run(dom);
+
+      await new Promise<void>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve();
+        });
+      });
+
+      should.equal((inputRef.value as HTMLInputElement).tagName, "INPUT");
+    });
   });
 }

@@ -38,18 +38,22 @@ function componentFactory() {
 }
 
 export default function () {
-  it("rerender may change root node on parents", async () => {
-    const { Component, state } = componentFactory();
-    await run(() => <Component />);
+  describe("rerender may change root node on parents", () => {
+    it("rerender may change root node on parents", async () => {
+      const { Component, state } = componentFactory();
+      await run(() => <Component />);
 
-    const oldId: string = (state.component!.__internal.element.node as Element)
-      .id;
-    should.equal(oldId, "node1");
+      const oldId: string = (
+        state.component!.__internal.element.node as Element
+      ).id;
+      should.equal(oldId, "node1");
 
-    state.component!.update();
+      state.component!.update();
 
-    const newId: string = (state.component!.__internal.element.node as Element)
-      .id;
-    should.equal(newId, "node2");
+      const newId: string = (
+        state.component!.__internal.element.node as Element
+      ).id;
+      should.equal(newId, "node2");
+    });
   });
 }
