@@ -13,7 +13,6 @@ function componentFactory() {
 
   const TestComponent = () => {
     let counter = 0;
-    let insertAfterRender = true;
 
     const component = new forgo.Component<{}>({
       render(_props, component) {
