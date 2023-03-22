@@ -93,29 +93,25 @@ export function runStringKey(dom: JSDOM) {
   });
 }
 
-export function runObjectKey(dom: JSDOM) {
+export function runNumericKey(dom: JSDOM) {
   window = dom.window;
   document = window.document;
   setCustomEnv({ window, document });
-
-  const keyOne = { x: 1 };
-  const keyTwo = { x: 2 };
-  const keyThree = { x: 3 };
 
   window.addEventListener("load", () => {
     mount(
       <Parent
         keys={[
           {
-            key: keyOne,
+            key: 1,
             id: "1",
           },
           {
-            key: keyTwo,
+            key: 2,
             id: "2",
           },
           {
-            key: keyThree,
+            key: 3,
             id: "3",
           },
         ]}
