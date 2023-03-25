@@ -183,7 +183,7 @@ export type ForgoEnvType = {
  * Instructs the renderer to search for an existing node to modify or replace,
  * before creating a new node.
  */
-export type ComponentAttachedNodes<
+export type NodeSearchScope<
   TCurrentNode extends ChildNode | undefined = ChildNode | undefined,
   TLastNode extends ChildNode | undefined = ChildNode | undefined
 > = {
@@ -463,7 +463,7 @@ export function createForgoInstance(customEnv: any) {
 
     * @param forgoNode The node to render. Can be any value renderable by Forgo,
     * not just DOM nodes.
-    * @param componentNodes Which nodes need to be replaced by the new
+    * @param nodeSearchScope Which nodes need to be replaced by the new
     * node(s), or whether the new node should be created detached from the DOM
     * (without replacement). 
     * @param statesAwaitingAttach The list of Component State objects which will
@@ -471,7 +471,7 @@ export function createForgoInstance(customEnv: any) {
     */
   function internalRender(
     forgoNode: ForgoNode | ForgoNode[],
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
@@ -479,7 +479,7 @@ export function createForgoInstance(customEnv: any) {
     if (Array.isArray(forgoNode)) {
       return renderArray(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -488,7 +488,7 @@ export function createForgoInstance(customEnv: any) {
     else if (isForgoFragment(forgoNode)) {
       return renderArray(
         flatten(forgoNode),
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -497,7 +497,7 @@ export function createForgoInstance(customEnv: any) {
     else if (isPrimitiveNode(forgoNode)) {
       return renderPrimitiveNode(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -506,7 +506,7 @@ export function createForgoInstance(customEnv: any) {
     else if (isForgoDOMElement(forgoNode)) {
       return renderDOMElement(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -515,7 +515,7 @@ export function createForgoInstance(customEnv: any) {
     else {
       const result = renderComponent(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -530,19 +530,19 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderPrimitiveNode(
     forgoNode: ForgoPrimitiveNode,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const matchedElement = findReplacementCandidateForPrimitiveNode(
       forgoNode,
-      componentNodes
+      nodeSearchScope
     );
 
     if (!matchedElement) {
       return addPrimitiveNode(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -558,7 +558,7 @@ export function createForgoInstance(customEnv: any) {
 
   function addPrimitiveNode(
     forgoNode: ForgoPrimitiveNode,
-    componentNodes: ComponentAttachedNodes<ChildNode | undefined>,
+    nodeSearchScope: NodeSearchScope<ChildNode | undefined>,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
@@ -570,9 +570,9 @@ export function createForgoInstance(customEnv: any) {
     }
     syncAttrsAndState(forgoNode, node, true, statesAwaitingAttach);
 
-    componentNodes.parentElement.insertBefore(
+    nodeSearchScope.parentElement.insertBefore(
       node,
-      componentNodes.currentNode ?? null
+      nodeSearchScope.currentNode ?? null
     );
 
     syncAttrsAndState(forgoNode, node, false, statesAwaitingAttach);
@@ -615,19 +615,19 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderDOMElement<TProps extends ForgoDOMElementProps>(
     forgoNode: ForgoDOMElement<TProps>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const matchedElement = findReplacementCandidateForDOMElement(
       forgoNode,
-      componentNodes
+      nodeSearchScope
     );
 
     if (!matchedElement) {
       return addDOMElement(
         forgoNode,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -646,11 +646,11 @@ export function createForgoInstance(customEnv: any) {
    */
   function addDOMElement<TProps extends ForgoDOMElementProps>(
     forgoNode: ForgoDOMElement<TProps>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
-    const newElement = createElement(forgoNode, componentNodes.parentElement);
+    const newElement = createElement(forgoNode, nodeSearchScope.parentElement);
 
     if (forgoNode.props.ref) {
       forgoNode.props.ref.value = newElement;
@@ -659,15 +659,15 @@ export function createForgoInstance(customEnv: any) {
     syncAttrsAndState(forgoNode, newElement, true, statesAwaitingAttach);
 
     if (forgoNode.props.dangerouslySetInnerHTML) {
-      componentNodes.parentElement.innerHTML =
+      nodeSearchScope.parentElement.innerHTML =
         forgoNode.props.dangerouslySetInnerHTML.__html;
     } else {
       renderChildNodes(forgoNode, newElement, mountOnPreExistingDOM);
     }
 
-    componentNodes.parentElement.insertBefore(
+    nodeSearchScope.parentElement.insertBefore(
       newElement,
-      componentNodes.currentNode ?? null
+      nodeSearchScope.currentNode ?? null
     );
 
     return {
@@ -822,14 +822,14 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderComponent<TProps extends ForgoElementBaseProps>(
     forgoComponentElement: ForgoComponentElement<TProps>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
     // boundary: ForgoComponent<any> | undefined
   ): RenderResult {
     const matchedNode = findReplacementCandidateForComponent(
       forgoComponentElement,
-      componentNodes,
+      nodeSearchScope,
       statesAwaitingAttach.length
     );
 
@@ -843,7 +843,7 @@ export function createForgoInstance(customEnv: any) {
     } else {
       return addComponent(
         forgoComponentElement,
-        componentNodes,
+        nodeSearchScope,
         statesAwaitingAttach,
         mountOnPreExistingDOM
       );
@@ -852,7 +852,7 @@ export function createForgoInstance(customEnv: any) {
 
   function addComponent<TProps extends ForgoElementBaseProps>(
     forgoComponentElement: ForgoComponentElement<TProps>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
@@ -881,7 +881,7 @@ export function createForgoInstance(customEnv: any) {
     return withErrorBoundary(
       forgoComponentElement,
       component,
-      componentNodes,
+      nodeSearchScope,
       statesToAttach,
       () => {
         // Create an element by rendering the component
@@ -893,7 +893,7 @@ export function createForgoInstance(customEnv: any) {
         // Pass it on for rendering...
         const renderResult = internalRender(
           newForgoElement,
-          componentNodes,
+          nodeSearchScope,
           statesToAttach,
           mountOnPreExistingDOM
         );
@@ -956,7 +956,7 @@ export function createForgoInstance(customEnv: any) {
 
       const previousNode = componentState.component.__internal.element.node;
 
-      const componentNodes: ComponentAttachedNodes<ChildNode> = {
+      const nodeSearchScope: NodeSearchScope<ChildNode> = {
         parentElement: node.parentElement as Element,
         currentNode: node,
         lastNode: componentState.nodes[componentState.nodes.length - 1],
@@ -965,13 +965,13 @@ export function createForgoInstance(customEnv: any) {
       const renderResult = withErrorBoundary(
         forgoComponentElement,
         updatedComponentState.component,
-        componentNodes,
+        nodeSearchScope,
         allStates,
         () => {
           // Pass it on for rendering...
           const renderResult = internalRender(
             newForgoNode,
-            componentNodes,
+            nodeSearchScope,
             allStates,
             mountOnPreExistingDOM
           );
@@ -1008,7 +1008,7 @@ export function createForgoInstance(customEnv: any) {
   function withErrorBoundary<TProps extends ForgoElementBaseProps>(
     forgoComponentElement: ForgoComponentElement<TProps>,
     component: Component<any>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesToAttach: NodeAttachedComponentState<any>[],
     exec: () => RenderResult,
     mountOnPreExistingDOM: boolean
@@ -1024,7 +1024,7 @@ export function createForgoInstance(customEnv: any) {
         );
         return internalRender(
           newForgoElement,
-          componentNodes,
+          nodeSearchScope,
           statesToAttach,
           mountOnPreExistingDOM
         );
@@ -1040,17 +1040,17 @@ export function createForgoInstance(customEnv: any) {
   */
   function renderArray(
     forgoNodes: ForgoNode[],
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     statesAwaitingAttach: NodeAttachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
     const renderResults: RenderResult = { nodes: [] };
 
-    let currentNode: ChildNode | undefined = componentNodes.currentNode;
+    let currentNode: ChildNode | undefined = nodeSearchScope.currentNode;
 
     for (const forgoNode of forgoNodes) {
-      const newComponentNodes: ComponentAttachedNodes = {
-        ...componentNodes,
+      const newComponentNodes: NodeSearchScope = {
+        ...nodeSearchScope,
         currentNode,
       };
 
@@ -1080,23 +1080,23 @@ export function createForgoInstance(customEnv: any) {
    */
   function findReplacementCandidateForPrimitiveNode(
     forgoNode: ForgoPrimitiveNode,
-    componentNodes: ComponentAttachedNodes
+    nodeSearchScope: NodeSearchScope
   ): ChildNode | undefined {
-    if (componentNodes.currentNode !== undefined) {
-      let node: ChildNode | null = componentNodes.currentNode;
+    if (nodeSearchScope.currentNode !== undefined) {
+      let node: ChildNode | null = nodeSearchScope.currentNode;
       if (forgoNode === null || forgoNode === undefined) {
         while (node !== null) {
           if (node.nodeType === COMMENT_NODE_TYPE) {
-            if (node !== componentNodes.currentNode) {
-              componentNodes.parentElement.insertBefore(
+            if (node !== nodeSearchScope.currentNode) {
+              nodeSearchScope.parentElement.insertBefore(
                 node,
-                componentNodes.currentNode
+                nodeSearchScope.currentNode
               );
             }
             return node;
           }
           // If we have reached the last node, break.
-          if (node === componentNodes.lastNode) {
+          if (node === nodeSearchScope.lastNode) {
             break;
           }
           node = node.nextSibling;
@@ -1107,16 +1107,16 @@ export function createForgoInstance(customEnv: any) {
             node.nodeType === TEXT_NODE_TYPE &&
             forgoNode.toString() === node.textContent
           ) {
-            if (node !== componentNodes.currentNode) {
-              componentNodes.parentElement.insertBefore(
+            if (node !== nodeSearchScope.currentNode) {
+              nodeSearchScope.parentElement.insertBefore(
                 node,
-                componentNodes.currentNode
+                nodeSearchScope.currentNode
               );
             }
             return node;
           }
           // If we have reached the last node, break.
-          if (node === componentNodes.lastNode) {
+          if (node === nodeSearchScope.lastNode) {
             break;
           }
           node = node.nextSibling;
@@ -1135,11 +1135,11 @@ export function createForgoInstance(customEnv: any) {
     TProps extends ForgoDOMElementProps
   >(
     forgoNode: ForgoDOMElement<TProps>,
-    componentNodes: ComponentAttachedNodes
+    nodeSearchScope: NodeSearchScope
   ): Element | undefined {
-    if (componentNodes.currentNode !== undefined) {
+    if (nodeSearchScope.currentNode !== undefined) {
       if (isForgoDOMElement(forgoNode)) {
-        let node: ChildNode | null = componentNodes.currentNode;
+        let node: ChildNode | null = nodeSearchScope.currentNode;
 
         while (node !== null) {
           if (nodeIsElement(node)) {
@@ -1151,9 +1151,9 @@ export function createForgoInstance(customEnv: any) {
               node.tagName.toLowerCase() === forgoNode.type
             ) {
               // Let's move the node up
-              componentNodes.parentElement.insertBefore(
+              nodeSearchScope.parentElement.insertBefore(
                 node,
-                componentNodes.currentNode
+                nodeSearchScope.currentNode
               );
               return node;
             } else {
@@ -1163,10 +1163,10 @@ export function createForgoInstance(customEnv: any) {
                 node.tagName.toLowerCase() === forgoNode.type &&
                 (stateOnNode === undefined || stateOnNode.key === undefined)
               ) {
-                if (componentNodes.currentNode !== node) {
-                  componentNodes.parentElement.insertBefore(
+                if (nodeSearchScope.currentNode !== node) {
+                  nodeSearchScope.parentElement.insertBefore(
                     node,
-                    componentNodes.currentNode
+                    nodeSearchScope.currentNode
                   );
                 }
                 return node;
@@ -1174,7 +1174,7 @@ export function createForgoInstance(customEnv: any) {
             }
 
             // If we have reached the last node, break.
-            if (node === componentNodes.lastNode) {
+            if (node === nodeSearchScope.lastNode) {
               break;
             }
             node = node.nextSibling;
@@ -1194,29 +1194,46 @@ export function createForgoInstance(customEnv: any) {
     TProps extends ForgoDOMElementProps
   >(
     forgoElement: ForgoComponentElement<TProps>,
-    componentNodes: ComponentAttachedNodes,
+    nodeSearchScope: NodeSearchScope,
     componentIndex: number
   ): ChildNode | undefined {
-    if (componentNodes.currentNode !== undefined) {
-      let node: ChildNode | null = componentNodes.currentNode;
+    if (nodeSearchScope.currentNode !== undefined) {
+      let node: ChildNode | null = nodeSearchScope.currentNode;
       while (node !== null) {
         const stateOnNode = getForgoState(node);
+        const nodeAttachedComponentState =
+          stateOnNode.components[componentIndex];
         if (stateOnNode.components.length > componentIndex) {
           if (
-            stateOnNode.components[componentIndex].ctor === forgoElement.type &&
-            stateOnNode.components[componentIndex].key === forgoElement.key
+            nodeAttachedComponentState.ctor === forgoElement.type &&
+            nodeAttachedComponentState.key === forgoElement.key
           ) {
-            if (node !== componentNodes.currentNode) {
-              componentNodes.parentElement.insertBefore(
+            if (node !== nodeSearchScope.currentNode) {
+              // Move the node up.
+              nodeSearchScope.parentElement.insertBefore(
                 node,
-                componentNodes.currentNode
+                nodeSearchScope.currentNode
               );
+              // A component might have rendered an array
+              // Hence we must move subsequent nodes as well.
+              if (nodeAttachedComponentState.nodes.length > 1) {
+                for (
+                  let i = 1;
+                  i < nodeAttachedComponentState.nodes.length;
+                  i++
+                ) {
+                  nodeSearchScope.parentElement.insertBefore(
+                    nodeAttachedComponentState.nodes[i],
+                    nodeSearchScope.currentNode
+                  );
+                }
+              }
             }
 
             return node;
           }
         }
-        if (node === componentNodes.lastNode) {
+        if (node === nodeSearchScope.lastNode) {
           break;
         }
 
@@ -1429,12 +1446,12 @@ export function createForgoInstance(customEnv: any) {
     node: ChildNode;
     nodes: ChildNode[];
   } {
-    const componentNodes: ComponentAttachedNodes = {
+    const nodeSearchScope: NodeSearchScope = {
       parentElement: env.document.createElement("div"),
       currentNode: undefined,
       lastNode: undefined,
     };
-    const renderResult = internalRender(forgoNode, componentNodes, [], false);
+    const renderResult = internalRender(forgoNode, nodeSearchScope, [], false);
     return { node: renderResult.nodes[0], nodes: renderResult.nodes };
   }
 
