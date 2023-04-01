@@ -982,8 +982,6 @@ export function createForgoInstance(customEnv: any) {
           componentState.component.__internal.element.node =
             renderResult.nodes[0];
 
-          // Remove stale nodes.
-
           return renderResult;
         },
         mountOnPreExistingDOM
@@ -1862,30 +1860,6 @@ function styleToString(style: any): string {
       ""
     );
   }
-}
-
-/**
- * node.childNodes is some funky data structure that's not really not an array,
- * so we can't just slice it like normal
- */
-function sliceNodes(
-  nodes: ArrayLike<ChildNode>,
-  from: number,
-  to: number
-): ChildNode[] {
-  return Array.from(nodes).slice(from, to);
-}
-
-/**
- * node.childNodes is some funky data structure that's not really not an array,
- * so we can't just search for the value like normal
- */
-function findNodeIndex(
-  nodes: ArrayLike<ChildNode>,
-  element: ChildNode | undefined
-): number {
-  if (!element) return -1;
-  return Array.from(nodes).indexOf(element);
 }
 
 /* JSX Types */
