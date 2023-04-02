@@ -34,8 +34,8 @@ export function run(dom: JSDOM) {
   document = window.document;
   setCustomEnv({ window, document });
 
-  const { node } = render(<TestComponent />);
+  const { firstNode } = render(<TestComponent />);
   window.addEventListener("load", () => {
-    document.getElementById("root")!.firstElementChild!.replaceWith(node);
+    document.getElementById("root")!.firstElementChild!.replaceWith(firstNode);
   });
 }
