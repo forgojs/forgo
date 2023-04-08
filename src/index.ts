@@ -802,12 +802,7 @@ export function createForgoInstance(customEnv: any) {
     }
 
     // Now that all childNodes have been rendered, we can unmount leftover nodes.
-    let nodeToUnload: ChildNode | null = currentNode ?? null;
-
-    while (nodeToUnload !== null) {
-      unloadNode(nodeToUnload);
-      nodeToUnload = nodeToUnload.nextSibling;
-    }
+    unloadNodeRange(currentNode, null);
   }
 
   function unloadNode(node: ChildNode) {
@@ -930,26 +925,36 @@ export function createForgoInstance(customEnv: any) {
     );
   }
 
-  function attachNodeToUnattachedComponentState<
-    T extends ForgoElementBaseProps
-  >(
-    input: UnattachedComponentState<T>,
-    firstNode: ChildNode,
-    lastNode: ChildNode
-  ) {}
+  function unloadNodeRange(
+    startNode: ChildNode | null,
+    untilNode: ChildNode | null
+  ) {
+    let nodeToUnload: ChildNode | null = startNode ?? null;
 
+    while (nodeToUnload !== untilNode && nodeToUnload !== null) {
+      unloadNode(nodeToUnload);
+      nodeToUnload = nodeToUnload.nextSibling;
+    }
+  }
+
+  // The 'isRerenderTarget' property indicates where rerender was called on this
+  // component. If so, we must clean up unused childNodes from previous
+  // rerender.
   function renderExistingComponent<TProps extends ForgoElementBaseProps>(
     forgoComponentElement: ForgoComponentElement<TProps>,
     node: ChildNode,
     statesAwaitingAttach: UnattachedComponentState<any>[],
     mountOnPreExistingDOM: boolean
   ): RenderResult {
+    // Let's keep the next node handy.
     // if statesAwaitingAttach.length = 4, then the next component (which will
     // be added further down) will be at index = 4 (ie, the 5th element)
     const componentIndex = statesAwaitingAttach.length;
 
     const state = getForgoState(node);
     const componentState = state.components[componentIndex];
+
+    const nodeAfterComponent = componentState.lastNode.nextSibling;
 
     if (
       lifecycleEmitters.shouldUpdate(
@@ -1002,6 +1007,12 @@ export function createForgoInstance(customEnv: any) {
           componentState.lastNode = renderResult.lastNode;
           componentState.component.__internal.element.node =
             renderResult.firstNode;
+
+          // Let's remove extra nodes.
+          unloadNodeRange(
+            renderResult.lastNode.nextSibling,
+            nodeAfterComponent
+          );
 
           return renderResult;
         },
@@ -1881,8 +1892,6 @@ export * as JSX from "./jsxTypes.js";
 // export within createElement because I can't find a way to export a namespace
 // within a namespace without using import aliases.
 import * as JSXTypes from "./jsxTypes.js";
-import { currentNode } from "./test/afterRender/script.js";
-import { childCounter } from "./test/rerenderChild/script.js";
 // The createElement namespace exists so that users can set their TypeScript
 // jsxFactory to createElement instead of forgo.createElement.// eslint-disable-next-line @typescript-eslint/no-namespace
 
