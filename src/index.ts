@@ -105,6 +105,10 @@ export type ForgoPrimitiveNode = ForgoNonEmptyPrimitiveNode | null | undefined;
  */
 export type ForgoNode = ForgoPrimitiveNode | ForgoElement<any> | ForgoFragment;
 
+export interface RenderedComponent extends NodeAttachedComponentState<any> {}
+
+export type RenderedNode = ChildNode | RenderedComponent;
+
 /*
   Forgo stores Component state on the element on which it is mounted.
 
@@ -129,8 +133,7 @@ export type UnattachedComponentState<TProps extends ForgoElementBaseProps> = {
 
 export type NodeAttachedComponentState<TProps extends ForgoElementBaseProps> =
   UnattachedComponentState<TProps> & {
-    firstNode: ChildNode;
-    lastNode: ChildNode;
+    nodes: RenderedNode[];
   };
 
 export type ForgoKeyType = string | number;
@@ -202,8 +205,7 @@ export type NodeSearchScope<
   Result of the render functions.
 */
 export type RenderResult = {
-  firstNode: ChildNode;
-  lastNode: ChildNode;
+  nodes: RenderedNode[];
 };
 
 export type DeletedNode = {
@@ -593,8 +595,7 @@ export function createForgoInstance(customEnv: any) {
     syncAttrsAndState(forgoNode, node, false, statesAwaitingAttach);
 
     return {
-      firstNode: node,
-      lastNode: node,
+      nodes: [node],
     };
   }
 
@@ -612,8 +613,7 @@ export function createForgoInstance(customEnv: any) {
     unloadStaleComponentsOnNode(node, statesAwaitingAttach, staleComponents);
 
     return {
-      firstNode: node,
-      lastNode: node,
+      nodes: [node],
     };
   }
 
@@ -688,8 +688,7 @@ export function createForgoInstance(customEnv: any) {
     );
 
     return {
-      firstNode: newElement,
-      lastNode: newElement,
+      nodes: [newElement],
     };
   }
 
@@ -714,8 +713,7 @@ export function createForgoInstance(customEnv: any) {
     unloadStaleComponentsOnNode(element, statesAwaitingAttach, staleComponents);
 
     return {
-      firstNode: element,
-      lastNode: element,
+      nodes: [element],
     };
   }
 
@@ -784,6 +782,8 @@ export function createForgoInstance(customEnv: any) {
 
     let currentNode = parentElement.firstChild;
 
+    const nodes: RenderedNode[] = [];
+
     for (const forgoChild of forgoChildren) {
       const renderResult = internalRender(
         forgoChild,
@@ -798,7 +798,7 @@ export function createForgoInstance(customEnv: any) {
 
       // If anything was rendered, move currentNode to point to sibling of last
       // rendered node
-      currentNode = renderResult.lastNode.nextSibling;
+      renderResult.nodes.forEach((node) => nodes.push(node));
     }
 
     // Now that all childNodes have been rendered, we can unmount leftover nodes.
@@ -903,14 +903,9 @@ export function createForgoInstance(customEnv: any) {
 
         // In case we rendered an array, set the node to the first node.
         // We do this because args.element.node would be set to the last node otherwise.
-        (newComponentState as NodeAttachedComponentState<TProps>).firstNode =
-          renderResult.firstNode;
-        (newComponentState as NodeAttachedComponentState<TProps>).lastNode =
-          renderResult.lastNode;
-
-        newComponentState.component.__internal.element.node =
-          renderResult.firstNode;
-
+        (newComponentState as NodeAttachedComponentState<TProps>).nodes =
+          renderResult.nodes;
+          
         lifecycleEmitters.mount(component, forgoComponentElement.props);
 
         lifecycleEmitters.afterRender(
@@ -952,21 +947,21 @@ export function createForgoInstance(customEnv: any) {
     const componentIndex = statesAwaitingAttach.length;
 
     const state = getForgoState(node);
-    const componentState = state.components[componentIndex];
+    const originalComponentState = state.components[componentIndex];
 
-    const nodeAfterComponent = componentState.lastNode.nextSibling;
+    const nodeAfterComponent = originalComponentState.lastNode.nextSibling;
 
     if (
       lifecycleEmitters.shouldUpdate(
-        componentState.component,
+        originalComponentState.component,
         forgoComponentElement.props,
-        componentState.props
+        originalComponentState.props
       )
     ) {
       // Since we have compatible state already stored, we'll push the
       // savedComponentState into statesAwaitingAttach for later attachment.
       const updatedComponentState = {
-        ...componentState,
+        ...originalComponentState,
         props: forgoComponentElement.props,
       };
 
@@ -979,12 +974,13 @@ export function createForgoInstance(customEnv: any) {
 
       const allStates = statesAwaitingAttach.concat(updatedComponentState);
 
-      const previousNode = componentState.component.__internal.element.node;
+      const previousNode =
+        originalComponentState.component.__internal.element.node;
 
       const nodeSearchScope: NodeSearchScope<ChildNode> = {
         parentElement: node.parentElement as Element,
         currentNode: node,
-        lastNode: componentState.lastNode,
+        lastNode: originalComponentState.lastNode,
       };
 
       const renderResult = withErrorBoundary(
@@ -1003,12 +999,11 @@ export function createForgoInstance(customEnv: any) {
 
           // In case we rendered an array, set the node to the first node.
           // We do this because args.element.node would be set to the last node otherwise.
-          componentState.firstNode = renderResult.firstNode;
-          componentState.lastNode = renderResult.lastNode;
-          componentState.component.__internal.element.node =
+          updatedComponentState.firstNode = renderResult.firstNode;
+          updatedComponentState.lastNode = renderResult.lastNode;
+          updatedComponentState.component.__internal.element.node =
             renderResult.firstNode;
 
-          // Let's remove extra nodes.
           unloadNodeRange(
             renderResult.lastNode.nextSibling,
             nodeAfterComponent
@@ -1030,8 +1025,8 @@ export function createForgoInstance(customEnv: any) {
     // shouldUpdate() returned false
     else {
       return {
-        firstNode: componentState.firstNode,
-        lastNode: componentState.lastNode,
+        firstNode: originalComponentState.firstNode,
+        lastNode: originalComponentState.lastNode,
       };
     }
   }
