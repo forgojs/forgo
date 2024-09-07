@@ -444,7 +444,7 @@ export const h = createElement;
 */
 function handlerDisabledOnNodeDelete(node: ChildNode, value: any) {
   return (e: any) => {
-    if (node.__forgo === undefined || node.__forgo.deleted === false) {
+    if (node.__forgo === undefined || !node.__forgo.deleted) {
       return value(e);
     }
   };
