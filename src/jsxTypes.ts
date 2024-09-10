@@ -319,8 +319,10 @@ export type TargetedClipboardEvent<Target extends EventTarget> = TargetedEvent<
   Target,
   ClipboardEvent
 >;
-export type TargetedCompositionEvent<Target extends EventTarget> =
-  TargetedEvent<Target, CompositionEvent>;
+export type TargetedCompositionEvent<Target extends EventTarget> = TargetedEvent<
+  Target,
+  CompositionEvent
+>;
 export type TargetedDragEvent<Target extends EventTarget> = TargetedEvent<
   Target,
   DragEvent
@@ -356,6 +358,14 @@ export type TargetedUIEvent<Target extends EventTarget> = TargetedEvent<
 export type TargetedWheelEvent<Target extends EventTarget> = TargetedEvent<
   Target,
   WheelEvent
+>;
+export type TargetedInputEvent<Target extends EventTarget> = TargetedEvent<
+  Target,
+  InputEvent
+>;
+export type TargetedSecurityPolicyViolationEvent<Target extends EventTarget> = TargetedEvent<
+  Target,
+  SecurityPolicyViolationEvent
 >;
 
 export interface EventHandler<E extends TargetedEvent> {
@@ -405,6 +415,12 @@ export type UIEventHandler<Target extends EventTarget> = EventHandler<
 export type WheelEventHandler<Target extends EventTarget> = EventHandler<
   TargetedWheelEvent<Target>
 >;
+export type InputEventHandler<Target extends EventTarget> = EventHandler<
+  TargetedInputEvent<Target>
+>;
+export type SecurityPolicyViolationEventHandler<Target extends EventTarget> = EventHandler<
+  TargetedSecurityPolicyViolationEvent<Target>
+>;
 
 /*
   The function used to convert
@@ -435,16 +451,23 @@ export interface DOMAttributes<Target extends EventTarget>
   oncompositionstart?: CompositionEventHandler<Target>;
   oncompositionupdate?: CompositionEventHandler<Target>;
 
-  // Details Events
+  // Toggle Events
+  onbeforetoggle?: GenericEventHandler<Target>;
   ontoggle?: GenericEventHandler<Target>;
 
   // Focus Events
   onfocus?: FocusEventHandler<Target>;
+  onfocusin?: FocusEventHandler<Target>;
+  onfocusout?: FocusEventHandler<Target>;
   onblur?: FocusEventHandler<Target>;
 
+  // Input Events
+  onbeforeinput?: InputEventHandler<Target>;
+  oninput?: InputEventHandler<Target>;
+
   // Form Events
+  oncancel?: GenericEventHandler<Target>;
   onchange?: GenericEventHandler<Target>;
-  oninput?: GenericEventHandler<Target>;
   onsearch?: GenericEventHandler<Target>;
   onsubmit?: GenericEventHandler<Target>;
   oninvalid?: GenericEventHandler<Target>;
@@ -453,6 +476,10 @@ export interface DOMAttributes<Target extends EventTarget>
 
   // Keyboard Events
   onkeydown?: KeyboardEventHandler<Target>;
+  /**
+   * @deprecated: This event is deprecated, use `onbeforeinput` or `onkeydown` instead.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/keypress_event
+   * */
   onkeypress?: KeyboardEventHandler<Target>;
   onkeyup?: KeyboardEventHandler<Target>;
 
@@ -480,18 +507,17 @@ export interface DOMAttributes<Target extends EventTarget>
   onvolumechange?: GenericEventHandler<Target>;
   onwaiting?: GenericEventHandler<Target>;
 
-  // MouseEvents
-  onclick?: MouseEventHandler<Target>;
-  oncontextmenu?: MouseEventHandler<Target>;
-  ondblclick?: MouseEventHandler<Target>;
+  // Drag Events
   ondrag?: DragEventHandler<Target>;
   ondragend?: DragEventHandler<Target>;
   ondragenter?: DragEventHandler<Target>;
-  ondragexit?: DragEventHandler<Target>;
   ondragleave?: DragEventHandler<Target>;
   ondragover?: DragEventHandler<Target>;
   ondragstart?: DragEventHandler<Target>;
   ondrop?: DragEventHandler<Target>;
+
+  // Mouse Events
+  ondblclick?: MouseEventHandler<Target>;
   onmousedown?: MouseEventHandler<Target>;
   onmouseenter?: MouseEventHandler<Target>;
   onmouseleave?: MouseEventHandler<Target>;
@@ -510,6 +536,11 @@ export interface DOMAttributes<Target extends EventTarget>
   ontouchstart?: TouchEventHandler<Target>;
 
   // Pointer Events
+  onauxclick?: PointerEventHandler<Target>;
+  onclick?: PointerEventHandler<Target>;
+  oncontextmenu?: PointerEventHandler<Target>;
+  ongotpointercapture?: PointerEventHandler<Target>;
+  onlostpointercapture?: PointerEventHandler<Target>;
   onpointerover?: PointerEventHandler<Target>;
   onpointerenter?: PointerEventHandler<Target>;
   onpointerdown?: PointerEventHandler<Target>;
@@ -519,19 +550,26 @@ export interface DOMAttributes<Target extends EventTarget>
   onpointerout?: PointerEventHandler<Target>;
   onpointerleave?: PointerEventHandler<Target>;
 
-  // UI Events
-  onscroll?: UIEventHandler<Target>;
-
   // Wheel Events
   onwheel?: WheelEventHandler<Target>;
 
+  // Scroll Events
+  onscroll?: GenericEventHandler<Target>;
+
+  // Security Policy Violation Events
+  onsecuritypolicyviolation?: SecurityPolicyViolationEventHandler<Target>;
+
   // Animation Events
-  onanimationstart?: AnimationEventHandler<Target>;
+  onanimationcancel?: AnimationEventHandler<Target>;
   onanimationend?: AnimationEventHandler<Target>;
   onanimationiteration?: AnimationEventHandler<Target>;
+  onanimationstart?: AnimationEventHandler<Target>;
 
   // Transition Events
+  ontransitioncancel?: TransitionEventHandler<Target>;
   ontransitionend?: TransitionEventHandler<Target>;
+  ontransitionrun?: TransitionEventHandler<Target>;
+  ontransitionstart?: TransitionEventHandler<Target>;
 }
 
 export interface HTMLAttributes<RefType extends EventTarget = EventTarget>
