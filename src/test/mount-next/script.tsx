@@ -35,24 +35,24 @@ const ParentDOMWrappingComponent = () => {
   });
 };
 
-// const CounterComponent = () => {
-//   let counter = 0;
+const CounterComponent = () => {
+  let counter = 0;
 
-//   function inc() {
-//     counter++;
-//   }
+  return new forgo.Component({
+    name: "counter-component",
+    render(props: any, element: HTMLElement) {
+      function inc() {
+        counter++;
+      }
 
-//   return new forgo.Component({
-//     name: "counter-component",
-//     render() {
-//       return (
-//         <div>
-//           <button onclick={inc}>INC!</button>Clicked ${counter} times.
-//         </div>
-//       );
-//     },
-//   });
-// };
+      return (
+        <div>
+          <button onclick={inc}>INC!</button>Clicked ${counter} times.
+        </div>
+      );
+    },
+  });
+};
 
 export function run(dom: JSDOM) {
   window = dom.window;

@@ -1,12 +1,17 @@
+/**
+ * Creates everything needed to run forgo, wrapped in a closure holding e.g.,
+ * JSDOM-specific environment overrides used in tests
+ */
+// Cache for storing custom elements, so we don't redefine them
 // Type definitions
 type Props = { [key: string]: any }; // Props can be any key-value pairs.
 type ForgoElement = HTMLElement | Text; // A Forgo element is either an HTML element or text.
 type ChildElement = ForgoElement | string | number; // Children can be elements or simple text.
 
-// Type representing a Forgo component class
+// Update ForgoComponentType to accept props and customElement in render()
 type ForgoComponentType = {
   name: string;
-  render: () => ForgoElement;
+  render: (props: Props, customElement: HTMLElement) => ForgoElement;
 };
 
 /*
@@ -22,26 +27,27 @@ export type ForgoEnvType = {
   };
 };
 
-// Cache for storing custom elements, so we don't redefine them
-const customElementRegistry: { [key: string]: boolean } = {};
-
 // The Component class
 export class Component {
   name: string;
-  render: () => ForgoElement;
+  render: (props: Props, customElement: HTMLElement) => ForgoElement;
 
-  constructor(config: { name: string; render: () => ForgoElement }) {
+  constructor(config: {
+    name: string;
+    render: (props: Props, customElement: HTMLElement) => ForgoElement;
+  }) {
     this.name = config.name;
     this.render = config.render;
   }
 }
 
+// Cache for storing custom elements, so we don't redefine them
+const customElementRegistry: { [key: string]: boolean } = {};
+
 /**
  * Creates everything needed to run forgo, wrapped in a closure holding e.g.,
  * JSDOM-specific environment overrides used in tests
  */
-// Cache for storing custom elements, so we don't redefine them
-
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
 
@@ -79,8 +85,11 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      // Render the component's content and append it to the custom element here
-      const renderedContent = componentInstance.render();
+      // Render the component's content, passing props and the customElement to the render function
+      const renderedContent = componentInstance.render(
+        props || {},
+        customElement
+      );
       customElement.appendChild(renderedContent);
 
       return customElement;
@@ -144,7 +153,6 @@ export function createForgoInstance(customEnv: any) {
     mount,
   };
 }
-
 const windowObject = globalThis !== undefined ? globalThis : window;
 
 let forgoInstance = createForgoInstance({
