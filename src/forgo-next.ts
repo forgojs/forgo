@@ -5,6 +5,7 @@ type ChildElement = ForgoElement | string | number; // Children can be elements 
 
 // Type representing a Forgo component class
 type ForgoComponentType = {
+  name: string;
   render: () => ForgoElement;
 };
 
@@ -21,11 +22,16 @@ export type ForgoEnvType = {
   };
 };
 
+// Cache for storing custom elements, so we don't redefine them
+const customElementRegistry: { [key: string]: boolean } = {};
+
 // The Component class
 export class Component {
+  name: string;
   render: () => ForgoElement;
 
-  constructor(config: { render: () => ForgoElement }) {
+  constructor(config: { name: string; render: () => ForgoElement }) {
+    this.name = config.name;
     this.render = config.render;
   }
 }
@@ -34,6 +40,8 @@ export class Component {
  * Creates everything needed to run forgo, wrapped in a closure holding e.g.,
  * JSDOM-specific environment overrides used in tests
  */
+// Cache for storing custom elements, so we don't redefine them
+
 export function createForgoInstance(customEnv: any) {
   const env: ForgoEnvType = customEnv;
 
@@ -48,10 +56,34 @@ export function createForgoInstance(customEnv: any) {
     props: Props | null,
     ...children: ChildElement[]
   ): ForgoElement {
-    // If the tag is a component (a function), call the function to get the component's render output
     if (typeof tag === "function") {
       const componentInstance = tag();
-      return componentInstance.render();
+
+      // Check if the custom element has already been registered
+      if (!customElementRegistry[componentInstance.name]) {
+        // Create a custom element class, but without rendering in connectedCallback
+        class CustomElement extends env.__internal.HTMLElement {}
+
+        // Define the custom element using the component's name
+        env.window.customElements.define(componentInstance.name, CustomElement);
+        customElementRegistry[componentInstance.name] = true;
+      }
+
+      // Create the custom element (i.e., <basic-component> or <parent-component>)
+      const customElement = env.document.createElement(componentInstance.name);
+
+      // Set the props as attributes on the custom element
+      if (props) {
+        for (const [key, value] of Object.entries(props)) {
+          customElement.setAttribute(key, String(value));
+        }
+      }
+
+      // Render the component's content and append it to the custom element here
+      const renderedContent = componentInstance.render();
+      customElement.appendChild(renderedContent);
+
+      return customElement;
     }
 
     // If tag is an HTML element (string), create a DOM element
@@ -72,12 +104,10 @@ export function createForgoInstance(customEnv: any) {
     children.forEach((child) => {
       if (typeof child === "string" || typeof child === "number") {
         element.appendChild(env.document.createTextNode(String(child))); // Append text nodes
-      } else if (typeof child === "function") {
-        // If the child is a component function, call its render() and append the result
-        const componentInstance = (child as () => ForgoComponentType)();
-        const childElement = componentInstance.render();
-        element.appendChild(childElement);
-      } else if (child instanceof env.__internal.HTMLElement || child instanceof env.__internal.Text) {
+      } else if (
+        child instanceof env.__internal.HTMLElement ||
+        child instanceof env.__internal.Text
+      ) {
         element.appendChild(child); // Append child elements
       }
     });

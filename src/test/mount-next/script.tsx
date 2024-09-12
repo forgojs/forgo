@@ -6,6 +6,7 @@ let document: Document;
 
 const BasicComponent = () => {
   return new forgo.Component({
+    name: "basic-component",
     render() {
       return <div>Hello world</div>;
     },
@@ -14,6 +15,7 @@ const BasicComponent = () => {
 
 const ParentComponent = () => {
   return new forgo.Component({
+    name: "parent-component",
     render() {
       return <BasicComponent />;
     },
@@ -22,6 +24,7 @@ const ParentComponent = () => {
 
 const ParentDOMWrappingComponent = () => {
   return new forgo.Component({
+    name: "parent-dom-wrapping-component",
     render() {
       return (
         <div>
@@ -31,6 +34,25 @@ const ParentDOMWrappingComponent = () => {
     },
   });
 };
+
+// const CounterComponent = () => {
+//   let counter = 0;
+
+//   function inc() {
+//     counter++;
+//   }
+
+//   return new forgo.Component({
+//     name: "counter-component",
+//     render() {
+//       return (
+//         <div>
+//           <button onclick={inc}>INC!</button>Clicked ${counter} times.
+//         </div>
+//       );
+//     },
+//   });
+// };
 
 export function run(dom: JSDOM) {
   window = dom.window;
