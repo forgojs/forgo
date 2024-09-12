@@ -104,6 +104,10 @@ export function createForgoInstance(customEnv: any) {
 
       // Set the props as attributes on the custom element
       if (props) {
+        if (props.ref !== undefined) {
+          props.ref.value = customElement;
+        }
+
         for (const [key, value] of Object.entries(props)) {
           customElement.setAttribute(key, String(value));
         }
@@ -124,6 +128,10 @@ export function createForgoInstance(customEnv: any) {
 
     // Set properties or attributes if provided
     if (props) {
+      if (props.ref !== undefined) {
+        props.ref.value = element;
+      }
+
       for (const [key, value] of Object.entries(props)) {
         if (key in element) {
           (element as any)[key] = value; // Set DOM properties
