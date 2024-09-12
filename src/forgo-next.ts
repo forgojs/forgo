@@ -12,8 +12,10 @@ type ForgoComponentType = {
   name: string;
   render: (props: Props, component: ForgoComponentType) => ForgoElement;
   element?: HTMLElement; // Optional element property to store the custom element reference
-  update: () => void; // New update method to re-render the component
+  update: () => void; // Update method to re-render the component
   props?: Props; // Store optional props
+  attachShadow: boolean; // Whether to attach a shadow root
+  mode: "open" | "closed"; // Shadow DOM mode (open or closed)
 };
 
 /*
@@ -35,29 +37,40 @@ export class Component {
   render: (props: Props, component: Component) => ForgoElement;
   element?: HTMLElement; // Store the associated custom element
   props: Props; // Store the props passed to the component
+  attachShadow: boolean; // Whether to attach a shadow root
+  mode: "open" | "closed"; // The mode for the shadow root
 
   constructor(config: {
     name: string;
     render: (props: Props, component: Component) => ForgoElement;
     props?: Props;
+    attachShadow?: boolean; // Add this option, defaults to true
+    mode?: "open" | "closed"; // Add this option, defaults to "open"
   }) {
     this.name = config.name;
     this.render = config.render;
     this.element = undefined; // Initialize the element as undefined
     this.props = config.props ?? {}; // Store the props passed to the component
+    this.attachShadow = config.attachShadow ?? true; // Default attachShadow to true
+    this.mode = config.mode ?? "open"; // Default mode to "open"
   }
 
   // The update method to re-render the component and update the DOM
   update() {
     if (this.element) {
-      // Clear the element's existing content
-      while (this.element.firstChild) {
-        this.element.removeChild(this.element.firstChild);
-      }
+      // Determine whether to target the shadow DOM or the regular element based on the attachShadow prop
+      const target = this.attachShadow ? this.element.shadowRoot : this.element;
 
-      // Re-render and append new content
-      const newContent = this.render(this.props, this);
-      this.element.appendChild(newContent);
+      if (target) {
+        // Clear the target's existing content
+        while (target.firstChild) {
+          target.removeChild(target.firstChild);
+        }
+
+        // Re-render and append new content
+        const newContent = this.render(this.props, this);
+        target.appendChild(newContent);
+      }
     }
   }
 }
@@ -99,6 +112,12 @@ export function createForgoInstance(customEnv: any) {
       // Create the custom element (i.e., <basic-component> or <parent-component>)
       const customElement = env.document.createElement(forgoComponent.name);
 
+      // Conditionally attach a shadow root based on attachShadow property
+      let shadowRoot;
+      if (forgoComponent.attachShadow) {
+        shadowRoot = customElement.attachShadow({ mode: forgoComponent.mode });
+      }
+
       // Attach the custom element to the component's `element` prop
       forgoComponent.element = customElement;
 
@@ -113,17 +132,23 @@ export function createForgoInstance(customEnv: any) {
         }
       }
 
-      // Render the component's content, passing props and the customElement to the render function
+      // Render the component's content, passing props and the component to the render function
       const renderedContent = forgoComponent.render(
         props || {},
         forgoComponent
       );
-      customElement.appendChild(renderedContent);
+
+      // Append the rendered content to the shadow root if it exists, otherwise to the element
+      if (shadowRoot) {
+        shadowRoot.appendChild(renderedContent);
+      } else {
+        customElement.appendChild(renderedContent);
+      }
 
       return customElement;
     }
 
-    // If tag is an HTML element (string), create a DOM element
+    // For standard HTML elements, no shadow root is created
     const element = env.document.createElement(tag);
 
     // Set properties or attributes if provided

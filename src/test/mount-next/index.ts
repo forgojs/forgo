@@ -11,7 +11,7 @@ import {
 
 export default function () {
   describe("mounts a component", () => {
-    it("mounts on an DOM element", async () => {
+    it("mounts on a DOM element", async () => {
       const dom = new JSDOM(htmlFile(), {
         runScripts: "outside-only",
         resources: "usable",
@@ -22,7 +22,17 @@ export default function () {
 
       const innerHtml = await new Promise<string>((resolve) => {
         window.addEventListener("load", () => {
-          resolve(window.document.body.innerHTML);
+          const root = window.document.getElementById("root") as HTMLElement;
+          const component = root.querySelector(
+            "basic-component"
+          ) as HTMLElement;
+
+          // Check the shadow DOM for the content
+          if (component.shadowRoot) {
+            resolve(component.shadowRoot.innerHTML);
+          } else {
+            resolve(root.innerHTML);
+          }
         });
       });
 
@@ -38,11 +48,23 @@ export default function () {
 
       runParent(dom);
 
-      const innerHtml = await new Promise<string>((resolve) => {
+      const document = await new Promise<Document>((resolve) => {
         window.addEventListener("load", () => {
-          resolve(window.document.body.innerHTML);
+          resolve(window.document);
         });
       });
+
+      const root = document.getElementById("root") as HTMLElement;
+      const parentComponent = root.querySelector(
+        "parent-component"
+      ) as HTMLElement;
+      const basicComponent = (
+        parentComponent.shadowRoot ?? parentComponent
+      ).querySelector("basic-component") as HTMLElement;
+
+      const innerHtml = basicComponent.shadowRoot
+        ? basicComponent.shadowRoot.innerHTML
+        : basicComponent.innerHTML;
 
       innerHtml.should.containEql("Hello world");
     });
@@ -62,7 +84,20 @@ export default function () {
         });
       });
 
-      document.body.innerHTML.should.containEql("Hello world");
+      const root = document.getElementById("root") as HTMLElement;
+      const domWrappingComponent = root.querySelector(
+        "parent-dom-wrapping-component"
+      ) as HTMLElement;
+
+      const basicComponent = (
+        domWrappingComponent.shadowRoot ?? domWrappingComponent
+      ).querySelector("basic-component") as HTMLElement;
+
+      const innerHtml = basicComponent.shadowRoot
+        ? basicComponent.shadowRoot.innerHTML
+        : basicComponent.innerHTML;
+
+      innerHtml.should.containEql("Hello world");
     });
 
     it("mounts a counter component", async () => {
@@ -80,11 +115,18 @@ export default function () {
         });
       });
 
+      const root = document.getElementById("root") as HTMLElement;
+      const component = root.querySelector("counter-component") as HTMLElement;
+
       counterButtonRef.value.click();
       counterButtonRef.value.click();
       counterButtonRef.value.click();
 
-      document.body.innerHTML.should.containEql("Clicked 3 times");
+      const innerHtml = component.shadowRoot
+        ? component.shadowRoot.innerHTML
+        : component.innerHTML;
+
+      innerHtml.should.containEql("Clicked 3 times");
     });
   });
 }
