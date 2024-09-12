@@ -2,16 +2,18 @@
  * Creates everything needed to run forgo, wrapped in a closure holding e.g.,
  * JSDOM-specific environment overrides used in tests
  */
+
 // Cache for storing custom elements, so we don't redefine them
-// Type definitions
 type Props = { [key: string]: any }; // Props can be any key-value pairs.
 type ForgoElement = HTMLElement | Text; // A Forgo element is either an HTML element or text.
 type ChildElement = ForgoElement | string | number; // Children can be elements or simple text.
 
-// Update ForgoComponentType to accept props and customElement in render()
 type ForgoComponentType = {
   name: string;
-  render: (props: Props, customElement: HTMLElement) => ForgoElement;
+  render: (props: Props, component: ForgoComponentType) => ForgoElement;
+  element?: HTMLElement; // Optional element property to store the custom element reference
+  update: () => void; // New update method to re-render the component
+  props?: Props; // Store optional props
 };
 
 /*
@@ -30,14 +32,33 @@ export type ForgoEnvType = {
 // The Component class
 export class Component {
   name: string;
-  render: (props: Props, customElement: HTMLElement) => ForgoElement;
+  render: (props: Props, component: Component) => ForgoElement;
+  element?: HTMLElement; // Store the associated custom element
+  props: Props; // Store the props passed to the component
 
   constructor(config: {
     name: string;
-    render: (props: Props, customElement: HTMLElement) => ForgoElement;
+    render: (props: Props, component: Component) => ForgoElement;
+    props?: Props;
   }) {
     this.name = config.name;
     this.render = config.render;
+    this.element = undefined; // Initialize the element as undefined
+    this.props = config.props ?? {}; // Store the props passed to the component
+  }
+
+  // The update method to re-render the component and update the DOM
+  update() {
+    if (this.element) {
+      // Clear the element's existing content
+      while (this.element.firstChild) {
+        this.element.removeChild(this.element.firstChild);
+      }
+
+      // Re-render and append new content
+      const newContent = this.render(this.props, this);
+      this.element.appendChild(newContent);
+    }
   }
 }
 
@@ -63,20 +84,23 @@ export function createForgoInstance(customEnv: any) {
     ...children: ChildElement[]
   ): ForgoElement {
     if (typeof tag === "function") {
-      const componentInstance = tag();
+      const forgoComponent = tag();
 
       // Check if the custom element has already been registered
-      if (!customElementRegistry[componentInstance.name]) {
+      if (!customElementRegistry[forgoComponent.name]) {
         // Create a custom element class, but without rendering in connectedCallback
         class CustomElement extends env.__internal.HTMLElement {}
 
         // Define the custom element using the component's name
-        env.window.customElements.define(componentInstance.name, CustomElement);
-        customElementRegistry[componentInstance.name] = true;
+        env.window.customElements.define(forgoComponent.name, CustomElement);
+        customElementRegistry[forgoComponent.name] = true;
       }
 
       // Create the custom element (i.e., <basic-component> or <parent-component>)
-      const customElement = env.document.createElement(componentInstance.name);
+      const customElement = env.document.createElement(forgoComponent.name);
+
+      // Attach the custom element to the component's `element` prop
+      forgoComponent.element = customElement;
 
       // Set the props as attributes on the custom element
       if (props) {
@@ -86,9 +110,9 @@ export function createForgoInstance(customEnv: any) {
       }
 
       // Render the component's content, passing props and the customElement to the render function
-      const renderedContent = componentInstance.render(
+      const renderedContent = forgoComponent.render(
         props || {},
-        customElement
+        forgoComponent
       );
       customElement.appendChild(renderedContent);
 
@@ -153,6 +177,7 @@ export function createForgoInstance(customEnv: any) {
     mount,
   };
 }
+
 const windowObject = globalThis !== undefined ? globalThis : window;
 
 let forgoInstance = createForgoInstance({

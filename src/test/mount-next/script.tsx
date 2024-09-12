@@ -40,9 +40,10 @@ const CounterComponent = () => {
 
   return new forgo.Component({
     name: "counter-component",
-    render(props: any, element: HTMLElement) {
+    render(props, component) {
       function inc() {
         counter++;
+        component.update();
       }
 
       return (
