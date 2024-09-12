@@ -20,6 +20,10 @@ export default function () {
         });
       });
 
+      console.log({
+        innerHtml,
+      });
+
       innerHtml.should.containEql("Hello world");
     });
 
@@ -38,6 +42,10 @@ export default function () {
         });
       });
 
+      console.log({
+        innerHtml,
+      });
+
       innerHtml.should.containEql("Hello world");
     });
 
@@ -54,6 +62,10 @@ export default function () {
         window.addEventListener("load", () => {
           resolve(window.document.body.innerHTML);
         });
+      });
+
+      console.log({
+        innerHtml,
       });
 
       innerHtml.should.containEql("Hello world");

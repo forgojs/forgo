@@ -48,7 +48,7 @@ export function createForgoInstance(customEnv: any) {
     props: Props | null,
     ...children: ChildElement[]
   ): ForgoElement {
-    // If tag is a component (a function), call the function to get the component's render output
+    // If the tag is a component (a function), call the function to get the component's render output
     if (typeof tag === "function") {
       const componentInstance = tag();
       return componentInstance.render();
@@ -72,7 +72,12 @@ export function createForgoInstance(customEnv: any) {
     children.forEach((child) => {
       if (typeof child === "string" || typeof child === "number") {
         element.appendChild(env.document.createTextNode(String(child))); // Append text nodes
-      } else if (child instanceof HTMLElement || child instanceof Text) {
+      } else if (typeof child === "function") {
+        // If the child is a component function, call its render() and append the result
+        const componentInstance = (child as () => ForgoComponentType)();
+        const childElement = componentInstance.render();
+        element.appendChild(childElement);
+      } else if (child instanceof env.__internal.HTMLElement || child instanceof env.__internal.Text) {
         element.appendChild(child); // Append child elements
       }
     });
