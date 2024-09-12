@@ -1,7 +1,12 @@
 import { JSDOM } from "jsdom";
 import htmlFile from "../htmlFile.js";
 import "should";
-import { run, runParent, runParentDOMWrapping } from "./script.js";
+import {
+  run,
+  runParent,
+  runParentDOMWrapping,
+  counterButtonRef,
+} from "./script.js";
 
 export default function () {
   describe("mounts a component", () => {
@@ -58,17 +63,25 @@ export default function () {
 
       runParentDOMWrapping(dom);
 
-      const innerHtml = await new Promise<string>((resolve) => {
+      const document = await new Promise<Document>((resolve) => {
         window.addEventListener("load", () => {
-          resolve(window.document.body.innerHTML);
+          resolve(window.document);
         });
       });
 
       console.log({
-        innerHtml,
+        innerHtml: document.body.innerHTML,
       });
 
-      innerHtml.should.containEql("Hello world");
+      counterButtonRef.value.click();
+      counterButtonRef.value.click();
+      counterButtonRef.value.click();
+
+      console.log({
+        innerHtml: document.body.innerHTML,
+      });
+
+      document.body.innerHTML.should.containEql("Hello world");
     });
   });
 }

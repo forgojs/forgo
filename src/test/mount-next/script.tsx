@@ -35,6 +35,8 @@ const ParentDOMWrappingComponent = () => {
   });
 };
 
+export const counterButtonRef: any = {};
+
 const CounterComponent = () => {
   let counter = 0;
 
@@ -48,7 +50,10 @@ const CounterComponent = () => {
 
       return (
         <div>
-          <button onclick={inc}>INC!</button>Clicked ${counter} times.
+          <button ref={counterButtonRef} onclick={inc}>
+            INC!
+          </button>
+          Clicked ${counter} times.
         </div>
       );
     },
