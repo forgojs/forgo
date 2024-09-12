@@ -53,7 +53,7 @@ const CounterComponent = () => {
           <button ref={counterButtonRef} onclick={inc}>
             INC!
           </button>
-          Clicked ${counter} times.
+          Clicked {counter} times.
         </div>
       );
     },
@@ -87,5 +87,15 @@ export function runParentDOMWrapping(dom: JSDOM) {
 
   window.addEventListener("load", () => {
     forgo.mount(<ParentDOMWrappingComponent />, "#root");
+  });
+}
+
+export function runCounter(dom: JSDOM) {
+  window = dom.window;
+  document = window.document;
+  forgo.setCustomEnv({ window, document });
+
+  window.addEventListener("load", () => {
+    forgo.mount(<CounterComponent />, "#root");
   });
 }

@@ -5,6 +5,7 @@ import {
   run,
   runParent,
   runParentDOMWrapping,
+  runCounter,
   counterButtonRef,
 } from "./script.js";
 
@@ -25,10 +26,6 @@ export default function () {
         });
       });
 
-      console.log({
-        innerHtml,
-      });
-
       innerHtml.should.containEql("Hello world");
     });
 
@@ -45,10 +42,6 @@ export default function () {
         window.addEventListener("load", () => {
           resolve(window.document.body.innerHTML);
         });
-      });
-
-      console.log({
-        innerHtml,
       });
 
       innerHtml.should.containEql("Hello world");
@@ -69,19 +62,29 @@ export default function () {
         });
       });
 
-      console.log({
-        innerHtml: document.body.innerHTML,
-      });
-
-      counterButtonRef.value.click();
-      counterButtonRef.value.click();
-      counterButtonRef.value.click();
-
-      console.log({
-        innerHtml: document.body.innerHTML,
-      });
-
       document.body.innerHTML.should.containEql("Hello world");
+    });
+
+    it("mounts a counter component", async () => {
+      const dom = new JSDOM(htmlFile(), {
+        runScripts: "outside-only",
+        resources: "usable",
+      });
+      const window = dom.window;
+
+      runCounter(dom);
+
+      const document = await new Promise<Document>((resolve) => {
+        window.addEventListener("load", () => {
+          resolve(window.document);
+        });
+      });
+
+      counterButtonRef.value.click();
+      counterButtonRef.value.click();
+      counterButtonRef.value.click();
+
+      document.body.innerHTML.should.containEql("Clicked 3 times");
     });
   });
 }
